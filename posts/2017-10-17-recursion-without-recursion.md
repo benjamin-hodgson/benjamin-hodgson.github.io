@@ -3,7 +3,7 @@ title: Recursion Without Recursion
 subtitle: Tearing Down Trees in One Line of Code
 ---
 
-If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type [`[c#] and (salary:50000gbp or not [javascript])`](https://stackoverflow.com/jobs?sort=i&q=%5Bc%23%5D+and+(salary%3A50000gbp+or+not+%5Bjavascript%5D)) into the search box. This advanced search syntax is called JQL, for _Jobs Query Language_.
+If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type [`[c#] and (not [javascript] or salary:50000gbp)`](https://stackoverflow.com/jobs?sort=i&q=%5Bc%23%5D+and+(salary%3A50000gbp+or+not+%5Bjavascript%5D)) into the search box. This advanced search syntax is called JQL, for _Jobs Query Language_.
 
 It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler is quite vanilla (though it's still my favourite part of the codebase): there's a parser which produces an abstract syntax tree, a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)
 
@@ -43,14 +43,14 @@ class TagNode : JqlNode
 }
 ```
 
-Each syntactic form in the source language is represented as a subclass of `JqlNode`. Using the example I gave above, the input string `[c#] and (salary:50000gbp or not [javascript])` would be represented as:
+Each syntactic form in the source language is represented as a subclass of `JqlNode`. Using the example I gave above, the input string `[c#] and (not [javascript] or salary:50000gbp)` would be represented as:
 
 ```csharp
 new AndNode(
     new TagNode("c#"),
     new OrNode(
-        new SalaryNode(50000, "gbp"),
-        new NotNode(new TagNode("javascript"))
+        new NotNode(new TagNode("javascript")),
+        new SalaryNode(50000, "gbp")
     )
 )
 ```
@@ -121,7 +121,7 @@ This type of code gets pretty tedious pretty quickly! In both of these functions
 
 Here's the first insight that'll help us improve on this situation. In the first example we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you're looking for. We'll call the function which extracts the list of subtrees `SelfAndDescendants`.
 
-Given a tree like the example from above (`[c#] and (salary:50000gbp or not [javascript])`), `SelfAndDescendants` will yield every subtree in a depth-first, left-to-right manner:
+Given a tree like the example from above (`[c#] and (not [javascript] or salary:50000gbp)`), `SelfAndDescendants` will yield every subtree in a depth-first, left-to-right manner:
 
 ```csharp
 new JqlNode[]
@@ -129,18 +129,18 @@ new JqlNode[]
     new AndNode(
         new TagNode("c#"),
         new OrNode(
-            new SalaryNode(50000, "gbp"),
-            new NotNode(new TagNode("javascript"))
+            new NotNode(new TagNode("javascript")),
+            new SalaryNode(50000, "gbp")
         )
     ),
     new TagNode("c#"),
     new OrNode(
-        new SalaryNode(50000, "gbp"),
-        new NotNode(new TagNode("javascript"))
+        new NotNode(new TagNode("javascript")),
+        new SalaryNode(50000, "gbp")
     ),
-    new SalaryNode(50000, "gbp"),
     new NotNode(new TagNode("javascript")),
-    new TagNode("javascript")
+    new TagNode("javascript"),
+    new SalaryNode(50000, "gbp")
 }
 ```
 
@@ -193,21 +193,21 @@ How about transforming a JQL AST? `DontNotSimplifyDoubleNegatives` searches a JQ
 
 A transformation function searches through every node in a syntax tree, and when it encounters a node satisfying the pattern it's looking for, it replaces it. The knack is to separate the two responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a transformation function to every node in a JQL tree from bottom to top; then it's the transformation function's job to decide what to do with each node.
 
-For example, `Rewrite` will take the query above (`[c#] and (salary:50000gbp or not [javascript])`) and compute the expression:
+For example, `Rewrite` will take the query above (`[c#] and (not [javascript] or salary:50000gbp)`) and compute the expression:
 
 ```csharp
 transformer(new AndNode(
     transformer(new TagNode("c#")),
     transformer(new OrNode(
-        transformer(new SalaryNode(50000, "gbp")),
         transformer(new NotNode(
             transformer(new TagNode("javascript"))
-        ))
+        )),
+        transformer(new SalaryNode(50000, "gbp"))
     ))
 ))
 ```
 
-So `transformer` gets applied to every node in the tree exactly once. `Rewrite` is a mapping operation, like LINQ's `Select`.
+So `transformer` gets applied to every subtree exactly once. `Rewrite` is a mapping operation, like LINQ's `Select`.
 
 To use this `Rewrite` method, you write a transformation function which calculates a replacement for each node. If there's no replacing to do, it just returns the same node. Like this:
 
