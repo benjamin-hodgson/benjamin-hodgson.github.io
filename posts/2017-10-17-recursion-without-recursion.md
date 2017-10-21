@@ -119,7 +119,32 @@ This type of code gets pretty tedious pretty quickly! In both of these functions
 
 ### Easier Querying
 
-Here's the first insight that'll help us improve on this situation. In the first example we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you're looking for.
+Here's the first insight that'll help us improve on this situation. In the first example we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you're looking for. We'll call the function which extracts the list of subtrees `SelfAndDescendants`.
+
+Given a tree like the example from above (`[c#] and (salary:50000gbp or not [javascript])`), `SelfAndDescendants` will yield every subtree in a depth-first, left-to-right manner:
+
+```csharp
+new JqlNode[]
+{
+    new AndNode(
+        new TagNode("c#"),
+        new OrNode(
+            new SalaryNode(50000, "gbp"),
+            new NotNode(new TagNode("javascript"))
+        )
+    ),
+    new TagNode("c#"),
+    new OrNode(
+        new SalaryNode(50000, "gbp"),
+        new NotNode(new TagNode("javascript"))
+    ),
+    new SalaryNode(50000, "gbp"),
+    new NotNode(new TagNode("javascript")),
+    new TagNode("javascript")
+}
+```
+
+Here's `SelfAndDescendants` in use:
 
 ```csharp
 IEnumerable<string> ExtractTags(JqlNode node)
@@ -162,34 +187,42 @@ public static IEnumerable<JqlNode> SelfAndDescendants(this JqlNode node)
 }
 ```
 
-Given a tree like the example from above (`[c#] and (salary:50000gbp or not [javascript])`), `SelfAndDescendants` will yield every subtree in a depth-first, left-to-right manner:
-
-```csharp
-new JqlNode[]
-{
-    new AndNode(
-        new TagNode("c#"),
-        new OrNode(
-            new SalaryNode(50000, "gbp"),
-            new NotNode(new TagNode("javascript"))
-        )
-    ),
-    new TagNode("c#"),
-    new OrNode(
-        new SalaryNode(50000, "gbp"),
-        new NotNode(new TagNode("javascript"))
-    ),
-    new SalaryNode(50000, "gbp"),
-    new NotNode(new TagNode("javascript")),
-    new TagNode("javascript")
-}
-```
-
 ### A Reusable Transformer
 
 How about transforming a JQL AST? `DontNotSimplifyDoubleNegatives` searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?
 
-A transformation function searches through every node in a syntax tree, and when it encounters a node satisfying the pattern it's looking for, it replaces it. The knack is to separate the two responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_.
+A transformation function searches through every node in a syntax tree, and when it encounters a node satisfying the pattern it's looking for, it replaces it. The knack is to separate the two responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a transformation function to every node in a JQL tree from bottom to top; then it's the transformation function's job to decide what to do with each node.
+
+For example, `Rewrite` will take the query above (`[c#] and (salary:50000gbp or not [javascript])`) and compute the expression:
+
+```csharp
+transformer(new AndNode(
+    transformer(new TagNode("c#")),
+    transformer(new OrNode(
+        transformer(new SalaryNode(50000, "gbp")),
+        transformer(new NotNode(
+            transformer(new TagNode("javascript"))
+        ))
+    ))
+))
+```
+
+So `transformer` gets applied to every node in the tree exactly once. `Rewrite` is a mapping operation, like LINQ's `Select`.
+
+To use this `Rewrite` method, you write a transformation function which calculates a replacement for each node. If there's no replacing to do, it just returns the same node. Like this:
+
+```csharp
+JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
+    => node.Rewrite(
+        n => n is NotNode n1 && n1 is NotNode n2
+            ? n2.Operand
+            : n;
+    );
+```
+
+Once again, this code is a huge improvement over the verbose version which used explicit pattern matching and recursion. `Rewrite` allows us to get straight to the point and only think about the parts of the tree we're interested in.
+
+Here's how `Rewrite` is implemented. Much as `SelfAndDescendants` packaged up a pattern of recursion
 
 ```csharp
 static JqlNode Rewrite(
@@ -221,38 +254,11 @@ static JqlNode Rewrite(
 }
 ```
 
-`Rewrite` takes a transformation function and applies it to every node in a syntax tree, from bottom to top. The transformation function looks at a single node and returns a replacement node. If there's no replacing to do, it just returns the same node. Like this:
-
-```csharp
-JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
-    => node.Rewrite(
-        n => n is NotNode n1 && n1 is NotNode n2
-            ? n2.Operand
-            : n;
-    );
-```
-
-For example, `Rewrite` will take the query above (`[c#] and (salary:50000gbp or not [javascript])`) and compute the expression:
-
-```csharp
-transformer(new AndNode(
-    transformer(new TagNode("c#")),
-    transformer(new OrNode(
-        transformer(new SalaryNode(50000, "gbp")),
-        transformer(new NotNode(
-            transformer(new TagNode("javascript"))
-        ))
-    ))
-))
-```
-
-So `transformer` gets applied to every node in the tree exactly once. `Rewrite` is a mapping operation, like LINQ's `Select`.
-
 ### From Pattern to Library
 
 Wrapping up patterns of recursion like this is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and they form the basis of most of the operations in the production JQL compiler, but in this form they don't constitute a library. `SelfAndDescendants` and `Rewrite` have knowledge of `JqlNode` baked in to them; if you're working on a compiler of your own you have to hand-write equivalent functions to work on your own datatypes.
 
-The trick is to abstract over tree-shaped structures. You can model a tree as an object which has a collection of children. If you show me how to reach each node's immediate children, I can recursively apply that recipe to look at the children's children and so on.
+We can turn this idea into something reusable, though, by abstracting over tree-shaped structures. You can model a tree as an object which has a collection of children. If you show me how to reach each node's immediate children, I can recursively apply that recipe to look at the children's children and so on.
 
 **Picture here**
 
@@ -359,18 +365,18 @@ First, what I find remarkable about this design is its power-to-weight ratio. `I
 * An efficient mutable view of a node and its neighbours, which supports complex sequences of edits to a localised part of a tree
 * Tools to help you implement `IRewriter`, either using a typed fluent interface or using reflection and code generation.
 
-I've also had success implementing `IRewritable` for a variety of tree-like types. Sawmill comes bundled with versions of all of these extension methods for some well-known tree types - `Expression`, `XmlNode`, and `XElement` - and I've written extension packages which do the same for `Newtonsoft.Json.Linq` and Roslyn's syntax trees. (These implementations actually use a separate `IRewriter` interface, because of course I can't add a new interface to the above types.) It felt like a big validation of my design when I realised that I could use Sawmill to layer a simple, uniform API on top of preexisting types.
+I've also had success implementing `IRewritable` for a variety of tree-like types. Sawmill comes bundled with versions of all of these extension methods for some well-known tree types - `Expression`, `XmlNode`, and `XElement` - and I've written extension packages which do the same for `Newtonsoft.Json.Linq` and Roslyn's syntax trees. (These implementations actually use a separate `IRewriter` interface, because of course I can't add a new interface to the above types.) It felt like a big validation of the design when I realised that I could use Sawmill to layer a simple, uniform API on top of preexisting objects.
 
-Sawmill's version of `Rewrite` also makes an important optimisation which I glossed over above: nodes which the `transformer` function didn't change are _shared_ between the new and old versions of the tree. If you change a single node, you only have to rebuild that node's ancestors (because their children have changed), not the parts of the tree you didn't touch.
+Sawmill's version of `Rewrite` also makes an important optimisation which I glossed over above: parts of the tree which the `transformer` function didn't change are _shared_ between the new and old versions of the tree. If you change a single node, you only have to rebuild that node's ancestors (because their children have changed), not the parts of the tree you didn't touch.
 
 **Picture here**
 
 (This is safe for immutable trees like those in Roslyn; for mutable trees like `XmlNode` the whole tree has to be copied if any part of it changes. This makes me sad - in my view those types should have been immutable all along.)
 
-Sawmill's API has a couple of other minor differences from the API I outlined above:
+Sawmill's API has a couple of other minor differences from the one I sketched above:
 
 * Rather than using `IEnumerable`, `GetChildren` and `SetChildren` use a custom `Children` struct. This allows you to pass up to two children on the stack, which reduces GC pressure for the common case of nodes with a small number of children. If you have more than two children, you can fall back to `IEnumerable`.
 * `IRewritable<T>` has an extra function `T RewriteChildren(Func<T, T> transformer)`, which takes a transformer function, applies it to the node's immediate children, and returns a copy of the node with new children. This allows functions like `Rewrite` to avoid building intermediate data structures while traversing the tree. Most of the time you'll just want to delegate this method to the supplied `DefaultRewriteChildren` extension method, but in certain circumstances it's possible to write an optimised implementation by hand. (Incidentally, this would be a great fit for [C#8's proposed "default interface methods"](https://github.com/dotnet/csharplang/issues/288).)
-* Sawmill attempts to use an `IEnumerable` of the same type that it got from `GetChildren` when it calls `SetChildren`. For example if `GetChildren` returned a `List<T>`, `SetChildren` will be called with a `List<T>`. This isn't documented in the type, but it can make `SetChildren` easier to implement. Note that operations like `Rewrite` generally have the best asymptotic efficiency when `GetChildren` returns an `ImmutableList<T>`, due to the aforementioned sharing optimisation.
+* Sawmill attempts to use an `IEnumerable` of the same type that it got from `GetChildren` when it calls `SetChildren`. For example if `GetChildren` returned a `List<T>`, `SetChildren` will be called with a `List<T>`. This can make `SetChildren` easier to implement. Note that operations like `Rewrite` generally have the best asymptotic efficiency when `GetChildren` returns an `ImmutableList<T>`, due to the aforementioned sharing optimisation.
 
-Finally and most importantly, I want to acknowledge Neil Mitchell's great work in his [`uniplate` Haskell library](https://hackage.haskell.org/package/uniplate) (and [its modernised port in `lens`](https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html)), upon which Sawmill is based. I wouldn't even have thought of this C# library if I hadn't already encountered it in Haskell. I recommend the [_Uniform Boilerplate and List Processing_](http://ndmitchell.com/downloads/paper-uniform_boilerplate_and_list_processing-30_sep_2007.pdf) article describing the design of `uniplate`.
+Finally and most importantly, I want to acknowledge Neil Mitchell's great work in his [`uniplate` Haskell library](https://hackage.haskell.org/package/uniplate) (and [its modernised port in `lens`](https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html)), upon which Sawmill is based. I wouldn't even have thought of this C# library if I hadn't already encountered it in Haskell. It's weird to think that [`uniplate`'s accompanying article](http://ndmitchell.com/downloads/paper-uniform_boilerplate_and_list_processing-30_sep_2007.pdf) was published in 2007! Someone - my mum, if you must know - once told me that in the field of medicine it takes a decade for new research to reach mainstream practice. I think that process might take even longer in computer science, but I hope that in writing this I've helped these ideas along a little.
