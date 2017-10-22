@@ -258,11 +258,11 @@ static JqlNode Rewrite(
 
 Wrapping up patterns of recursion like this is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and they form the basis of most of the operations in the production JQL compiler, but in this form they don't constitute a library. `SelfAndDescendants` and `Rewrite` have knowledge of `JqlNode` baked in to them; if you're working on a compiler of your own you have to hand-write equivalent functions to work on your own datatypes.
 
-We can turn this idea into something reusable, though, by abstracting over tree-shaped structures. You can model a tree as an object which has a collection of children. If you show me how to reach each node's immediate children, I can recursively apply that recipe to look at the children's children and so on.
+We can turn this idea into something reusable, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has _children_ which are also nodes.
 
 **Picture here**
 
-Here's how that looks as an interface.
+So let's use an interface to model the notion of an object with a collection of self-similar children.
 
 ```csharp
 interface IRewritable<T> where T : IRewritable<T>
@@ -272,9 +272,9 @@ interface IRewritable<T> where T : IRewritable<T>
 }
 ```
 
-A type `T` is _rewritable_ if it knows how to access its immediate self-similar children - in other words, if you can get and set an `IEnumerable<T>` representing a node's children. We're working with immutable trees, remember, so `SetChildren` returns a new `T` the same as the current instance but with different children. Part of the contract of `IRewritable` is that you shouldn't call `SetChildren` with a different number of children to what you got from `GetChildren`. This allows implementations to make assumptions about how many children they can expect to find `newChildren` in order to build an updated copy of the current object.
+A type `T` is _rewritable_ if it knows how to access its immediate self-similar children - in other words, if you can get and set an `IEnumerable<T>` representing a node's children. We're working with immutable trees, remember, so `SetChildren` returns a new `T` the same as the current instance but with different children. Part of the contract of `IRewritable` is that you shouldn't call `SetChildren` with a different number of children to what you got from `GetChildren`. This allows rewritable objects to make assumptions about how many children they can expect to find `newChildren` in order to build an updated copy of the current object.
 
-Now we can package up those `Rewrite` and `SelfAndDescendants` functions for any rewritable object, once and for all.
+Now we can package up those `Rewrite` and `SelfAndDescendants` functions for any rewritable object, once and for all. If you show me how to reach each node's immediate children, I can recursively apply that recipe to look at the children's children and so on.
 
 ```csharp
 static IEnumerable<T> SelfAndDescendants<T>(this T node)
