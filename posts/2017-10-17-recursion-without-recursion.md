@@ -11,7 +11,8 @@ It should come as no surprise that our codebase contains a miniature compiler fo
 
 In this post I'm going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.
 
-### ASTs and operations
+ASTs and operations
+-------------------
 
 The JQL AST looks roughly like this:
 
@@ -117,7 +118,8 @@ JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
 
 This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the `case`s was interesting (`case TagNode t` in the first function and `case NotNode n1 when n1.Operand is NotNode n2` in the second); the rest of each function was just boilerplate to recursively operate on nodes' children. You're interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of `JqlNode`, so 11/12ths of the code in each operation is boilerplate!
 
-### Easier Querying
+Easier Querying
+---------------
 
 Here's the first insight that'll help us improve on this situation. In the first example we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you're looking for. We'll call the function which extracts the list of subtrees `SelfAndDescendants`.
 
@@ -187,7 +189,8 @@ public static IEnumerable<JqlNode> SelfAndDescendants(this JqlNode node)
 }
 ```
 
-### A Reusable Transformer
+A Reusable Transformer
+----------------------
 
 How about transforming a JQL AST? `DontNotSimplifyDoubleNegatives` searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?
 
@@ -254,7 +257,8 @@ static JqlNode Rewrite(
 }
 ```
 
-### From Pattern to Library
+From Pattern to Library
+-----------------------
 
 Wrapping up patterns of recursion like this is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and they form the basis of most of the operations in the production JQL compiler, but in this form they don't constitute a library. `SelfAndDescendants` and `Rewrite` have knowledge of `JqlNode` baked in to them; if you're working on a compiler of your own you have to hand-write equivalent functions to work on your own datatypes.
 
@@ -351,7 +355,8 @@ Note that there isn't a single line of recursion in the JQL-specifc code. It's a
 
 The old-fashioned way of writing reusable tree traversals is the Visitor pattern: you put the recursive traversal code in a base class, with virtual methods for each type of node that can be overridden to carry out specific operations. (This is how the Roslyn API works, for example.) `IRewritable` is a clear improvement over the Visitor pattern. It's much simpler and less clunky to use, and operations like `Rewrite` can be written totally generically, whereas with the Visitor pattern every type of tree has its own Visitor base class.
 
-### Sawmill
+Sawmill
+-------
 
 I've named this generic tree-processing library Sawmill - because it's all about taking trees apart! - and it's available on [NuGet](https://www.nuget.org/packages/Sawmill) and [GitHub](https://github.com/benjamin-hodgson/Sawmill). I'll outline some improvements on the design I demonstrated above, which you'll find in Sawmill.
 
