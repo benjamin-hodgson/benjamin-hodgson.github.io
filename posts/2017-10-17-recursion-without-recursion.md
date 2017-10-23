@@ -289,7 +289,7 @@ static T Rewrite<T>(this T node, Func<T, T> transformer)
     where T : IRewritable<T>
 {
     var children = node.GetChildren();
-    var newChildren = children.Select(c => c.Rewrite(node, transformer));
+    var newChildren = children.Select(c => c.Rewrite(transformer)).ToList();
     var nodeWithNewChildren = node.SetChildren(newChildren);
     return transformer(nodeWithNewChildren);
 }
@@ -347,7 +347,7 @@ class TagNode : JqlNode
 }
 ```
 
-Note that there isn't a single line of recursion in this code. It's all wrapped up in the `SelfAndDescendants` and `Rewrite` functions, which are totally generic and reusable for any type of tree.
+Note that there isn't a single line of recursion in the JQL-specifc code. It's all wrapped up in the `SelfAndDescendants` and `Rewrite` functions, which are totally generic and reusable for any type of tree.
 
 The old-fashioned way of writing reusable tree traversals is the Visitor pattern: you put the recursive traversal code in a base class, with virtual methods for each type of node that can be overridden to carry out specific operations. (This is how the Roslyn API works, for example.) `IRewritable` is a clear improvement over the Visitor pattern. It's much simpler and less clunky to use, and operations like `Rewrite` can be written totally generically, whereas with the Visitor pattern every type of tree has its own Visitor base class.
 
