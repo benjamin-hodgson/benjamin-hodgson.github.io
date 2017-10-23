@@ -266,7 +266,7 @@ We can turn this idea into something reusable, though, by abstracting over tree-
 
 <img src="/images/2017-10-17-recursion-without-recursion/children.jpg" alt="Nodes and their children" width="700" />
 
-So let's use an interface to model the notion of an object with a collection of self-similar children.
+As the picture shows, you can reach every node in a tree just by looking at each node's children. If you can show me how to replace your children, I can replace your children's children and so on. So let's use an interface to model the notion of an object with a collection of self-similar children.
 
 ```csharp
 interface IRewritable<T> where T : IRewritable<T>
