@@ -5,7 +5,7 @@ subtitle: Tearing Down Trees in One Line of Code
 
 If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type [`[c#] and (not [javascript] or salary:50000gbp)`](https://stackoverflow.com/jobs?sort=i&q=%5Bc%23%5D+and+(salary%3A50000gbp+or+not+%5Bjavascript%5D)) into the search box. This advanced search syntax is called JQL, for _Jobs Query Language_.
 
-It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler is quite vanilla (though it's still my favourite part of the codebase): there's a parser which produces an abstract syntax tree, a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)
+It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there's a parser which produces an abstract syntax tree, a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)
 
 <img src="/images/2017-10-17-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="700" />
 
@@ -189,14 +189,16 @@ public static IEnumerable<JqlNode> SelfAndDescendants(this JqlNode node)
 }
 ```
 
+Google crawls links between pages for you, so you can search the Web for a specific piece of information; `SelfAndDescendants` crawls pointers between nodes for you, so you can search a tree for a specific piece of information. Programming tree traversals by hand is like manually clicking every link on the Web!
+
 A Reusable Transformer
 ----------------------
 
 How about transforming a JQL AST? `DontNotSimplifyDoubleNegatives` searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?
 
-A transformation function searches through every node in a syntax tree, and when it encounters a node satisfying the pattern it's looking for, it replaces it. The knack is to separate the two responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a transformation function to every node in a JQL tree from bottom to top; then it's the transformation function's job to decide what to do with each node.
+A transformation function like `DontNotSimplifyDoubleNegatives` searches a syntax tree, and when it encounters a node satisfying the pattern it's looking for, it replaces it. The trick is to separate the two responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a `Func` to every node in a JQL tree from bottom to top; then it's the `Func`'s job to decide what to do with each node.
 
-For example, `Rewrite` will take the query above (`[c#] and (not [javascript] or salary:50000gbp)`) and compute the expression:
+For example, `Rewrite` will take the query above (`[c#] and (not [javascript] or salary:50000gbp)`) and a function `transformer`, and compute the expression:
 
 ```csharp
 transformer(new AndNode(
@@ -225,7 +227,7 @@ JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
 
 Once again, this code is a huge improvement over the verbose version which used explicit pattern matching and recursion. `Rewrite` allows us to get straight to the point and only think about the parts of the tree we're interested in.
 
-Here's how `Rewrite` is implemented. Much as `SelfAndDescendants` packaged up a pattern of recursion
+Here's how `Rewrite` is implemented.
 
 ```csharp
 static JqlNode Rewrite(
@@ -260,9 +262,9 @@ static JqlNode Rewrite(
 From Pattern to Library
 -----------------------
 
-Wrapping up patterns of recursion like this is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and they form the basis of most of the operations in the production JQL compiler, but in this form they don't constitute a library. `SelfAndDescendants` and `Rewrite` have knowledge of `JqlNode` baked in to them; if you're working on a compiler of your own you have to hand-write equivalent functions to work on your own datatypes.
+`Rewrite` and `SelfAndDescendants` wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don't constitute a library. `SelfAndDescendants` and `Rewrite`, as written above, have knowledge of `JqlNode` baked in to them; you have to hand-write equivalent functions to work on your own datatypes.
 
-We can turn this idea into something reusable, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has _children_ which are also nodes.
+We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has _children_ which are also nodes.
 
 <img src="/images/2017-10-17-recursion-without-recursion/children.jpg" alt="Nodes and their children" width="700" />
 
