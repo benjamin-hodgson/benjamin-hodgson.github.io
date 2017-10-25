@@ -116,12 +116,12 @@ JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
 }
 ```
 
-This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the `case`s was interesting (`case TagNode t` in the first function and `case NotNode n1 when n1.Operand is NotNode n2` in the second); the rest of each function was just boilerplate to recursively operate on nodes' children. You're interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of `JqlNode`, so 11/12ths of the code in each operation is boilerplate!
+This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the `case`s was interesting (`case TagNode t` in `ExtractTags` and `case NotNode n1 when n1.Operand is NotNode n2` in `DontNotSimplifyDoubleNegatives`); the rest of each function was just boilerplate to recursively operate on nodes' children. You're interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of `JqlNode`, so 11/12ths (around 90%) of the code in each operation is boilerplate!
 
 Easier Querying
 ---------------
 
-Here's the first insight that'll help us improve on this situation. In the first example we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you're looking for. We'll call the function which extracts the list of subtrees `SelfAndDescendants`.
+Here's the first insight that'll help us improve on this situation. In `ExtractTags` we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you're looking for. We'll call the function which extracts the list of subtrees `SelfAndDescendants`.
 
 Given a tree like the example from above (`[c#] and (not [javascript] or salary:50000gbp)`), `SelfAndDescendants` will yield every subtree in a depth-first, left-to-right manner:
 
@@ -212,22 +212,7 @@ transformer(new AndNode(
 ))
 ```
 
-So `transformer` gets applied to every subtree exactly once. `Rewrite` is a mapping operation, like LINQ's `Select`.
-
-To use this `Rewrite` method, you write a transformation function which calculates a replacement for each node. If there's no replacing to do, it just returns the same node. Like this:
-
-```csharp
-JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
-    => node.Rewrite(
-        n => n is NotNode n1 && n1 is NotNode n2
-            ? n2.Operand
-            : n;
-    );
-```
-
-Once again, this code is a huge improvement over the verbose version which used explicit pattern matching and recursion. `Rewrite` allows us to get straight to the point and only think about the parts of the tree we're interested in.
-
-Here's how `Rewrite` is implemented.
+So `transformer` gets applied to every subtree exactly once. `Rewrite` is a mapping operation, like LINQ's `Select`. Here's how it's implemented.
 
 ```csharp
 static JqlNode Rewrite(
@@ -258,6 +243,21 @@ static JqlNode Rewrite(
     }
 }
 ```
+
+To use this `Rewrite` method, you write a transformation function which calculates a replacement for each node. If there's no replacing to do, it just returns the same node. Like this:
+
+```csharp
+JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
+    => node.Rewrite(
+        n => n is NotNode n1 && n1 is NotNode n2
+            ? n2.Operand
+            : n;
+    );
+```
+
+Once again, this code is a huge improvement over the verbose version which used explicit pattern matching and recursion. `Rewrite` allows us to get straight to the point and only think about the parts of the tree we're interested in.
+
+
 
 From Pattern to Library
 -----------------------
@@ -364,8 +364,7 @@ I've named this generic tree-processing library Sawmill - because it's all about
 
 First, what I find remarkable about this design is its power-to-weight ratio. `IRewritable` a very simple interface with an easily-grasped meaning, but you can build a load of rich, generic tools on top of it. Sawmill contains versions of `SelfAndDescendants` and `Rewrite`, but also a bunch of other extension methods at varying levels of nicheness, all getting squeezed through the `IRewritable` interface:
 
-* A family of versions of `SelfAndDescendants` capturing a variety of traversal orders (preorder, postorder and breadth-first)
-* Eager and lazy versions of the above
+* A family of versions of `SelfAndDescendants` capturing a variety of traversal orders (preorder, postorder and breadth-first), in both eager and lazy form
 * A `Fold` method for reducing a whole tree to a value, like LINQ's `Aggregate`
 * An iterative version of `Rewrite` which transforms an expression repeatedly until it reaches a normal form
 * Versions of `SelfAndDescendants` et al which give you a way to replace one node at a time
@@ -379,11 +378,5 @@ Sawmill's version of `Rewrite` also makes an important optimisation which I glos
 <img src="/images/2017-10-17-recursion-without-recursion/sharing.jpg" alt="The sharing optimisation" width="700" />
 
 (This is safe for immutable trees like those in Roslyn; for mutable trees like `XmlNode` the whole tree has to be copied if any part of it changes. This makes me sad - in my view those types should have been immutable all along.)
-
-Sawmill's API has a couple of other minor differences from the one I sketched above:
-
-* Rather than using `IEnumerable`, `GetChildren` and `SetChildren` use a custom `Children` struct. This allows you to pass up to two children on the stack, which reduces GC pressure for the common case of nodes with a small number of children. If you have more than two children, you can fall back to `IEnumerable`.
-* `IRewritable<T>` has an extra function `T RewriteChildren(Func<T, T> transformer)`, which takes a transformer function, applies it to the node's immediate children, and returns a copy of the node with new children. This allows functions like `Rewrite` to avoid building intermediate data structures while traversing the tree. Most of the time you'll just want to delegate this method to the supplied `DefaultRewriteChildren` extension method, but in certain circumstances it's possible to write an optimised implementation by hand. (Incidentally, this would be a great fit for [C#8's proposed "default interface methods"](https://github.com/dotnet/csharplang/issues/288).)
-* Sawmill attempts to use an `IEnumerable` of the same type that it got from `GetChildren` when it calls `SetChildren`. For example if `GetChildren` returned a `List<T>`, `SetChildren` will be called with a `List<T>`. This can make `SetChildren` easier to implement. Note that operations like `Rewrite` generally have the best asymptotic efficiency when `GetChildren` returns an `ImmutableList<T>`, due to the aforementioned sharing optimisation.
 
 Finally and most importantly, I want to acknowledge Neil Mitchell's great work in his [`uniplate` Haskell library](https://hackage.haskell.org/package/uniplate) (and [its modernised port in `lens`](https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html)), upon which Sawmill is based. I wouldn't even have thought of this C# library if I hadn't already encountered it in Haskell. It's weird to think that [`uniplate`'s accompanying article](http://ndmitchell.com/downloads/paper-uniform_boilerplate_and_list_processing-30_sep_2007.pdf) was published in 2007! Someone - my mum, if you must know - once told me that in the field of medicine it takes a decade for new research to reach mainstream practice. I think that process might take even longer in computer science, but I hope that in writing this I've helped these ideas along a little.
