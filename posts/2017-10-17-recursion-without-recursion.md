@@ -251,7 +251,7 @@ JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
     => node.Rewrite(
         n => n is NotNode n1 && n1 is NotNode n2
             ? n2.Operand
-            : n;
+            : n
     );
 ```
 
