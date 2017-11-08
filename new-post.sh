@@ -13,5 +13,5 @@ website: http://www.benjamin.pizza
 published: $1
 ---
 
-To join the discussion, <a href=\"https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/comments/$basename/example.md\">send me a pull request</a>.
+To join the discussion, <a href=\"https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/develop/comments/$basename/example.md\">send me a pull request</a>.
 " > "comments/$basename/example.md"
