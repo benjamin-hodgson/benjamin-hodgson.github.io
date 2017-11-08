@@ -5,11 +5,12 @@ subtitle: Tearing Down Trees in One Line of Code
 
 If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type [`[c#] and (not [javascript] or salary:50000gbp)`](https://stackoverflow.com/jobs?sort=i&q=%5Bc%23%5D+and+(salary%3A50000gbp+or+not+%5Bjavascript%5D)) into the search box. This advanced search syntax is called JQL, for _Jobs Query Language_.
 
-It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there's a parser which produces an abstract syntax tree, a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)
+It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there's a parser which produces an abstract syntax tree (hereafter _AST_), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)
 
 <img src="/images/2017-10-17-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="700" />
 
 In this post I'm going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.
+
 
 ASTs and operations
 -------------------
@@ -22,7 +23,6 @@ class AndNode : JqlNode
 {
     public JqlNode Left { get; }
     public JqlNode Right { get; }
-    // constructor omitted for brevity
 }
 class OrNode : JqlNode
 {
@@ -58,7 +58,7 @@ new AndNode(
 
 <img src="/images/2017-10-17-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" width="700" />
 
-When you need to analyse a `JqlNode`, you use pattern matching to scrutinise the type of node, and recursively query the operands of `And`/`Or`/`Not` nodes. Here's a function which searches for the `TagNode`s in a tree:
+When you need to analyse a `JqlNode`, you use pattern matching to see what type of node you have, and recursively query the operands of `And`/`Or`/`Not` nodes. Here's a function which searches for the `TagNode`s in a tree:
 
 ```csharp
 IEnumerable<string> ExtractTags(JqlNode node)
@@ -82,15 +82,15 @@ IEnumerable<string> ExtractTags(JqlNode node)
 }
 ```
 
-Transforming a `JqlNode` to produce a new `JqlNode` is a similar story: you recursively traverse the tree, taking it apart and putting it back together. Here's an example of an optimisation step which never doesn't remove double-negatives, so a query like `not (not [java])` isn't not simplified to `[java]`:
+Transforming a `JqlNode` to produce a new `JqlNode` is a similar story: you recursively traverse the tree, taking it apart and putting it back together. Here's an example of an optimisation step which never doesn't remove double-negatives, so a query like `not (not [java])` gets simplified to `[java]`:
 
 ```csharp
-JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
+JqlNode SimplifyDoubleNegatives(JqlNode node)
 {
     switch (node)
     {
         case NotNode n1 when n1.Operand is NotNode n2:
-            return DontNotSimplifyDoubleNegatives(n2.Operand);
+            return SimplifyDoubleNegatives(n2.Operand);
         case TagNode t:
             return t;
         case SalaryNode s:
@@ -98,17 +98,17 @@ JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
         case AndNode a:
             // recursively process the operands and rebuild the node
             return new AndNode(
-                DontNotSimplifyDoubleNegatives(a.Left),
-                DontNotSimplifyDoubleNegatives(a.Right)
+                SimplifyDoubleNegatives(a.Left),
+                SimplifyDoubleNegatives(a.Right)
             );
         case OrNode o:
             return new OrNode(
-                DontNotSimplifyDoubleNegatives(o.Left),
-                DontNotSimplifyDoubleNegatives(o.Right)
+                SimplifyDoubleNegatives(o.Left),
+                SimplifyDoubleNegatives(o.Right)
             );
         case NotNode n:
             return new NotNode(
-                DontNotSimplifyDoubleNegatives(n.Operand)
+                SimplifyDoubleNegatives(n.Operand)
             );
         default:
             throw new ArgumentOutOfRangeException(nameof(node));
@@ -116,7 +116,8 @@ JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
 }
 ```
 
-This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the `case`s was interesting (`case TagNode t` in `ExtractTags` and `case NotNode n1 when n1.Operand is NotNode n2` in `DontNotSimplifyDoubleNegatives`); the rest of each function was just boilerplate to recursively operate on nodes' children. You're interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of `JqlNode`, so 11/12ths (around 90%) of the code in each operation is boilerplate!
+This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the `case`s was interesting (`case TagNode t` in `ExtractTags` and `case NotNode n1 when n1.Operand is NotNode n2` in `SimplifyDoubleNegatives`); the rest of each function was just boilerplate to recursively operate on nodes' children. You're interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of `JqlNode`, so around 90% of the code in each operation is boilerplate!
+
 
 Easier Querying
 ---------------
@@ -191,12 +192,13 @@ public static IEnumerable<JqlNode> SelfAndDescendants(this JqlNode node)
 
 Google crawls links between pages for you, so you can search the Web for a specific piece of information; `SelfAndDescendants` crawls pointers between nodes for you, so you can search a tree for a specific piece of information. Programming tree traversals by hand is like manually clicking every link on the Web!
 
+
 A Reusable Transformer
 ----------------------
 
-How about transforming a JQL AST? `DontNotSimplifyDoubleNegatives` searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?
+How about transforming a JQL AST? `SimplifyDoubleNegatives` searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?
 
-A transformation function like `DontNotSimplifyDoubleNegatives` searches a syntax tree, and when it encounters a node satisfying the pattern it's looking for, it replaces it. The trick is to separate the two responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a `Func` to every node in a JQL tree from bottom to top; then it's the `Func`'s job to decide what to do with each node.
+A transformation function like `SimplifyDoubleNegatives` searches a syntax tree, and when it encounters a node satisfying the pattern it's looking for, it replaces it. As with `SelfAndDescendants`, the trick is to separate the two responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a `Func` to every node in a JQL tree from bottom to top; then it's the `Func`'s job to decide what to do with each node.
 
 For example, `Rewrite` will take the query above (`[c#] and (not [javascript] or salary:50000gbp)`) and a function `transformer`, and compute the expression:
 
@@ -247,7 +249,7 @@ static JqlNode Rewrite(
 To use this `Rewrite` method, you write a transformation function which calculates a replacement for each node. If there's no replacing to do, it just returns the same node. Like this:
 
 ```csharp
-JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
+JqlNode SimplifyDoubleNegatives(JqlNode node)
     => node.Rewrite(
         n => n is NotNode n1 && n1 is NotNode n2
             ? n2.Operand
@@ -256,7 +258,6 @@ JqlNode DontNotSimplifyDoubleNegatives(JqlNode node)
 ```
 
 Once again, this code is a huge improvement over the verbose version which used explicit pattern matching and recursion. `Rewrite` allows us to get straight to the point and only think about the parts of the tree we're interested in.
-
 
 
 From Pattern to Library
@@ -278,7 +279,7 @@ interface IRewritable<T> where T : IRewritable<T>
 }
 ```
 
-A type `T` is _rewritable_ if it knows how to access its immediate self-similar children - in other words, if you can get and set an `IEnumerable<T>` representing a node's children. We're working with immutable trees, remember, so `SetChildren` returns a new `T` the same as the current instance but with different children. Part of the contract of `IRewritable` is that you shouldn't call `SetChildren` with a different number of children to what you got from `GetChildren`. This allows rewritable objects to make assumptions about how many children they can expect to find `newChildren` in order to build an updated copy of the current object.
+A type `T` is _rewritable_ if it knows how to access its immediate self-similar children - in other words, if you can get and set an `IEnumerable<T>` representing a node's children. We're working with immutable trees, remember, so `SetChildren` doesn't modify the current instance - it returns a new `T` the same as the current instance but with different children. Part of the contract of `IRewritable` is that you shouldn't call `SetChildren` with a different number of children to what you got from `GetChildren`. This allows rewritable objects to make assumptions about how many children they can expect to find `newChildren` in order to build an updated copy of the current object.
 
 Now we can package up those `Rewrite` and `SelfAndDescendants` functions for any rewritable object, once and for all. If you show me how to reach each node's immediate children, I can recursively apply that recipe to look at the children's children and so on.
 
@@ -370,6 +371,7 @@ First, what I find remarkable about this design is its power-to-weight ratio. `I
 * Versions of `SelfAndDescendants` et al which give you a way to replace one node at a time
 * An efficient mutable view of a node and its neighbours, which supports complex sequences of edits to a localised part of a tree
 * Tools to help you implement `IRewriter`, either using a typed fluent interface or using reflection and code generation.
+* Some minor API changes to the outline above, to enable greater efficiency for certain common cases.
 
 I've also had success implementing `IRewritable` for a variety of tree-like types. Sawmill comes bundled with versions of all of these extension methods for some well-known tree types - `Expression`, `XmlNode`, and `XElement` - and I've written extension packages which do the same for `Newtonsoft.Json.Linq` and Roslyn's syntax trees. (These implementations actually use a separate `IRewriter` interface, because of course I can't add a new interface to the above types.) It felt like a big validation of the design when I realised that I could use Sawmill to layer a simple, uniform API on top of preexisting objects.
 
