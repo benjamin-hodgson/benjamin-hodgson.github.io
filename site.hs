@@ -1,7 +1,15 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-import           Data.Monoid (mappend)
-import           Hakyll
+import Control.Monad ((>=>))
+import Data.Char (isDigit)
+import Data.List (sortBy)
+import Data.Maybe (fromMaybe)
+import Data.Monoid (mappend)
+import Data.Ord (comparing)
+import Data.Traversable (for)
+import System.FilePath (takeBaseName)
+import Text.Read (readMaybe)
+import Hakyll
 
 
 --------------------------------------------------------------------------------
@@ -19,7 +27,7 @@ main = hakyll $ do
         route   idRoute
         compile compressCssCompiler
 
-    match (fromList ["about.rst", "contact.markdown"]) $ do
+    match (fromList ["about.md", "contact.md"]) $ do
         route   $ setExtension "html"
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
@@ -27,18 +35,26 @@ main = hakyll $ do
 
     match "posts/*" $ do
         route $ setExtension "html"
-        compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
-            >>= relativizeUrls
+        compile $ do
+            comments <- compilePostComments
+            let ctx = postCtx comments
+            pandocCompiler
+                >>= loadAndApplyTemplate "templates/post.html" ctx
+                >>= loadAndApplyTemplate "templates/default.html" ctx
+                >>= relativizeUrls
+
+    match "comments/*/*" $ do
+        compile $
+            pandocCompiler
+                >>= loadAndApplyTemplate "templates/comment.html" commentCtx
 
     create ["archive.html"] $ do
         route idRoute
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let archiveCtx =
-                    listField "posts" postCtx (return posts) `mappend`
-                    constField "title" "Archives"            `mappend`
+                    listField "posts" postSummaryCtx (return posts) `mappend`
+                    constField "title" "Archives"                   `mappend`
                     defaultContext
 
             makeItem ""
@@ -52,7 +68,7 @@ main = hakyll $ do
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let indexCtx =
-                    listField "posts" postCtx (return posts) `mappend`
+                    listField "posts" postSummaryCtx (return posts) `mappend`
                     defaultContext
 
             getResourceBody
@@ -64,8 +80,33 @@ main = hakyll $ do
 
 
 --------------------------------------------------------------------------------
-postCtx :: Context String
-postCtx =
+postCtx :: [Item String] -> Context String
+postCtx comments =
+    listField "comments" commentCtx (return comments) `mappend`
     dateField "date" "%B %e, %Y" `mappend`
     defaultContext
 
+postSummaryCtx :: Context String
+postSummaryCtx = 
+    dateField "date" "%B %e, %Y" `mappend`
+    defaultContext
+
+commentCtx :: Context String
+commentCtx =
+    dateField "date" "%B %e, %Y" `mappend`
+    defaultContext
+
+
+compilePostComments :: Compiler [Item String]
+compilePostComments = do
+    filename <- fmap (takeBaseName . toFilePath) getUnderlying
+    sortBy (comparing commentNumber) <$> loadAll (fromGlob $ "comments/" ++ filename ++ "/*")
+
+commentNumber :: Item a -> Int
+commentNumber =
+    fromMaybe maxBound
+    . readMaybe
+    . takeWhile isDigit
+    . takeBaseName
+    . toFilePath
+    . itemIdentifier

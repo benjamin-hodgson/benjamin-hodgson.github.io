@@ -1,6 +1,6 @@
 body {
     color: black;
-    font-size: 16px;
+    font-size: 12pt;
     margin: 0px auto 0px auto;
     width: 700px;
 }
@@ -11,13 +11,6 @@ div#header {
     padding: 12px 0px 12px 0px;
 }
 
-div#logo a {
-    color: black;
-    float: left;
-    font-size: 18px;
-    font-weight: bold;
-    text-decoration: none;
-}
 
 div#header #navigation {
     text-align: right;
@@ -25,11 +18,19 @@ div#header #navigation {
 
 div#header #navigation a {
     color: black;
-    font-size: 18px;
+    font-size: 14pt;
     font-weight: bold;
     margin-left: 12px;
     text-decoration: none;
     text-transform: uppercase;
+}
+div#header #navigation a#logo {
+    float: left;
+    margin-left: 0;
+    text-transform: lowercase;
+}
+div#header #navigation a#logo pre {
+    margin: 0;
 }
 
 div#footer {
@@ -42,7 +43,7 @@ div#footer {
 }
 
 h1 {
-    font-size: 24px;
+    font-size: 18pt;
 }
 
 h2 {
@@ -58,6 +59,23 @@ div.info {
 div#content header p {
     font-weight: bold;
     font-style: italic;
+}
+
+.comments {
+
+}
+.comments-list {
+    list-style: none;
+    padding: 0;
+}
+.comment {
+    border: 1px solid lightgray;
+    border-radius: 2px;
+    padding: 1em;
+    margin: 1em 0 1em 1em;
+}
+.comment-header {
+    font-size: 12pt;
 }
 
 
