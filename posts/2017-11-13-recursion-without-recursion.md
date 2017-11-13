@@ -251,7 +251,7 @@ To use this `Rewrite` method, you write a transformation function which calculat
 ```csharp
 JqlNode SimplifyDoubleNegatives(JqlNode node)
     => node.Rewrite(
-        n => n is NotNode n1 && n1 is NotNode n2
+        n => n is NotNode n1 && n1.Operand is NotNode n2
             ? n2.Operand
             : n
     );
