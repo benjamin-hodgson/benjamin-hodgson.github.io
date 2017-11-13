@@ -210,7 +210,7 @@
 <p>To use this <code>Rewrite</code> method, you write a transformation function which calculates a replacement for each node. If there’s no replacing to do, it just returns the same node. Like this:</p>
 <div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)
     =&gt; node.<span class="fu">Rewrite</span>(
-        n =&gt; n <span class="kw">is</span> NotNode n1 &amp;&amp; n1 <span class="kw">is</span> NotNode n2
+        n =&gt; n <span class="kw">is</span> NotNode n1 &amp;&amp; n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2
             ? n2.<span class="fu">Operand</span>
             : n
     );</code></pre></div>
