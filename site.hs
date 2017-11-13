@@ -40,6 +40,7 @@ main = hakyll $ do
             let ctx = postCtx comments
             pandocCompiler
                 >>= loadAndApplyTemplate "templates/post.html" ctx
+                >>= saveSnapshot "content"
                 >>= loadAndApplyTemplate "templates/default.html" ctx
                 >>= relativizeUrls
 
@@ -61,6 +62,14 @@ main = hakyll $ do
                 >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
                 >>= loadAndApplyTemplate "templates/default.html" archiveCtx
                 >>= relativizeUrls
+    
+    create ["atom.xml"] $ do
+        route idRoute
+        compile $ 
+            loadAllSnapshots "posts/*" "content"
+                >>= recentFirst
+                <&> take 10
+                >>= renderAtom feedConfig atomCtx
 
 
     match "index.html" $ do
@@ -91,10 +100,23 @@ postSummaryCtx =
     dateField "date" "%B %e, %Y" `mappend`
     defaultContext
 
+atomCtx :: Context String
+atomCtx =
+    postSummaryCtx `mappend`
+    bodyField "description"
+
 commentCtx :: Context String
 commentCtx =
     dateField "date" "%B %e, %Y" `mappend`
     defaultContext
+
+feedConfig = FeedConfiguration {
+    feedTitle = "benjamin.pizza",
+    feedDescription = "Benjamin's blog",
+    feedAuthorName = "Benjamin Hodgson",
+    feedAuthorEmail = "bhodgson@stackoverflow.com",
+    feedRoot = "http://www.benjamin.pizza"
+}
 
 
 compilePostComments :: Compiler [Item String]
@@ -110,3 +132,6 @@ commentNumber =
     . takeBaseName
     . toFilePath
     . itemIdentifier
+
+infixl 1 <&>
+(<&>) = flip (<$>)
