@@ -3,7 +3,7 @@ title: Recursion Without Recursion
 subtitle: Tearing Down Trees in One Line of Code
 ---
 
-If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type [`[c#] and (not [javascript] or salary:50000gbp)`](https://stackoverflow.com/jobs?sort=i&q=%5Bc%23%5D+and+(salary%3A50000gbp+or+not+%5Bjavascript%5D)) into the search box. This advanced search syntax is called JQL, for _Jobs Query Language_.
+If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type [`[c#] and (not [javascript] or salary:50000gbp)`](https://stackoverflow.com/jobs?sort=i&q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)) into the search box. This advanced search syntax is called JQL, for _Jobs Query Language_.
 
 It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there's a parser which produces an abstract syntax tree (hereafter _AST_), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)
 
@@ -198,7 +198,7 @@ A Reusable Transformer
 
 How about transforming a JQL AST? `SimplifyDoubleNegatives` searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?
 
-To rewrite a tree, you search the tree for nodes satisfying the pattern it's looking for and replace them. As with `SelfAndDescendants`, the trick is to separate the responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a `Func` to every node in a JQL tree from bottom to top; then it's the `Func`'s job to decide what to do with each node.
+To rewrite a tree, you search the tree for nodes satisfying the pattern you're looking for and replace them. As with `SelfAndDescendants`, the trick is to separate the responsibilities of _looking at every node in the tree_ and _deciding whether to replace a given node_. You can write a higher-order function - let's call it `Rewrite` - which applies a `Func` to every node in a JQL tree from bottom to top; then it's the `Func`'s job to decide what to do with each node.
 
 For example, `Rewrite` will take the query above (`[c#] and (not [javascript] or salary:50000gbp)`) and a function `transformer`, and compute the expression:
 
