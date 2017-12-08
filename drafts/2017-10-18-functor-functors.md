@@ -2,14 +2,14 @@
 title: Functor Functors
 ---
 
-You can a new dog old tricks.
+You can teach a new dog old tricks.
 
 One of the fun things about category theory is that once you've learned an idea in one context it's easy to apply it to another one. Of the numerous categories available to Haskell programmers, **Hask**, the category of Haskell types and functions, gets the lion's share of the attention. Working with standard abstractions in more overlooked categories is a great way to reuse ideas: it makes you look clever, like you've invented something new, but actually all you've done is put the building blocks together differently. I won't tell if you don't.
 
 Templates: Reusable Records
 ---------------------------
 
-Every so often I'll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and "draft" checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.
+Every now and then I'll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and "draft" checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.
 
 ```haskell
 data CardType = Visa | AmEx | Mastercard
@@ -58,7 +58,7 @@ type Form = Record FormTemplate
 type DraftForm = Partial FormTemplate
 ```
 
-The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I'll be taking the tools 
+The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I'll be taking familiar tools for working with fixed-size containers - `Functor`, `Traversable`, `Representable`
 
 Functors from the Category of Endofunctors
 ------------------------------------------
@@ -170,8 +170,8 @@ ffoldMap f = getConst . ftraverse mkConst
         mkConst = Compose . Const . f . ($> ())
 ```
 
-Zipping Records
----------------
+Zipping templates
+-----------------
 
 Given a pair of records of the same shape `t`, we should be able to combine them point-wise, matching up the fields of each: `fzip :: t f -> t g -> t (Product f g)`. In **Hask**, "combining point-wise" is exactly what the "reader" applicative `(->) r` does, so any functor which enjoys an isomorphism to `(->) r` for some `r` has at least a zippy `Applicative` instance. Such functors are called _representable functors_ and they are members of the class [`Representable`](https://hackage.haskell.org/package/adjunctions-4.3/docs/Data-Functor-Rep.html#t:Representable).
 
@@ -358,56 +358,6 @@ ghci> runValidator formValidator form2
 Failure (FormTemplate {_email = Const ["No @ in email","Invalid TLD"], _cardType = Const [], _cardNumber = Const [], _cardExpiry = Const []})
 ```
 
-We can keep most of this structure in place when considering context-sensitive validation by factorising a validator for a field into a pair consisting of a context-insensitive part and a context-sensitive part. The context-sensitive component takes the whole record as an input and validates one of its fields.
-
-```haskell
-data Validator s e a = Validator {
-    _ci :: a -> Validation e a,
-    _cs :: s -> Validation e a
-}
-
-noop :: Getter s a -> Validator s e a
-noop g = Validator {
-    _ci = Success,
-    _cs = \x -> Success $ x^.g
-}
-
-(&>) :: Monoid e => Validator s e a -> Validator s e a -> Validator s e a
-v &> u = Validator {
-    _ci = \x -> _ci v x *> _ci u x,
-    _cs = \x -> _cs v x *> _cs u x
-}
-
-cardNumberValidator :: Validator Form [Text] Text
-cardNumberValidator = Validator {
-    _ci = \x -> if length x /= 16 then Failure ["Wrong number of digits"] else Success x,
-    _cs = \x -> checkCardType (runIdentity $ _cardType x) (runIdentity $ _cardNumber x)
-}
-    where checkCardType Visa n = validateVisaCardNumber n
-          checkCardType AmEx n = validateAmExCardNumber n
-          checkCardType Mastercard n = validateMastercardCardNumber n
-          validateVisaCardNumber =  -- ...
-          validateAmExCardNumber =  -- ...
-          validateMastercardCardNumber =  -- ...
-```
-
-Why bother splitting up a field validator into context-sensitive and context-insensitive parts? We could just use a single function `i -> Validation e a` and embed the context-insensitive component inside it. I somewhat prefer this style, though, because it encourages you to think about which parts of your validator are context-insensitive. It also makes code reuse easier for the context-insensitive components: you can write a validator for email addresses and straightforwardly reuse it independently of where the email address appears.
-
-```haskell
-type Validators e t = t (Validator (Record t) e)
-
-validate :: (HasLenses t, FTraversable t, FRepresentable t, Monoid e)
-         => Validators e t
-         -> Validator (Record t) (Errors e t) (Record t)
-validate validators = Validator {
-        _ci = \x -> first unWrap $ fsequence' $ fzipWith (applyValidator x) lenses validators,
-        _cs = Success
-    }
-    where applyValidator record (FLens lens) (Validator ci cs) =
-            let result = ci (record^.lens._Wrapped') *> cs record
-            in first (\e -> mempty & _Wrapped'.lens._Wrapped' .~ e) result
-```
-
 Code review
 -----------
 
@@ -418,9 +368,7 @@ So we have a categorical framework for working with records and templates, among
 * Since the `Const`, `Sum`, `Product` and `Compose` type combinators are poly-kinded, they can be reused as functor functors too.
 * Add another primitive `FFunctor` to apply a functor to a type, `newtype At a f = At { getAt :: f a }`, and you have a kit to build polynomial functor functors with which you can build templates and write generic programs.
 
-One design decision I made when developing the `FFunctor` class was to give `ffmap` a `(Functor f, Functor g)` constraint, so you can only `ffmap` between types that are in fact functors. This has certain tradeoffs compared to having no such constraints. It enables more instances of `FFunctor` - for example, you can only write `Fix f`'s `ffmap` with a `Functor` constraint for either the input or output type parameters - but it rules out certain usages of `ffmap`. You can't `ffmap` over a template containing `Validator`s, for example, because `Validator` is not a `Functor`. And once you put the constraints into the type of `ffmap`, they make their way into the types of `ftraverse` and `fsequence` due to the usage of `ffmap` in `ftraverse`'s default implementation. But I _didn't_ put the same `Functor` constraints into `FRepresentable`'s methods. An `FRep` type typically won't be functorial - it'll be GADT-like - so adding a `Functor (FRep t)` constraint would be far too restrictive. And I figured, if you can't `ffmap` over a template full of `Validator`s, you should at least be able to use `fzipWith` to do something useful with it.
-
-`FTraversable` lets you traverse a functor functor "in one go". If you need to work your way along a functor functor step by step - with the ability to inspect or undo the intermediate results of traversing - you need to work with [_clowns and jokers_](http://strictlypositive.org/CJ.pdf). The tools in McBride's functional pearl are made to work with ordinary Haskell (endo-)functors and bifunctors, so rebuilding his library for the world of functor functors would require the development of a class for functor bifunctors. All of this duplication is vexing. It'd be cool to work with a generalised family of classes for working with (traversable, representable) functors between arbitrary categories, from which you can derive both `FFunctor` and the standard `Functor`. [It's possible, albeit a bit clunky](https://gist.github.com/ekmett/b26363fc0f38777a637d) in present-day Haskell.
+One design decision I made when developing the `FFunctor` class was to give `ffmap` a `(Functor f, Functor g)` constraint, so you can only `ffmap` between types that are in fact functors. This has certain tradeoffs compared to having no such constraints. It enables more instances of `FFunctor` - for example, you can only write `Fix`'s `ffmap` with a `Functor` constraint for either the input or output type parameters - but it rules out certain usages of `ffmap`. You can't `ffmap` over a template containing `Validator`s, for example, because `Validator` is not a `Functor`. And once you put the constraints into the type of `ffmap`, they make their way into the types of `ftraverse` and `fsequence` due to the usage of `ffmap` in `ftraverse`'s default implementation. But I _didn't_ put the same `Functor` constraints into `FRepresentable`'s methods. An `FRep` type typically won't be functorial - it'll be GADT-like - so adding a `Functor (FRep t)` constraint would be far too restrictive. And I figured, if you can't `ffmap` over a template full of `Validator`s, you should at least be able to use `fzipWith` to do something useful with it. But it's not as mathematically clean as I'd like.
 
 You'll notice that the concept of an applicative functor functor is conspicuously absent from my presentation above. `FApplicative` would probably look something like this:
 
@@ -443,16 +391,9 @@ instance FApplicative FormTemplate where
         (f4 cardExpiry)
 ```
 
-`FApplicative` is a more general interface than `FRepresentable`, in that it supports notions of composition other than zipping. However, that bookkeeping `:->` `newtype` wrapper is inconvenient. With the normal `Applicative` class you can map an _n_-ary function over _n_ applicative values directly: `f <$> x <*> y <*> z`. With `FApplicative` you have to apply the `Morph` constructor as many times as `f` has arguments: ``fpure (Morph $ \x -> Morph $ \y -> Morph $ \z -> f x y z) `fap` t `fap` u `fap` v``, which becomes very unwieldy very quickly. On the other hand, `FApplicative` does open up some interesting options for the design of `FTraversable`: one can traverse in an `FApplicative` rather than an `Applicative`. This gives some nice type signatures - `fsequence :: (FTraversable t, FApplicative f) => t f -> f t` - but I think it has less practical utility than the `FTraversable` I presented above, since there are more useful `Applicative`s in the Haskell ecosystem than there are `FApplicative`s.
+`FApplicative` is a more general interface than `FRepresentable`, in that it supports notions of composition other than zipping. However, that bookkeeping `:->` `newtype` wrapper is inconvenient. With the normal `Applicative` class you can map an _n_-ary function over _n_ applicative values directly: `f <$> x <*> y <*> z`. With `FApplicative` you have to apply the `Morph` constructor as many times as `f` has arguments: ``fpure (Morph $ \x -> Morph $ \y -> Morph $ \z -> f x y z) `fap` t `fap` u `fap` v``, which becomes very unwieldy very quickly. ([/u/rampion has come up with some nicer syntax for this](https://www.reddit.com/r/haskell/comments/78xxql/structures_of_arrays_functors_and_continuations/doy80ft/), but it involves [a more complicated formulation of `FApplicative`](https://gist.github.com/rampion/20291bde6c8568c11f9cc5923d9639eb#file-ffunctor-hs-L28).) On the other hand, `FApplicative` does open up some interesting options for the design of `FTraversable`: one can traverse in an `FApplicative` rather than an `Applicative`. This gives some nice type signatures - `fsequence :: (FTraversable t, FApplicative f) => t f -> f t` - and is strictly more general than the `FTraversable` I gave above, since any `Applicative` can be lifted into an `FApplicative` by composition (`newtype ComposeAt a f g = ComposeAt { getComposeAt :: f (g a) }`).
 
-Functor functors, as demonstrated here, are not to be confused with endofunctors on the functor category. These things have a kind of `(* -> *) -> * -> *` - like a monad transformer - and they're one of several things that are referred to as _indexed functors_.
-
-```haskell
-class IFunctor f where
-    imap :: (g ~> h) -> f g ~> f h
-```
-
-Because `IFunctor`, unlike `FFunctor`, is an endofunctor, there are some interesting things you can do with it, like take its fixed point `newtype IFix f a = IFix { unIFix :: f (IFix f) a }`
+**Link to other writing on this topic**
 
 **how useful is this in practice, considering the rest of the haskell ecosystem? something about indexed functors, something about Generic, something about newtypes**
 
