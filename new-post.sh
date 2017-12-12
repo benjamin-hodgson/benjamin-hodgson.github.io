@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ -z "$2" ]
-then echo "No commit message"; exit 1
+then echo "No title"; exit 1
 fi
 
 basename="$1-$2"
