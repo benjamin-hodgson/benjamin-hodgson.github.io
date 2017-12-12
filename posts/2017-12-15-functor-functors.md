@@ -29,7 +29,12 @@ data DraftForm = DraftForm {
 }
 
 toForm :: DraftForm -> Maybe Form
-toForm (DraftForm (Just email) (Just cardType) (Just cardNumber) (Just cardExpiry)) = Just $ Form email cardType cardNumber cardExpiry
+toForm (DraftForm
+    (Just email)
+    (Just cardType)
+    (Just cardNumber)
+    (Just cardExpiry)) = Just $
+        Form email cardType cardNumber cardExpiry
 toForm _ = Nothing
 ```
 
@@ -65,7 +70,7 @@ Functors from the Category of Endofunctors
 
 In Haskell, categories are represented as a _kind_ `k` of objects and a _type constructor_ `c :: k -> k -> *` of morphisms between those objects. If the category `C` has objects in `k1` and morphisms in `c`, and `D` has objects in `k2` and morphisms in `d`, then a functor from `C` to `D` is a type constructor `f :: k1 -> k2` mapping objects paired with an operation `fmap :: c a b -> d (f a) (f b)` mapping the morphisms. The standard `Functor` class is for _endofunctors on **Hask**_ - the special case in which `k1 ~ k2 ~ *` and `c ~ d ~ (->)`.
 
-<img src="/images/2017-10-18-functor-functors/hask.jpg" alt="Endofunctors on Hask" width="700" />
+<img src="/images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" width="700" />
 
 Given two categories `C` and `D`, you can construct the category of functors between `C` and `D`, written as `[C, D]`. Objects in this category are functors from `C` to `D`, and morphisms are natural transformations between those functors. Since `[C, D]` is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that'd be a type of kind `(k1 -> k2) -> k3`. I'll call such types _functor functors_.
 
@@ -80,7 +85,12 @@ class FFunctor f where
     ffmap :: (Functor g, Functor h) => (g ~> h) -> f g -> f h
 
 instance FFunctor FormTemplate where
-    ffmap eta (FormTemplate email cardType cardNumber cardExpiry) = FormTemplate
+    ffmap eta (FormTemplate
+        email
+        cardType
+        cardNumber
+        cardExpiry
+    ) = FormTemplate
         (eta email)
         (eta cardType)
         (eta cardNumber)
@@ -97,7 +107,7 @@ ffmap id = id
 ffmap (eta . phi) = ffmap eta . ffmap phi
 ```
 
-<img src="/images/2017-10-18-functor-functors/ffunctor.jpg" alt="Functor functors" width="700" />
+<img src="/images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" width="700" />
 
 `ffmap` encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor `f` into `g`, then you can map a record of `f`s to a record of `g`s by embedding each `f`. (This is also sometimes called "hoisting".) For example, the boring `Identity` functor can be embedded into an arbitrary `Applicative` by injecting the contained value using `pure`. We can use this to turn a total record into a partial one:
 
@@ -116,13 +126,17 @@ Now that we have a new dog, it's natural to ask which old tricks we can teach it
 
 ```haskell
 class FFunctor t => FTraversable t where
-    ftraverse :: (Functor f, Functor g, Applicative a) => (f ~> Compose a g) -> t f -> a (t g)
+    ftraverse :: (Functor f, Functor g, Applicative a)
+              => (f ~> Compose a g) -> t f -> a (t g)
     ftraverse eta = fsequence . ffmap eta
-    fsequence :: (Functor f, Applicative a) => t (Compose a f) -> a (t f)
+    fsequence :: (Functor f, Applicative a)
+              => t (Compose a f) -> a (t f)
     fsequence = ftraverse id
 
-ffmapDefault :: (Functor f, Functor g, FTraversable t) => (f ~> g) -> t f -> t g
-ffmapDefault eta = runIdentity . ftraverse (Compose . Identity . eta)
+ffmapDefault :: (Functor f, Functor g, FTraversable t)
+             => (f ~> g) -> t f -> t g
+ffmapDefault eta =
+    runIdentity . ftraverse (Compose . Identity . eta)
 
 fsequence' :: (FTraversable t, Applicative a) => t a -> a (Record t)
 fsequence' = ftraverse (Compose . fmap Identity)
@@ -132,24 +146,27 @@ The `FTraversable` laws come about by adjusting the `Traversable` laws to add so
 
 ```haskell
 -- naturality
-nu . ftraverse eta = ftraverse (Compose . nu . getCompose . eta)  -- for any applicative transformation nu
+nu . ftraverse eta = ftraverse (Compose . nu . getCompose . eta)
+-- for any applicative transformation nu
 
 -- identity
 ftraverse (Compose . Identity) = Identity
 
 -- composition
-ftraverse (Compose . Compose . fmap (getCompose . phi) . getCompose . eta) = Compose . fmap (ftraverse phi) . ftraverse eta
+ftraverse (Compose . Compose . fmap (getCompose.phi) . getCompose . eta)
+    = Compose . fmap (ftraverse phi) . ftraverse eta
 ```
 
 Implementations of `traverse` look like implementations of `fmap` but in an applicative context. Likewise, implementations of `ftraverse` look like implementations of `ffmap` in an applicative context, with a few `getCompose`s scattered around.
 
 ```haskell
 instance FTraversable FormTemplate where
-    ftraverse eta (FormTemplate email cardType cardNumber cardExpiry) = FormTemplate <$>
-        (getCompose $ eta email) <*>
-        (getCompose $ eta cardType) <*>
-        (getCompose $ eta cardNumber) <*>
-        (getCompose $ eta cardExpiry)
+    ftraverse eta (FormTemplate email cardType cardNumber cardExpiry)
+        = FormTemplate <$>
+            (getCompose $ eta email) <*>
+            (getCompose $ eta cardType) <*>
+            (getCompose $ eta cardNumber) <*>
+            (getCompose $ eta cardExpiry)
 ```
 
 This is where things start to get interesting. The `toForm` function, which converts a draft form to a regular form if all of its fields have been filled in, can be defined tersely in terms of `ftraverse`.
@@ -167,10 +184,12 @@ Here's another example: a generic program, defined by analogy to `Foldable`'s `f
 ```haskell
 data Empty a deriving Functor
 
-ffoldMap :: forall f t m. (Monoid m, Functor f, FTraversable t) => (f () -> m) -> t f -> m
+ffoldMap :: forall f t m. (Monoid m, Functor f, FTraversable t)
+         => (f () -> m) -> t f -> m
 ffoldMap f = getConst . ftraverse mkConst
     where
-        mkConst :: f x -> Compose (Const m) Empty x  -- using ScopedTypeVariables to bind f
+        -- using ScopedTypeVariables to bind f
+        mkConst :: f x -> Compose (Const m) Empty x
         mkConst = Compose . Const . f . ($> ())
 ```
 
@@ -187,11 +206,16 @@ class FFunctor t => FRepresentable t where
     ftabulate :: (FRep t ~> f) -> t f
     findex :: t f -> FRep t a -> f a
 
-fzipWith :: FRepresentable t => (forall x. f x -> g x -> h x) -> t f -> t g -> t h
+fzipWith :: FRepresentable t
+         => (forall x. f x -> g x -> h x)
+         ->            t f -> t g -> t h
 fzipWith f t u = ftabulate $ \r -> f (findex t r) (findex u r)
 
-fzipWith3 :: FRepresentable t => (forall x. f x -> g x -> h x -> k x) -> t f -> t g -> t h -> t k
-fzipWith3 f t u v = ftabulate $ \r -> f (findex t r) (findex u r) (findex v r)
+fzipWith3 :: FRepresentable t
+          => (forall x. f x -> g x -> h x -> k x)
+          ->            t f -> t g -> t h -> t k
+fzipWith3 f t u v = ftabulate $
+    \r -> f (findex t r) (findex u r) (findex v r)
 
 fzip :: FRepresentable t => t f -> t g -> t (Product f g)
 fzip = fzipWith Pair
@@ -321,15 +345,16 @@ Validator f &> Validator g = Validator $ \x -> f x *> g x
 -- for example
 emailValidator :: Validator [Text] Text
 emailValidator = hasAtSymbol &> hasTopLevelDomain
-    where hasAtSymbol = Validator $ \email -> 
+    where
+        hasAtSymbol = Validator $ \email -> 
             if "@" `isInfixOf` email
             then Success email
             else Failure ["No @ in email"]
-          hasTopLevelDomain = Validator $ \email ->
+        hasTopLevelDomain = Validator $ \email ->
             if any (`isSuffixOf` email) topLevelDomains
             then Success email
             else Failure ["Invalid TLD"]
-          topLevelDomains = [".com", ".org", ".co.uk"]  -- etc
+        topLevelDomains = [".com", ".org", ".co.uk"]  -- etc
 ```
 
 The plan is to store these `Validator`s in a record template, zip them along an instance of the record itself, and then traverse the result to get either a validated record or a collection of errors. To make things interesting, we'll store the validation results for a given field in the matching field of another record.
@@ -346,9 +371,13 @@ validate validators = Validator $ \record ->
     first unWrap $
     fsequence' $
     fzipWith3 applyValidator lenses validators record
-    where applyValidator (FLens lens) (Validator validator) (Identity value) =
-            let result = validator value
-            in first (\e -> mempty & _Wrapped'.lens._Wrapped' .~ e) result
+    where
+        applyValidator
+            (FLens lens)
+            (Validator validator)
+            (Identity value) =
+                let setError e = mempty & _Wrapped'.lens._Wrapped' .~ e
+                in first setError $ validator value
 ```
 
 `applyValidator` takes a lens into a record field, a validator for that field and the value in that field. It applies the validator to the value; upon failure it stores the error message (`e`) in the correct field of the `Errors` record using the lens. `fzipWith3` handles the logic of running `applyValidator` for each field of the record, then `fsequence'` combines the resulting `Validation` applicative actions into a single one. So all of the errors from all of the fields are eventually collected into the matching fields of the `Errors` record and combined monoidally.
@@ -356,8 +385,10 @@ validate validators = Validator $ \record ->
 A quick test, wherein I test validation on the email field:
 
 ```
-ghci> let formValidator = validate $ FormTemplate emailValidator noop noop noop
+ghci> let formValidator = validate
+    $ FormTemplate emailValidator noop noop noop
 ghci> let today = read "2017-08-17" :: Day
+
 ghci> let form1 = FormTemplate
     (Identity "bhodgson@stackoverflow.com")
     (Identity Visa)
@@ -370,6 +401,7 @@ Success (FormTemplate {
     _cardNumber = Identity "1234567890123456",
     _cardExpiry = Identity 2017-08-17
     })
+
 ghci> let form2 = FormTemplate
     (Identity "notanemail")
     (Identity Visa)
@@ -410,7 +442,17 @@ fliftA eta t = fpure (Morph eta) `fap` t
 
 instance FApplicative FormTemplate where
     fpure x = FormTemplate x x x x
-    FormTemplate (Morph f1) (Morph f2) (Morph f3) (Morph f4) `fap` FormTemplate email cardType cardNumber cardExpiry = FormTemplate
+    fap (FormTemplate
+        (Morph f1)
+        (Morph f2)
+        (Morph f3)
+        (Morph f4)
+    ) (FormTemplate
+        email
+        cardType
+        cardNumber
+        cardExpiry
+    ) = FormTemplate
         (f1 email)
         (f2 cardType)
         (f3 cardNumber)
