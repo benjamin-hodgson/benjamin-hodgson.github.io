@@ -78,16 +78,12 @@ toForm _ <span class="fu">=</span> <span class="dt">Nothing</span></code></pre><
 <span class="ot">    ffmap ::</span> (<span class="dt">Functor</span> g, <span class="dt">Functor</span> h) <span class="ot">=&gt;</span> (g <span class="fu">~&gt;</span> h) <span class="ot">-&gt;</span> f g <span class="ot">-&gt;</span> f h
 
 <span class="kw">instance</span> <span class="dt">FFunctor</span> <span class="dt">FormTemplate</span> <span class="kw">where</span>
-    ffmap eta (<span class="dt">FormTemplate</span>
-        email
-        cardType
-        cardNumber
-        cardExpiry
-    ) <span class="fu">=</span> <span class="dt">FormTemplate</span>
-        (eta email)
-        (eta cardType)
-        (eta cardNumber)
-        (eta cardExpiry)</code></pre></div>
+    ffmap eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)
+        <span class="fu">=</span> <span class="dt">FormTemplate</span>
+            (eta email)
+            (eta cardType)
+            (eta cardNumber)
+            (eta cardExpiry)</code></pre></div>
 <p><code>FFunctor</code> comes with the usual functor laws. The only difference is the types.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- identity</span>
 ffmap id <span class="fu">=</span> id
@@ -339,21 +335,22 @@ fliftA eta t <span class="fu">=</span> fpure (<span class="dt">Morph</span> eta)
 
 <span class="kw">instance</span> <span class="dt">FApplicative</span> <span class="dt">FormTemplate</span> <span class="kw">where</span>
     fpure x <span class="fu">=</span> <span class="dt">FormTemplate</span> x x x x
-    fap (<span class="dt">FormTemplate</span>
-        (<span class="dt">Morph</span> f1)
-        (<span class="dt">Morph</span> f2)
-        (<span class="dt">Morph</span> f3)
-        (<span class="dt">Morph</span> f4)
-    ) (<span class="dt">FormTemplate</span>
-        email
-        cardType
-        cardNumber
-        cardExpiry
-    ) <span class="fu">=</span> <span class="dt">FormTemplate</span>
-        (f1 email)
-        (f2 cardType)
-        (f3 cardNumber)
-        (f4 cardExpiry)</code></pre></div>
+    fap
+        (<span class="dt">FormTemplate</span>
+            (<span class="dt">Morph</span> f1)
+            (<span class="dt">Morph</span> f2)
+            (<span class="dt">Morph</span> f3)
+            (<span class="dt">Morph</span> f4))
+        (<span class="dt">FormTemplate</span>
+            email
+            cardType
+            cardNumber
+            cardExpiry)
+        <span class="fu">=</span> <span class="dt">FormTemplate</span>
+            (f1 email)
+            (f2 cardType)
+            (f3 cardNumber)
+            (f4 cardExpiry)</code></pre></div>
 <p><code>FApplicative</code> is a more general interface than <code>FRepresentable</code>, in that it supports notions of composition other than zipping. However, that bookkeeping <code>:-&gt;</code> <code>newtype</code> wrapper is inconvenient. With the normal <code>Applicative</code> class you can map an <em>n</em>-ary function over <em>n</em> applicative values directly: <code>f &lt;$&gt; x &lt;*&gt; y &lt;*&gt; z</code>. With <code>FApplicative</code> you have to apply the <code>Morph</code> constructor as many times as <code>f</code> has arguments: <code>fpure (Morph $ \x -&gt; Morph $ \y -&gt; Morph $ \z -&gt; f x y z) `fap` t `fap` u `fap` v</code>, which becomes very unwieldy very quickly. (<a href="https://www.reddit.com/r/haskell/comments/78xxql/structures_of_arrays_functors_and_continuations/doy80ft/">/u/rampion has come up with nicer syntax for this</a>, but it involves <a href="https://gist.github.com/rampion/20291bde6c8568c11f9cc5923d9639eb#file-ffunctor-hs-L28">a more complicated formulation of <code>FApplicative</code></a>.) On the other hand, <code>FApplicative</code> does open up some interesting options for the design of <code>FTraversable</code>: one can traverse in an <code>FApplicative</code> rather than an <code>Applicative</code>. This gives some nice type signatures - <code>fsequence :: (FTraversable t, FApplicative f) =&gt; t f -&gt; f t</code> - and is strictly more general than the <code>FTraversable</code> I gave above, since any <code>Applicative</code> can be lifted into an <code>FApplicative</code> by composition (<code>newtype ComposeAt a f g = ComposeAt { getComposeAt :: f (g a) }</code>).</p>
 <p>How useful are these tools in practice? Would I structure a production application around functor functors? Probably not. It’s a question of balance - while it’s useful to recognise functorial structures in categories other than <strong>Hask</strong> as a thinking tool, actually representing such abstractions in code doesn’t always pay off. Haskell already has a rich ecosystem of tools for working with the <code>Functor</code> family, but there’s much less code in the wild that’s structured around functor functors. This is partly because <code>Functor</code> has the advantage of being a standard class in <code>base</code>, but it’s also because code built around functor functors is a little less convenient to work with, typically requiring some tedious <code>newtype</code> bookkeeping.</p>
 <p>Over the course of putting together this article I came across some work by others on this very topic. I’ve spotted versions of these classes being packaged with bigger libraries such as <a href="http://hackage.haskell.org/package/hedgehog-0.5.1/docs/Hedgehog-Internal-HTraversable.html"><code>hedgehog</code></a> and <a href="https://hackage.haskell.org/package/quickcheck-state-machine-0.2.0/docs/Test-StateMachine-Types-HFunctor.html"><code>quickcheck-state-machine</code></a>. There are also a few packages providing similar tools. The most mature of these seems to be <a href="http://hackage.haskell.org/package/rank2classes"><code>rank2classes</code></a>, which includes some Template Haskell tools for deriving instances; there’s also <a href="http://hackage.haskell.org/package/conkin">the Conkin package</a>, which has <a href="https://github.com/rampion/conkin/blob/master/README.md">a well-written tutorial</a> focusing on working with data in column-major order.</p>
