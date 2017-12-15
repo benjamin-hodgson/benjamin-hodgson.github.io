@@ -19,7 +19,7 @@ Until recently I felt rather embarrassed that my C# generic programming library 
 
 I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don't have a partner (the grey-coloured ones in the drawing):
 
-**Picture here**
+<img src="/images/2017-12-08-zip-folding/zip.jpg" alt="Pairing up nodes" width="700" />
 
 But I got stuck on how to plug those paired nodes back into a single tree representing the zipped trees. Nodes typically have space for a fixed number of children, but pairing up children will typically change that number. That is, a binary operator has precisely two children, but when zipping two binary operators together you need to do something with four children.
 
@@ -86,7 +86,7 @@ public static U ZipFold<T, U>(
     );
 ```
 
-The two trees are zipped together and torn down in a single pass.
+The two trees are zipped together and torn down in a single pass. (If you're a member of the school of thought which uses Greek words for the names of recursion schemes, you might call this a _fermomorphism_, because apparently the Greek for "zip" is "fermouár".)
 
 `ZipFold` allows you to concisely test a pair of trees for equality, by looking only at one pair of nodes at a time. Here's an example for `JqlNode`:
 
@@ -162,4 +162,4 @@ public static bool Equal(JqlNode j1, JqlNode j2)
     );
 ```
 
-`ZipFold` is available in **whatever the latest release of Sawmill is**
+`ZipFold` is available in [version 1.3.0 of Sawmill](https://www.nuget.org/packages/Sawmill/).
