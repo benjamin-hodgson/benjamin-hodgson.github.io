@@ -34,7 +34,7 @@
 
 <p>If you visit <a href="https://www.stackoverflow.com/jobs">Stack Overflow Jobs</a> you’ll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type <a href="https://stackoverflow.com/jobs?sort=i&amp;q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)"><code>[c#] and (not [javascript] or salary:50000gbp)</code></a> into the search box. This advanced search syntax is called JQL, for <em>Jobs Query Language</em>.</p>
 <p>It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there’s a parser which produces an abstract syntax tree (hereafter <em>AST</em>), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)</p>
-<p><img src="../images/2017-10-17-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="700" /></p>
+<p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="700" /></p>
 <p>In this post I’m going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.</p>
 <h2 id="asts-and-operations">ASTs and operations</h2>
 <p>The JQL AST looks roughly like this:</p>
@@ -70,7 +70,7 @@
         <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
     )
 )</code></pre></div>
-<p><img src="../images/2017-10-17-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" width="700" /></p>
+<p><img src="../images/2017-11-13-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" width="700" /></p>
 <p>When you need to analyse a <code>JqlNode</code>, you use pattern matching to see what type of node you have, and recursively query the operands of <code>And</code>/<code>Or</code>/<code>Not</code> nodes. Here’s a function which searches for the <code>TagNode</code>s in a tree:</p>
 <div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)
 {
@@ -230,7 +230,7 @@
 <h2 id="from-pattern-to-library">From Pattern to Library</h2>
 <p><code>Rewrite</code> and <code>SelfAndDescendants</code> wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don’t constitute a library. <code>SelfAndDescendants</code> and <code>Rewrite</code>, as written above, have knowledge of <code>JqlNode</code> baked in to them; you have to hand-write equivalent functions to work on your own datatypes.</p>
 <p>We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has <em>children</em> which are also nodes.</p>
-<p><img src="../images/2017-10-17-recursion-without-recursion/children.jpg" alt="Nodes and their children" width="700" /></p>
+<p><img src="../images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" width="700" /></p>
 <p>As the picture shows, you can reach every node in a tree just by looking at each node’s children. If you can show me how to replace your children, I can replace your children’s children and so on. So let’s use an interface to model the notion of an object with a collection of children.</p>
 <div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
 {
@@ -319,7 +319,7 @@
 </ul>
 <p>I’ve also had success implementing <code>IRewritable</code> for a variety of tree-like types. Sawmill comes bundled with versions of all of these extension methods for some well-known tree types - <code>Expression</code>, <code>XmlNode</code>, and <code>XElement</code> - and I’ve written extension packages which do the same for <code>Newtonsoft.Json.Linq</code> and Roslyn’s syntax trees. (These implementations actually use a separate <code>IRewriter</code> interface, because of course I can’t add a new interface to the above types.) Realising that I could use Sawmill to layer a simple, uniform API on top of preexisting objects felt like a real validation of the design.</p>
 <p>Sawmill’s version of <code>Rewrite</code> also makes an important optimisation which I glossed over above: parts of the tree which the <code>transformer</code> function didn’t change are <em>shared</em> between the new and old versions of the tree. If you change a single node, you only have to rebuild that node’s ancestors (because their children have changed), not the parts of the tree you didn’t touch.</p>
-<p><img src="../images/2017-10-17-recursion-without-recursion/sharing.jpg" alt="The sharing optimisation" width="700" /></p>
+<p><img src="../images/2017-11-13-recursion-without-recursion/sharing.jpg" alt="The sharing optimisation" width="700" /></p>
 <p>(This is safe for immutable trees like those in Roslyn; for mutable trees like <code>XmlNode</code> the whole tree has to be copied if any part of it changes. This makes me sad - in my view those types should have been immutable all along.)</p>
 <p>Finally and most importantly, I want to acknowledge Neil Mitchell’s great work in his <a href="https://hackage.haskell.org/package/uniplate"><code>uniplate</code> Haskell library</a> (and <a href="https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html">its modernised port in <code>lens</code></a>), upon which Sawmill is based. I wouldn’t even have thought of this C# library if I hadn’t already encountered it in Haskell. It’s weird to think that <a href="http://ndmitchell.com/downloads/paper-uniform_boilerplate_and_list_processing-30_sep_2007.pdf"><code>uniplate</code>’s accompanying article</a> was published in 2007! Someone - my mum, if you must know - once told me that in the field of medicine it takes a decade for new research to reach mainstream practice. I think that process might take even longer in computer science, but I hope that in writing this I’ve helped these ideas along a little.</p>
 
