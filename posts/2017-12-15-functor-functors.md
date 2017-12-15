@@ -85,16 +85,12 @@ class FFunctor f where
     ffmap :: (Functor g, Functor h) => (g ~> h) -> f g -> f h
 
 instance FFunctor FormTemplate where
-    ffmap eta (FormTemplate
-        email
-        cardType
-        cardNumber
-        cardExpiry
-    ) = FormTemplate
-        (eta email)
-        (eta cardType)
-        (eta cardNumber)
-        (eta cardExpiry)
+    ffmap eta (FormTemplate email cardType cardNumber cardExpiry)
+        = FormTemplate
+            (eta email)
+            (eta cardType)
+            (eta cardNumber)
+            (eta cardExpiry)
 ```
 
 `FFunctor` comes with the usual functor laws. The only difference is the types.
@@ -442,21 +438,22 @@ fliftA eta t = fpure (Morph eta) `fap` t
 
 instance FApplicative FormTemplate where
     fpure x = FormTemplate x x x x
-    fap (FormTemplate
-        (Morph f1)
-        (Morph f2)
-        (Morph f3)
-        (Morph f4)
-    ) (FormTemplate
-        email
-        cardType
-        cardNumber
-        cardExpiry
-    ) = FormTemplate
-        (f1 email)
-        (f2 cardType)
-        (f3 cardNumber)
-        (f4 cardExpiry)
+    fap
+        (FormTemplate
+            (Morph f1)
+            (Morph f2)
+            (Morph f3)
+            (Morph f4))
+        (FormTemplate
+            email
+            cardType
+            cardNumber
+            cardExpiry)
+        = FormTemplate
+            (f1 email)
+            (f2 cardType)
+            (f3 cardNumber)
+            (f4 cardExpiry)
 ```
 
 `FApplicative` is a more general interface than `FRepresentable`, in that it supports notions of composition other than zipping. However, that bookkeeping `:->` `newtype` wrapper is inconvenient. With the normal `Applicative` class you can map an _n_-ary function over _n_ applicative values directly: `f <$> x <*> y <*> z`. With `FApplicative` you have to apply the `Morph` constructor as many times as `f` has arguments: ``fpure (Morph $ \x -> Morph $ \y -> Morph $ \z -> f x y z) `fap` t `fap` u `fap` v``, which becomes very unwieldy very quickly. ([/u/rampion has come up with nicer syntax for this](https://www.reddit.com/r/haskell/comments/78xxql/structures_of_arrays_functors_and_continuations/doy80ft/), but it involves [a more complicated formulation of `FApplicative`](https://gist.github.com/rampion/20291bde6c8568c11f9cc5923d9639eb#file-ffunctor-hs-L28).) On the other hand, `FApplicative` does open up some interesting options for the design of `FTraversable`: one can traverse in an `FApplicative` rather than an `Applicative`. This gives some nice type signatures - `fsequence :: (FTraversable t, FApplicative f) => t f -> f t` - and is strictly more general than the `FTraversable` I gave above, since any `Applicative` can be lifted into an `FApplicative` by composition (`newtype ComposeAt a f g = ComposeAt { getComposeAt :: f (g a) }`).
