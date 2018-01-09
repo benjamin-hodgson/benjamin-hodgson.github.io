@@ -5,15 +5,15 @@ title: Zip-Folding
 One of my favourite little gems of functional programming is the following implementation of the dot product:
 
 ```haskell
-dot :: Num a => [a] -> [a] -> a
+dot :: [Double] -> [Double] -> Double
 xs `dot` ys = sum (zipWith (*) xs ys)
 ```
 
-`dot` zips two lists, multiplying each pair of elements using `(*)`, and then aggregates the results with `sum`. It's like a _map-reduce_ program, but it processes two collections, not one. It generalises rather beautifully to any zippily `Applicative` `Foldable` container whose elements form a `Semiring`:
+`dot` zips two lists of numbers, multiplying each pair of elements using `(*)`, and then aggregates the results with `sum`. It's like a _map-reduce_ program, but it processes two collections, not one. It generalises rather beautifully to any zippily `Applicative` `Foldable` container whose elements form a `Semiring`:
 
 ```haskell
 dot :: (Semiring a, Applicative t, Foldable t) => t a -> t a -> a
-xs `dot` ys = foldr (<+>) zero (liftA2 (<.>) xs ys)
+xs `dot` ys = foldl' (<+>) zero (liftA2 (<.>) xs ys)
 ```
 
 I think I'm particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It's a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call _zip-folding_.
