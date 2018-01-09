@@ -2,20 +2,25 @@
 title: Zip-Folding
 ---
 
-One of my favourite little gems of functional programming is the following dot product function:
+One of my favourite little gems of functional programming is the following implementation of the dot product:
+
+```haskell
+dot :: Num a => [a] -> [a] -> a
+xs `dot` ys = sum (zipWith (*) xs ys)
+```
+
+`dot` zips two lists, multiplying each pair of elements using `(*)`, and then aggregates the results with `sum`. It's like a _map-reduce_ program, but it processes two collections, not one. It generalises rather beautifully to any zippily `Applicative` `Foldable` container whose elements form a `Semiring`:
 
 ```haskell
 dot :: (Semiring a, Applicative t, Foldable t) => t a -> t a -> a
-xs `dot` ys = sum (liftA2 (*) xs ys)
+xs `dot` ys = foldr (<+>) zero (liftA2 (<.>) xs ys)
 ```
-
-`dot` zips two `t`s together with `liftA2` (well, when the `Applicative` instance is zippy in nature), multiplying each pair of elements using `(*)`, and then aggregates the results with `sum`. It's like a _map-reduce_ program, but it processes two collections, not one.
 
 I think I'm particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It's a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call _zip-folding_.
 
 ----------
 
-Until recently I felt rather embarrassed that my C# generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) didn't have a good story for consuming more than one tree at a time. I had lots of tools for [querying](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs), [editing](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs), and [tearing down](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs) single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you're unit testing a parser or a transformation pass, you need to check that the output tree is what you expected!
+Until recently I felt rather embarrassed that my C# generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) didn't have a good story for consuming more than one tree at a time. I had lots of tools for [querying](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs), [editing](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs), and [tearing down](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs) single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you're unit testing a parser or a transformation pass, you need to compare that the output tree to the one that you expected.
 
 I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don't have a partner (the grey-coloured ones in the drawing):
 
@@ -23,11 +28,11 @@ I got to thinking about what it means to zip two trees together - an operation w
 
 But I got stuck on how to plug those paired nodes back into a single tree representing the zipped trees. Nodes typically have space for a fixed number of children, but pairing up children will typically change that number. That is, a binary operator has precisely two children, but when zipping two binary operators together you need to do something with four children.
 
-And, more generally, what would it mean to zip trees recursively? You can imagine a scheme wherein each child of a node is replaced with a tuple of two children. But each child is really a subtree, with its own children, so the two subtrees need to be zipped - but that ought to produce a single tree, not a pair of trees. It's contradictory! The intuitive idea that a tree is a container of subtrees fails when you consider zipping.
+And, more generally, what would it mean to zip trees recursively? You can imagine a scheme wherein each child of a node is replaced with a tuple of two children. But each child is really a subtree, with its own children, so the two subtrees need to be zipped - but that ought to produce a single tree, not a pair of trees. It's contradictory! The intuitive idea that a node in a tree is a container of subtrees fails when you consider zipping.
 
 ----------
 
-Guess where this is going: you can't zip trees, but you can zip-fold them. The idea is to take pairs of nodes in a tree and combine them with the results of zipping their children.
+Guess where this is going: you can't _zip_ trees to produce a new tree, but you can _zip-fold_ trees to produce a value. The idea is to take pairs of nodes in a tree and combine them with the results of zipping their children.
 
 Let's start by looking at (an abbreviated version of) Sawmill's existing `Fold`. `Fold` says _if you give me a way to combine a node with the results of folding its children, I can recursively fold the entire tree to produce a single summary value_.
 
@@ -66,9 +71,9 @@ func(
 )
 ```
 
-So `Fold` traverses a tree from bottom to top, applying `func` to each subtree and the current set of intermediate results.
+`Fold` traverses a tree from bottom to top, applying `func` to each subtree and the current set of intermediate results.
 
-`ZipFold` works by analogy to `Fold`. We pair up the children of the two input nodes using the standard `Enumerable.Zip`, recursively zip-fold each pair, and then feed the results to `func`. Note that the length of the `IEnumerable` that's passed to `func` is the length of the smaller of the two nodes' collections of children.
+`ZipFold` works by analogy to `Fold`. It says _if you give me a way to combine two nodes with the results of zip-folding their children, I can recursively zip the two entire trees to produce a single summary value_. `ZipFold` pairs up the children of the two input nodes using the standard `Enumerable.Zip`, recursively zip-folds each pair, and then feeds the results to `func`. Note that the length of the `IEnumerable` that's passed to `func` is the length of the smaller of the two nodes' collections of children.
 
 ```csharp
 public static U ZipFold<T, U>(
@@ -86,9 +91,16 @@ public static U ZipFold<T, U>(
     );
 ```
 
-The two trees are zipped together and torn down in a single pass. (If you're a member of the school of thought which uses Greek words for the names of recursion schemes, you might call this a _fermomorphism_, because apparently the Greek for "zip" is "fermouár".)
+The two trees are zipped together and torn down in a single pass.
 
-`ZipFold` allows you to concisely test a pair of trees for equality, by looking only at one pair of nodes at a time. Here's an example for `JqlNode`:
+Here's how it looks in Haskell, using the [`Control.Lens.Plated`](https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html) API. Haskellers, never to pass up an opportunity to sound intellectual, like to use tongue-in-cheek Greek names for recursion schemes. Apparently the Greek word for "zip" is "fermouár", so I'm calling this a _fermomorphism_.
+
+```haskell
+fermo :: Plated a => (a -> a -> [r] -> r) -> a -> a -> r
+fermo f x y = f x y $ zipWith (fermo f) (toListOf plate x) (toListOf plate y)
+```
+
+As an example: `ZipFold` allows you to concisely test a pair of trees for equality, by looking only at one pair of nodes at a time.
 
 ```csharp
 public static bool Equal(JqlNode j1, JqlNode j2)
@@ -127,8 +139,6 @@ private static IEnumerable<U> ZipChildren<T, U>(
     Func<T[], U> zipFunc
 ) where T : IRewritable<T>
 {
-    // a straightforward generalisation of the standard Enumerable.Zip
-
     var enumerators = input.Select(x => x.GetChildren().GetEnumerator()).ToArray();
 
     while (enumerators.All(e => e.MoveNext()))
@@ -160,6 +170,13 @@ public static bool Equal(JqlNode j1, JqlNode j2)
             }
         }
     );
+```
+
+In Haskell, an _n_-ary zip-fold looks like this:
+
+```haskell
+fermo :: Plated a => ([a] -> [r] -> r) -> [a] -> r
+fermo f xs = f xs (fermo f <$> alaf ZipList traverse (toListOf plate) xs)
 ```
 
 `ZipFold` is available in [version 1.3.0 of Sawmill](https://www.nuget.org/packages/Sawmill/).
