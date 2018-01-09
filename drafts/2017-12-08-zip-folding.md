@@ -93,7 +93,7 @@ public static U ZipFold<T, U>(
 
 The two trees are zipped together and torn down in a single pass.
 
-Here's how it looks in Haskell, using the [`Control.Lens.Plated`](https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html) API. Haskellers, never to pass up an opportunity to sound intellectual, like to use tongue-in-cheek Greek names for recursion schemes. Apparently the Greek word for "zip" is "fermouár", so I'm calling this a _fermomorphism_.
+Here's how it looks in Haskell, using the [`Control.Lens.Plated`](https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html) API. Haskellers like to use tongue-in-cheek Greek names for recursion schemes. Apparently the Greek word for "zip" is "fermouár", so I'm calling this a _fermomorphism_.
 
 ```haskell
 fermo :: Plated a => (a -> a -> [r] -> r) -> a -> a -> r
@@ -172,11 +172,11 @@ public static bool Equal(JqlNode j1, JqlNode j2)
     );
 ```
 
-In Haskell, an _n_-ary zip-fold looks like this:
+Here's the Haskell transliteration of this _n_-ary zip-fold function, which `traverse`s in the `ZipList` `Applicative` to concisely zip _n_ lists of children:
 
 ```haskell
 fermo :: Plated a => ([a] -> [r] -> r) -> [a] -> r
-fermo f xs = f xs (fermo f <$> alaf ZipList traverse (toListOf plate) xs)
+fermo f xs = f xs (map (fermo f) $ getZipList $ traverse (ZipList . toListOf plate) xs)
 ```
 
 `ZipFold` is available in [version 1.3.0 of Sawmill](https://www.nuget.org/packages/Sawmill/).
