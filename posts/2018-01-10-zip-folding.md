@@ -61,7 +61,10 @@ func(
                 func(
                     new NotNode(/* ... */),
                     Children.One(
-                        func(new TagNode("javascript"), Children.None<U>())
+                        func(
+                            new TagNode("javascript"),
+                            Children.None<U>()
+                        )
                     )
                 ),
                 func(new SalaryNode(50000, "gbp"), Children.None<U>())
@@ -97,7 +100,8 @@ Here's how it looks in Haskell, using the [`Control.Lens.Plated`](https://hackag
 
 ```haskell
 fermo :: Plated a => (a -> a -> [r] -> r) -> a -> a -> r
-fermo f x y = f x y $ zipWith (fermo f) (toListOf plate x) (toListOf plate y)
+fermo f x y = f x y $
+    zipWith (fermo f) (toListOf plate x) (toListOf plate y)
 ```
 
 As an example: `ZipFold` allows you to concisely test a pair of trees for equality, by looking only at one pair of nodes at a time.
@@ -111,7 +115,8 @@ public static bool Equal(JqlNode j1, JqlNode j2)
             switch (n1)
             {
                 case SalaryNode s1 when n2 is SalaryNode s2:
-                    return s1.Currency == s2.Currency && s1.Amount == s2.Amount;
+                    return s1.Currency == s2.Currency
+                        && s1.Amount == s2.Amount;
                 case TagNode t1 when n2 is TagNode t2:
                     return t1.Tag == t2.Tag;
                 case AndNode a1 when n2 is AndNode a2:
@@ -139,11 +144,15 @@ private static IEnumerable<U> ZipChildren<T, U>(
     Func<T[], U> zipFunc
 ) where T : IRewritable<T>
 {
-    var enumerators = input.Select(x => x.GetChildren().GetEnumerator()).ToArray();
+    var enumerators = input
+        .Select(x => x.GetChildren().GetEnumerator())
+        .ToArray();
 
     while (enumerators.All(e => e.MoveNext()))
     {
-        yield return zipFunc(enumerators.Select(e => e.Current).ToArray());
+        yield return zipFunc(
+            enumerators.Select(e => e.Current).ToArray()
+        );
     }
 }
 ```
@@ -158,7 +167,8 @@ public static bool Equal(JqlNode j1, JqlNode j2)
             switch (ns[0])
             {
                 case SalaryNode s1 when ns[1] is SalaryNode s2:
-                    return s1.Currency == s2.Currency && s1.Amount == s2.Amount;
+                    return s1.Currency == s2.Currency
+                        && s1.Amount == s2.Amount;
                 case TagNode t1 when ns[1] is TagNode t2:
                     return t1.Tag == t2.Tag;
                 case AndNode a1 when ns[1] is AndNode a2:
@@ -176,7 +186,9 @@ Here's the Haskell transliteration of this _n_-ary zip-fold function, which `tra
 
 ```haskell
 fermo :: Plated a => ([a] -> [r] -> r) -> [a] -> r
-fermo f xs = f xs (map (fermo f) $ getZipList $ traverse (ZipList . toListOf plate) xs)
+fermo f xs = f xs (
+    map (fermo f) $ getZipList $ traverse (ZipList . toListOf plate) xs
+    )
 ```
 
 `ZipFold` is available in [version 1.3.0 of Sawmill](https://www.nuget.org/packages/Sawmill/).
