@@ -8,8 +8,175 @@
         <name>Benjamin Hodgson</name>
         <email>bhodgson@stackoverflow.com</email>
     </author>
-    <updated>2017-12-15T00:00:00Z</updated>
+    <updated>2018-01-10T00:00:00Z</updated>
     <entry>
+    <title>Zip-Folding</title>
+    <link href="http://www.benjamin.pizza/posts/2018-01-10-zip-folding.html" />
+    <id>http://www.benjamin.pizza/posts/2018-01-10-zip-folding.html</id>
+    <published>2018-01-10T00:00:00Z</published>
+    <updated>2018-01-10T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on January 10, 2018
+    
+</div>
+
+<p>One of my favourite little gems of functional programming is the following implementation of the dot product:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">dot ::</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> <span class="dt">Double</span>
+xs <span class="ot">`dot`</span> ys <span class="fu">=</span> sum (zipWith (<span class="fu">*</span>) xs ys)</code></pre></div>
+<p><code>dot</code> zips two lists of numbers, multiplying each pair of elements using <code>(*)</code>, and then aggregates the results with <code>sum</code>. It’s like a <em>map-reduce</em> program, but it processes two collections, not one. It generalises rather beautifully to any zippily <code>Applicative</code> <code>Foldable</code> container whose elements form a <code>Semiring</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">dot ::</span> (<span class="dt">Semiring</span> a, <span class="dt">Applicative</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a
+xs <span class="ot">`dot`</span> ys <span class="fu">=</span> foldl&#39; (<span class="fu">&lt;+&gt;</span>) zero (liftA2 (<span class="fu">&lt;.&gt;</span>) xs ys)</code></pre></div>
+<p>I think I’m particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It’s a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call <em>zip-folding</em>.</p>
+<hr />
+<p>Until recently I felt rather embarrassed that my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> didn’t have a good story for consuming more than one tree at a time. I had lots of tools for <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs">querying</a>, <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs">editing</a>, and <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs">tearing down</a> single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you’re unit testing a parser or a transformation pass, you need to compare that the output tree to the one that you expected.</p>
+<p>I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don’t have a partner (the grey-coloured ones in the drawing):</p>
+<p><img src="/images/2018-01-10-zip-folding/zip.jpg" alt="Pairing up nodes" width="700" /></p>
+<p>But I got stuck on how to plug those paired nodes back into a single tree representing the zipped trees. Nodes typically have space for a fixed number of children, but pairing up children will typically change that number. That is, a binary operator has precisely two children, but when zipping two binary operators together you need to do something with four children.</p>
+<p>And, more generally, what would it mean to zip trees recursively? You can imagine a scheme wherein each child of a node is replaced with a tuple of two children. But each child is really a subtree, with its own children, so the two subtrees need to be zipped - but that ought to produce a single tree, not a pair of trees. It’s contradictory! The intuitive idea that a node in a tree is a container of subtrees fails when you consider zipping.</p>
+<hr />
+<p>Guess where this is going: you can’t <em>zip</em> trees to produce a new tree, but you can <em>zip-fold</em> trees to produce a value. The idea is to take pairs of nodes in a tree and combine them with the results of zipping their children.</p>
+<p>Let’s start by looking at (an abbreviated version of) Sawmill’s existing <code>Fold</code>. <code>Fold</code> says <em>if you give me a way to combine a node with the results of folding its children, I can recursively fold the entire tree to produce a single summary value</em>.</p>
+<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> U Fold&lt;T, U&gt;(
+    <span class="kw">this</span> T value,
+    Func&lt;T, Children&lt;U&gt;, U&gt; func,
+) where T : IRewritable&lt;T&gt;
+    =&gt; <span class="fu">func</span>(
+        value,
+        value.<span class="fu">GetChildren</span>()
+            .<span class="fu">Select</span>(child =&gt; child.<span class="fu">Fold</span>(func))
+    );</code></pre></div>
+<p>Revisiting <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">the JQL example</a>, <code>Fold</code> will take an input tree like <code>[c#] and (not [javascript] or salary:50000gbp)</code> and compute the expression:</p>
+<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="fu">func</span>(
+    <span class="kw">new</span> <span class="fu">AndNode</span>(<span class="co">/* ... */</span>),
+    Children.<span class="fu">Two</span>(
+        <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;()),
+        <span class="fu">func</span>(
+            <span class="kw">new</span> <span class="fu">OrNode</span>(<span class="co">/* ... */</span>),
+            Children.<span class="fu">Two</span>(
+                <span class="fu">func</span>(
+                    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="co">/* ... */</span>),
+                    Children.<span class="fu">One</span>(
+                        <span class="fu">func</span>(
+                            <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),
+                            Children.<span class="fu">None</span>&lt;U&gt;()
+                        )
+                    )
+                ),
+                <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;())
+            )
+        )
+    )
+)</code></pre></div>
+<p><code>Fold</code> traverses a tree from bottom to top, applying <code>func</code> to each subtree and the current set of intermediate results.</p>
+<p><code>ZipFold</code> works by analogy to <code>Fold</code>. It says <em>if you give me a way to combine two nodes with the results of zip-folding their children, I can recursively zip the two entire trees to produce a single summary value</em>. <code>ZipFold</code> pairs up the children of the two input nodes using the standard <code>Enumerable.Zip</code>, recursively zip-folds each pair, and then feeds the results to <code>func</code>. Note that the length of the <code>IEnumerable</code> that’s passed to <code>func</code> is the length of the smaller of the two nodes’ collections of children.</p>
+<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(
+    <span class="kw">this</span> T value1,
+    T value2
+    Func&lt;T, T, IEnumerable&lt;U&gt;, U&gt; func,
+) where T : IRewritable&lt;T&gt;
+    =&gt; <span class="fu">func</span>(
+        value1,
+        value2,
+        value1.<span class="fu">GetChildren</span>().<span class="fu">Zip</span>(
+            value2.<span class="fu">GetChildren</span>(),
+            (child1, child2) =&gt; child1.<span class="fu">ZipFold</span>(child2, func)
+        )
+    );</code></pre></div>
+<p>The two trees are zipped together and torn down in a single pass.</p>
+<p>Here’s how it looks in Haskell, using the <a href="https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html"><code>Control.Lens.Plated</code></a> API. Haskellers like to use tongue-in-cheek Greek names for recursion schemes. Apparently the Greek word for “zip” is “fermouár”, so I’m calling this a <em>fermomorphism</em>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> r
+fermo f x y <span class="fu">=</span> f x y <span class="fu">$</span>
+    zipWith (fermo f) (toListOf plate x) (toListOf plate y)</code></pre></div>
+<p>As an example: <code>ZipFold</code> allows you to concisely test a pair of trees for equality, by looking only at one pair of nodes at a time.</p>
+<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)
+    =&gt; j1.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(
+        j2,
+        (n1, n2, childrenEqual) =&gt;
+        {
+            <span class="kw">switch</span> (n1)
+            {
+                <span class="kw">case</span> SalaryNode s1 when n2 <span class="kw">is</span> SalaryNode s2:
+                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span>
+                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;
+                <span class="kw">case</span> TagNode t1 when n2 <span class="kw">is</span> TagNode t2:
+                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;
+                <span class="kw">case</span> AndNode a1 when n2 <span class="kw">is</span> AndNode a2:
+                <span class="kw">case</span> OrNode o1 when n2 <span class="kw">is</span> OrNode o2:
+                <span class="kw">case</span> NotNode a1 when n2 <span class="kw">is</span> NotNode a2:
+                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);
+                <span class="kw">default</span>:
+                    <span class="kw">return</span> <span class="kw">false</span>;
+            }
+        }
+    );</code></pre></div>
+<p>The <code>ZipFold</code> that you’ll find in Sawmill is actually an <em>n</em>-ary zip-fold. Instead of taking two <code>T</code>s, and passing two <code>T</code>s to <code>func</code>, it works with an arbitrary number of <code>T</code>s. Here’s the code:</p>
+<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(
+    <span class="kw">this</span> T[] values,
+    Func&lt;T[], IEnumerable&lt;U&gt;, U&gt; func,
+) where T : IRewritable&lt;T&gt;
+    =&gt; <span class="fu">func</span>(values, xs.<span class="fu">ZipChildren</span>(children =&gt; children.<span class="fu">ZipFold</span>(func)));
+
+<span class="kw">private</span> <span class="kw">static</span> IEnumerable&lt;U&gt; ZipChildren&lt;T, U&gt;(
+    <span class="kw">this</span> T[] input,
+    Func&lt;T[], U&gt; zipFunc
+) where T : IRewritable&lt;T&gt;
+{
+    <span class="dt">var</span> enumerators = input
+        .<span class="fu">Select</span>(x =&gt; x.<span class="fu">GetChildren</span>().<span class="fu">GetEnumerator</span>())
+        .<span class="fu">ToArray</span>();
+
+    <span class="kw">while</span> (enumerators.<span class="fu">All</span>(e =&gt; e.<span class="fu">MoveNext</span>()))
+    {
+        <span class="kw">yield</span> <span class="kw">return</span> <span class="fu">zipFunc</span>(
+            enumerators.<span class="fu">Select</span>(e =&gt; e.<span class="fu">Current</span>).<span class="fu">ToArray</span>()
+        );
+    }
+}</code></pre></div>
+<p>Sadly, the invariant that <code>func</code> receives the same number of <code>T</code>s as were passed to <code>ZipFold</code> is not expressible in C#’s type system. So as a consumer of <code>ZipFold</code>, you just have to trust that <code>func</code>’s argument is of a certain size. In the <code>Equal</code> example, that size is two, because we’re consuming two trees:</p>
+<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)
+    =&gt; <span class="kw">new</span>[] { j1, j2 }.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(
+        (ns, childrenEqual) =&gt;
+        {
+            <span class="kw">switch</span> (ns[<span class="dv">0</span>])
+            {
+                <span class="kw">case</span> SalaryNode s1 when ns[<span class="dv">1</span>] <span class="kw">is</span> SalaryNode s2:
+                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span>
+                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;
+                <span class="kw">case</span> TagNode t1 when ns[<span class="dv">1</span>] <span class="kw">is</span> TagNode t2:
+                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;
+                <span class="kw">case</span> AndNode a1 when ns[<span class="dv">1</span>] <span class="kw">is</span> AndNode a2:
+                <span class="kw">case</span> OrNode o1 when ns[<span class="dv">1</span>] <span class="kw">is</span> OrNode o2:
+                <span class="kw">case</span> NotNode n1 when ns[<span class="dv">1</span>] <span class="kw">is</span> NotNode n2:
+                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);
+                <span class="kw">default</span>:
+                    <span class="kw">return</span> <span class="kw">false</span>;
+            }
+        }
+    );</code></pre></div>
+<p>Here’s the Haskell transliteration of this <em>n</em>-ary zip-fold function, which <code>traverse</code>s in the <code>ZipList</code> <code>Applicative</code> to concisely zip <em>n</em> lists of children:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> r
+fermo f xs <span class="fu">=</span> f xs (
+    map (fermo f) <span class="fu">$</span> getZipList <span class="fu">$</span> traverse (<span class="dt">ZipList</span> <span class="fu">.</span> toListOf plate) xs
+    )</code></pre></div>
+<p><code>ZipFold</code> is available in <a href="https://www.nuget.org/packages/Sawmill/">version 1.3.0 of Sawmill</a>.</p>
+
+<section class="comments">
+    <h1>Comments</h1>
+
+    <ol class="comments-list">
+        
+            <li class="comment">
+    
+        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on January 10, 2018</h2>
+    
+    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/develop/comments/2018-01-10-zip-folding/example.md">send me a pull request</a>.</p></div>
+</li>
+        
+    </ol>
+</section>
+]]></summary>
+</entry>
+<entry>
     <title>Functor Functors</title>
     <link href="http://www.benjamin.pizza/posts/2017-12-15-functor-functors.html" />
     <id>http://www.benjamin.pizza/posts/2017-12-15-functor-functors.html</id>
