@@ -18,7 +18,7 @@ install: stack --no-terminal --install-ghc build --ghc-options -O2 --only-depend
 
 script:
   - stack --no-terminal build --ghc-options -O2 --copy-bins --local-bin-path ./bin
-  - stack exec benjamin-pizza
+  - stack exec benjamin-pizza build
 
 
 deploy:
