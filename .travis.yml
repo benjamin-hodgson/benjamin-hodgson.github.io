@@ -1,6 +1,9 @@
 sudo: false
 language: generic
 
+branches:
+  except:
+  - master
 
 # don't rebuild the cache just because stack updated the index.
 # I only care about updates to the dependencies themselves
