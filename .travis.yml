@@ -23,6 +23,8 @@ script:
 
 deploy:
   provider: pages
+  edge:
+    branch: pages-ivar-set
   skip-cleanup: true
   github-token:
       secure: "wFTrSmuk970yg5ImeCRasThBufp+El2PMLCwWWddNRqxla45fbWL4DcuQOKiePQ/dTi7zRD+P8KcVezeLJxG//kIGUIwE1VniKYFCLJkLppujOqoc4I0db7B3hkkvFpFCbDO+727QohQ4jpXaEiQNCFt5BLVBY/REM6gZhEQioBG5T0xW00Z9XtIwnLmPcmyq+a+8TIsekLhHd3bUGYOZHfTOboSbON9R8oxWWq3OrSnWRiuBdAJExrfmacmBLJpmcbzQxiU4uEjU9SXNcjFsMCXv9fgaOYB4i8e2FffSfIDZygkp94dQ7VsI6BlNoGIWRmeAkSJlNR4VbcnoyB7/QSvHnAyLlBm22IeMRK6EJHqw5vuo5vLr1ti7vUCl4GIEN+hi74wQkcJV3ToX9ok7XkA6KfUOfGj24zZiNyVdux1Em9ed8Pmy9FKzwW3xCy8J+WqyJY/8woJ0r/BymMRdTCc4Bm1SixC9H0aRJVEDXr7inasqUoZqTU2IGwPUqsmh9YTqWd4iFLG4kd+Rrs+Ao8N1HE5eyqVXqR669sP/4VVaWIfGwW1/wpdoKFduJ9iZz/GPkPv1AAXXHKVNg3Lu+MEMY+czCBNBfMQYL2IuA0udxoAyD0yw35fF3OTfM7Dz4hVZ5rzUTNUZGQK4f5iclQp+3t8+ut74eo9Q1sZqtQ="
