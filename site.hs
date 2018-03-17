@@ -33,7 +33,7 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= relativizeUrls
 
-    match "posts/*" $ do
+    match postsPattern $ do
         route $ setExtension "html"
         compile $ do
             comments <- compilePostComments
@@ -44,6 +44,10 @@ main = hakyll $ do
                 >>= loadAndApplyTemplate "templates/default.html" ctx
                 >>= relativizeUrls
 
+    version "redirects" $ createRedirects [
+        ("posts/2018-03-10-eighty.html", "2018-03-16-eighty.html")
+        ]
+
     match "comments/*/*" $ do
         compile $
             pandocCompiler
@@ -52,7 +56,7 @@ main = hakyll $ do
     create ["archive.html"] $ do
         route idRoute
         compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
+            posts <- recentFirst =<< loadAll postsPattern
             let archiveCtx =
                     listField "posts" postSummaryCtx (return posts) `mappend`
                     constField "title" "Archives"                   `mappend`
@@ -66,7 +70,7 @@ main = hakyll $ do
     create ["atom.xml"] $ do
         route idRoute
         compile $ 
-            loadAllSnapshots "posts/*" "content"
+            loadAllSnapshots postsPattern "content"
                 >>= recentFirst
                 <&> take 10
                 >>= renderAtom feedConfig atomCtx
@@ -75,7 +79,7 @@ main = hakyll $ do
     match "index.html" $ do
         route idRoute
         compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
+            posts <- recentFirst =<< loadAll postsPattern
             let indexCtx =
                     listField "posts" postSummaryCtx (return posts) `mappend`
                     defaultContext
@@ -89,6 +93,10 @@ main = hakyll $ do
 
 
 --------------------------------------------------------------------------------
+
+postsPattern = "posts/*" .&&. hasNoVersion
+
+
 postCtx :: [Item String] -> Context String
 postCtx comments =
     listField "comments" commentCtx (return comments) `mappend`
