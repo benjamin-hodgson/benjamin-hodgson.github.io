@@ -8,15 +8,15 @@
         <name>Benjamin Hodgson</name>
         <email>bhodgson@stackoverflow.com</email>
     </author>
-    <updated>2018-03-10T00:00:00Z</updated>
+    <updated>2018-03-16T00:00:00Z</updated>
     <entry>
     <title>Eighty</title>
-    <link href="http://www.benjamin.pizza/posts/2018-03-10-eighty.html" />
-    <id>http://www.benjamin.pizza/posts/2018-03-10-eighty.html</id>
-    <published>2018-03-10T00:00:00Z</published>
-    <updated>2018-03-10T00:00:00Z</updated>
+    <link href="http://www.benjamin.pizza/posts/2018-03-16-eighty.html" />
+    <id>http://www.benjamin.pizza/posts/2018-03-16-eighty.html</id>
+    <published>2018-03-16T00:00:00Z</published>
+    <updated>2018-03-16T00:00:00Z</updated>
     <summary type="html"><![CDATA[<div class="info">
-    Posted on March 10, 2018
+    Posted on March 16, 2018
     
 </div>
 
@@ -215,9 +215,9 @@ Html <span class="fu">SomeHtmlContainingANote</span>()
         
             <li class="comment">
     
-        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on March 10, 2018</h2>
+        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on March 16, 2018</h2>
     
-    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/develop/comments/2018-03-10-Eighty/example.md">send me a pull request</a>.</p></div>
+    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/develop/comments/2018-03-16-Eighty/example.md">send me a pull request</a>.</p></div>
 </li>
         
     </ol>
