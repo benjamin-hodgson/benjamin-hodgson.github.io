@@ -3,10 +3,11 @@
 import Control.Monad ((>=>))
 import Data.Char (isDigit)
 import Data.List (sortBy)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (mappend)
 import Data.Ord (comparing)
 import Data.Traversable (for)
+import System.Environment (getArgs)
 import System.FilePath (takeBaseName)
 import Text.Read (readMaybe)
 import Hakyll
@@ -14,87 +15,93 @@ import Hakyll
 
 --------------------------------------------------------------------------------
 main :: IO ()
-main = hakyll $ do
-    match "favicon.ico" $ do
-        route   idRoute
-        compile copyFileCompiler
-
-    match "images/**" $ do
-        route   idRoute
-        compile copyFileCompiler
-
-    match "css/*" $ do
-        route   idRoute
-        compile compressCssCompiler
-
-    match (fromList ["about.md", "contact.md"]) $ do
-        route   $ setExtension "html"
-        compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/default.html" defaultContext
-            >>= relativizeUrls
-
-    match postsPattern $ do
-        route $ setExtension "html"
-        compile $ do
-            comments <- compilePostComments
-            let ctx = postCtx comments
-            pandocCompiler
-                >>= loadAndApplyTemplate "templates/post.html" ctx
-                >>= saveSnapshot "content"
-                >>= loadAndApplyTemplate "templates/default.html" ctx
-                >>= relativizeUrls
-
-    version "redirects" $ createRedirects [
-        ("posts/2018-03-10-eighty.html", "2018-03-16-eighty.html")
-        ]
-
-    match "comments/*/*" $ do
-        compile $
-            pandocCompiler
-                >>= loadAndApplyTemplate "templates/comment.html" commentCtx
-
-    create ["archive.html"] $ do
-        route idRoute
-        compile $ do
-            posts <- recentFirst =<< loadAll postsPattern
-            let archiveCtx =
-                    listField "posts" postSummaryCtx (return posts) `mappend`
-                    constField "title" "Archives"                   `mappend`
-                    defaultContext
-
-            makeItem ""
-                >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
-                >>= loadAndApplyTemplate "templates/default.html" archiveCtx
-                >>= relativizeUrls
+main = do
+    args <- getArgs
+    let postsPattern = postsPatternForCommand (fromMaybe "" $ listToMaybe args)
     
-    create ["atom.xml"] $ do
-        route idRoute
-        compile $ 
-            loadAllSnapshots postsPattern "content"
-                >>= recentFirst
-                <&> take 10
-                >>= renderAtom feedConfig atomCtx
+    hakyll $ do
+        match "favicon.ico" $ do
+            route   idRoute
+            compile copyFileCompiler
 
+        match "images/**" $ do
+            route   idRoute
+            compile copyFileCompiler
 
-    match "index.html" $ do
-        route idRoute
-        compile $ do
-            posts <- recentFirst =<< loadAll postsPattern
-            let indexCtx =
-                    listField "posts" postSummaryCtx (return posts) `mappend`
-                    defaultContext
+        match "css/*" $ do
+            route   idRoute
+            compile compressCssCompiler
 
-            getResourceBody
-                >>= applyAsTemplate indexCtx
-                >>= loadAndApplyTemplate "templates/default.html" indexCtx
+        match (fromList ["about.md", "contact.md"]) $ do
+            route   $ setExtension "html"
+            compile $ pandocCompiler
+                >>= loadAndApplyTemplate "templates/default.html" defaultContext
                 >>= relativizeUrls
 
-    match "templates/*" $ compile templateCompiler
+        match postsPattern $ do
+            route $ setExtension "html"
+            compile $ do
+                comments <- compilePostComments
+                let ctx = postCtx comments
+                pandocCompiler
+                    >>= loadAndApplyTemplate "templates/post.html" ctx
+                    >>= saveSnapshot "content"
+                    >>= loadAndApplyTemplate "templates/default.html" ctx
+                    >>= relativizeUrls
+
+        version "redirects" $ createRedirects [
+            ("posts/2018-03-10-eighty.html", "2018-03-16-eighty.html")
+            ]
+
+        match "comments/*/*" $ do
+            compile $
+                pandocCompiler
+                    >>= loadAndApplyTemplate "templates/comment.html" commentCtx
+
+        create ["archive.html"] $ do
+            route idRoute
+            compile $ do
+                posts <- recentFirst =<< loadAll postsPattern
+                let archiveCtx =
+                        listField "posts" postSummaryCtx (return posts) `mappend`
+                        constField "title" "Archives"                   `mappend`
+                        defaultContext
+
+                makeItem ""
+                    >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
+                    >>= loadAndApplyTemplate "templates/default.html" archiveCtx
+                    >>= relativizeUrls
+        
+        create ["atom.xml"] $ do
+            route idRoute
+            compile $ 
+                loadAllSnapshots postsPattern "content"
+                    >>= recentFirst
+                    <&> take 10
+                    >>= renderAtom feedConfig atomCtx
+
+
+        match "index.html" $ do
+            route idRoute
+            compile $ do
+                posts <- recentFirst =<< loadAll postsPattern
+                let indexCtx =
+                        listField "posts" postSummaryCtx (return posts) `mappend`
+                        defaultContext
+
+                getResourceBody
+                    >>= applyAsTemplate indexCtx
+                    >>= loadAndApplyTemplate "templates/default.html" indexCtx
+                    >>= relativizeUrls
+
+        match "templates/*" $ compile templateCompiler
 
 
 --------------------------------------------------------------------------------
 
-postsPattern = "posts/*" .&&. hasNoVersion
+postsPatternForCommand "watch" = "posts/*" .&&. hasNoVersion .||. "drafts/*"
+postsPatternForCommand _ = "posts/*" .&&. hasNoVersion
+
 
 
 postCtx :: [Item String] -> Context String
