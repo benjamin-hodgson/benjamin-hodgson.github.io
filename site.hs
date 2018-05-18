@@ -6,9 +6,11 @@ import Data.List (sortBy)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (mappend)
 import Data.Ord (comparing)
+import qualified Data.Set as S
 import Data.Traversable (for)
 import System.Environment (getArgs)
 import System.FilePath (takeBaseName)
+import Text.Pandoc.Options
 import Text.Read (readMaybe)
 import Hakyll
 
@@ -102,6 +104,18 @@ main = do
 postsPatternForCommand "watch" = "posts/*" .&&. hasNoVersion .||. "drafts/*"
 postsPatternForCommand _ = "posts/*" .&&. hasNoVersion
 
+
+-- https://www.jdreaver.com/posts/2014-06-22-math-programming-blog-hakyll.html
+pandocMathCompiler =
+    let mathExtensions = [Ext_tex_math_dollars, Ext_tex_math_double_backslash,
+                          Ext_latex_macros]
+        defaultExtensions = writerExtensions defaultHakyllWriterOptions
+        newExtensions = foldr S.insert defaultExtensions mathExtensions
+        writerOptions = defaultHakyllWriterOptions {
+                          writerExtensions = newExtensions,
+                          writerHTMLMathMethod = MathJax ""
+                        }
+    in pandocCompilerWith defaultHakyllReaderOptions writerOptions
 
 
 postCtx :: [Item String] -> Context String
