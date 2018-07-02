@@ -322,7 +322,7 @@ instance Monoid e => Applicative (Validation e) where
 
 This `Applicative` instance has no compatible `Monad` instance.
 
-To get started, we'll build a library for validation processes which examine a single field of a record at a time. Later we can extend it to support context-sensitive validation rules like "the format of the card number must match the card type". A validation rule for a field typed `a` is a function which takes an `a` and returns a `Validation e a`.
+We'll build a library for validation processes which examine a single field of a record at a time. A validation rule for a field typed `a` is a function which takes an `a` and returns a `Validation e a`.
 
 ```haskell
 newtype Validator e a = Validator { runValidator :: a -> Validation e a }
