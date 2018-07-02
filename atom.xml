@@ -623,7 +623,7 @@ makeLenses <span class="ch">&#39;&#39;</span><span class="dt">FormTemplate</span
     <span class="dt">Failure</span> e1 <span class="fu">&lt;*&gt;</span> _ <span class="fu">=</span> <span class="dt">Failure</span> e1
     _ <span class="fu">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="fu">=</span> <span class="dt">Failure</span> e2</code></pre></div>
 <p>This <code>Applicative</code> instance has no compatible <code>Monad</code> instance.</p>
-<p>To get started, we’ll build a library for validation processes which examine a single field of a record at a time. Later we can extend it to support context-sensitive validation rules like “the format of the card number must match the card type”. A validation rule for a field typed <code>a</code> is a function which takes an <code>a</code> and returns a <code>Validation e a</code>.</p>
+<p>We’ll build a library for validation processes which examine a single field of a record at a time. A validation rule for a field typed <code>a</code> is a function which takes an <code>a</code> and returns a <code>Validation e a</code>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Validator</span> e a <span class="fu">=</span> <span class="dt">Validator</span> {<span class="ot"> runValidator ::</span> a <span class="ot">-&gt;</span> <span class="dt">Validation</span> e a }
 
 <span class="co">-- a validator which always succeeds</span>
