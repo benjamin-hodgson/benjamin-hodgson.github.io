@@ -8,8 +8,31 @@
         <name>Benjamin Hodgson</name>
         <email>bhodgson@stackoverflow.com</email>
     </author>
-    <updated>2018-03-16T00:00:00Z</updated>
+    <updated>2018-07-16T00:00:00Z</updated>
     <entry>
+    <title>Live-streaming</title>
+    <link href="http://www.benjamin.pizza/posts/2018-07-16-live-streaming.html" />
+    <id>http://www.benjamin.pizza/posts/2018-07-16-live-streaming.html</id>
+    <published>2018-07-16T00:00:00Z</published>
+    <updated>2018-07-16T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on July 16, 2018
+    
+</div>
+
+<p>My esteemed colleague <a href="https://twitter.com/g3rv4?lang=en">Gervasio</a> and I have arranged to live-stream some programming this Friday. We’re going to be working on adding some basic <code>Span</code> support to <a href="https://github.com/benjamin-hodgson/Pidgin">my parsing library</a>, and it’s going to involve <code>unsafe</code> and custom IL, which should be a bit of fun.</p>
+<p>The stream will be <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">on YouTube</a> and we’re planning to start at 2PM BST. Hope to see you there with your questions!</p>
+
+<section class="comments">
+    <h1>Comments</h1>
+
+    <ol class="comments-list">
+        
+    </ol>
+</section>
+]]></summary>
+</entry>
+<entry>
     <title>Eighty</title>
     <link href="http://www.benjamin.pizza/posts/2018-03-16-eighty.html" />
     <id>http://www.benjamin.pizza/posts/2018-03-16-eighty.html</id>
