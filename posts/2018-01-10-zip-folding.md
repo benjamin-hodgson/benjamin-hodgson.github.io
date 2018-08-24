@@ -20,7 +20,7 @@ I think I'm particularly taken with this example because it combines three diffe
 
 ----------
 
-Until recently I felt rather embarrassed that my C# generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) didn't have a good story for consuming more than one tree at a time. I had lots of tools for [querying](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs), [editing](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs), and [tearing down](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs) single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you're unit testing a parser or a transformation pass, you need to compare that the output tree to the one that you expected.
+Until recently I felt rather embarrassed that my C# generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) didn't have a good story for consuming more than one tree at a time. I had lots of tools for [querying](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs), [editing](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs), and [tearing down](https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs) single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you're unit testing a parser or a transformation pass, you need to compare the output tree to the one that you expected.
 
 I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don't have a partner (the grey-coloured ones in the drawing):
 
@@ -82,14 +82,14 @@ func(
 public static U ZipFold<T, U>(
     this T value1,
     T value2
-    Func<T, T, IEnumerable<U>, U> func,
+    Func<T, T, IEnumerable<U>, U> zipFunc,
 ) where T : IRewritable<T>
-    => func(
+    => zipFunc(
         value1,
         value2,
         value1.GetChildren().Zip(
             value2.GetChildren(),
-            (child1, child2) => child1.ZipFold(child2, func)
+            (child1, child2) => child1.ZipFold(child2, zipFunc)
         )
     );
 ```
@@ -157,7 +157,7 @@ private static IEnumerable<U> ZipChildren<T, U>(
 }
 ```
 
-Sadly, the invariant that `func` receives the same number of `T`s as were passed to `ZipFold` is not expressible in C#'s type system. So as a consumer of `ZipFold`, you just have to trust that `func`'s argument is of a certain size. In the `Equal` example, that size is two, because we're consuming two trees:
+Sadly, the invariant that `zipFunc` receives the same number of `T`s as were passed to `ZipFold` is not expressible in C#'s type system. So as a consumer of `ZipFold`, you just have to trust that `zipFunc`'s argument is of a certain size. In the `Equal` example, that size is two, because we're consuming two trees:
 
 ```csharp
 public static bool Equal(JqlNode j1, JqlNode j2)
