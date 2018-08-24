@@ -51,7 +51,7 @@ xs <span class="ot">`dot`</span> ys <span class="fu">=</span> sum (zipWith (<spa
 xs <span class="ot">`dot`</span> ys <span class="fu">=</span> foldl' (<span class="fu">&lt;+&gt;</span>) zero (liftA2 (<span class="fu">&lt;.&gt;</span>) xs ys)</code></pre></div>
 <p>I think I’m particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It’s a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call <em>zip-folding</em>.</p>
 <hr />
-<p>Until recently I felt rather embarrassed that my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> didn’t have a good story for consuming more than one tree at a time. I had lots of tools for <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs">querying</a>, <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs">editing</a>, and <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs">tearing down</a> single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you’re unit testing a parser or a transformation pass, you need to compare that the output tree to the one that you expected.</p>
+<p>Until recently I felt rather embarrassed that my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> didn’t have a good story for consuming more than one tree at a time. I had lots of tools for <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs">querying</a>, <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs">editing</a>, and <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs">tearing down</a> single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you’re unit testing a parser or a transformation pass, you need to compare the output tree to the one that you expected.</p>
 <p>I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don’t have a partner (the grey-coloured ones in the drawing):</p>
 <p><img src="../images/2018-01-10-zip-folding/zip.jpg" alt="Pairing up nodes" width="700" /></p>
 <p>But I got stuck on how to plug those paired nodes back into a single tree representing the zipped trees. Nodes typically have space for a fixed number of children, but pairing up children will typically change that number. That is, a binary operator has precisely two children, but when zipping two binary operators together you need to do something with four children.</p>
@@ -95,14 +95,14 @@ xs <span class="ot">`dot`</span> ys <span class="fu">=</span> foldl' (<span clas
 <div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(
     <span class="kw">this</span> T value1,
     T value2
-    Func&lt;T, T, IEnumerable&lt;U&gt;, U&gt; func,
+    Func&lt;T, T, IEnumerable&lt;U&gt;, U&gt; zipFunc,
 ) where T : IRewritable&lt;T&gt;
-    =&gt; <span class="fu">func</span>(
+    =&gt; <span class="fu">zipFunc</span>(
         value1,
         value2,
         value1.<span class="fu">GetChildren</span>().<span class="fu">Zip</span>(
             value2.<span class="fu">GetChildren</span>(),
-            (child1, child2) =&gt; child1.<span class="fu">ZipFold</span>(child2, func)
+            (child1, child2) =&gt; child1.<span class="fu">ZipFold</span>(child2, zipFunc)
         )
     );</code></pre></div>
 <p>The two trees are zipped together and torn down in a single pass.</p>
@@ -155,7 +155,7 @@ fermo f x y <span class="fu">=</span> f x y <span class="fu">$</span>
         );
     }
 }</code></pre></div>
-<p>Sadly, the invariant that <code>func</code> receives the same number of <code>T</code>s as were passed to <code>ZipFold</code> is not expressible in C#’s type system. So as a consumer of <code>ZipFold</code>, you just have to trust that <code>func</code>’s argument is of a certain size. In the <code>Equal</code> example, that size is two, because we’re consuming two trees:</p>
+<p>Sadly, the invariant that <code>zipFunc</code> receives the same number of <code>T</code>s as were passed to <code>ZipFold</code> is not expressible in C#’s type system. So as a consumer of <code>ZipFold</code>, you just have to trust that <code>zipFunc</code>’s argument is of a certain size. In the <code>Equal</code> example, that size is two, because we’re consuming two trees:</p>
 <div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)
     =&gt; <span class="kw">new</span>[] { j1, j2 }.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(
         (ns, childrenEqual) =&gt;
