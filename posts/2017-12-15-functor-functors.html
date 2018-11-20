@@ -18,12 +18,12 @@
             gtag('config', 'UA-115911217-1');
         </script>
 
-        <script async src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     </head>
     <body>
         <div id="header">
             <div id="navigation">
-                <a href="../" id="logo"><pre>benjamin.pizza</pre></a>
+                <a href="../" id="logo"><pre class="title">benjamin.pizza</pre></a>
                 <a href="../">Home</a>
                 <a href="../about.html">About</a>
                 <a href="../contact.html">Contact</a>
@@ -90,7 +90,7 @@ toForm _ <span class="fu">=</span> <span class="dt">Nothing</span></code></pre><
 <p>The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I’ll be taking familiar tools for working with containers of <em>values</em> - <code>Functor</code>, <code>Traversable</code>, <code>Representable</code> - and applying them to the context of containers of <em>functors</em>.</p>
 <h2 id="functors-from-the-category-of-endofunctors">Functors from the Category of Endofunctors</h2>
 <p>In Haskell, categories are represented as a <em>kind</em> <code>k</code> of objects and a <em>type constructor</em> <code>c :: k -&gt; k -&gt; *</code> of morphisms between those objects. If the category <code>C</code> has objects in <code>k1</code> and morphisms in <code>c</code>, and <code>D</code> has objects in <code>k2</code> and morphisms in <code>d</code>, then a functor from <code>C</code> to <code>D</code> is a type constructor <code>f :: k1 -&gt; k2</code> mapping objects paired with an operation <code>fmap :: c a b -&gt; d (f a) (f b)</code> mapping the morphisms. The standard <code>Functor</code> class is for <em>endofunctors on <strong>Hask</strong></em> - the special case in which <code>k1 ~ k2 ~ *</code> and <code>c ~ d ~ (-&gt;)</code>.</p>
-<p><img src="../images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" width="700" /></p>
+<p><img src="../images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" width="900" /></p>
 <p>Given two categories <code>C</code> and <code>D</code>, you can construct the category of functors between <code>C</code> and <code>D</code>, written as <code>[C, D]</code>. Objects in this category are functors from <code>C</code> to <code>D</code>, and morphisms are natural transformations between those functors. Since <code>[C, D]</code> is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that’d be a type of kind <code>(k1 -&gt; k2) -&gt; k3</code>. I’ll call such types <em>functor functors</em>.</p>
 <p>We’re talking about record templates of kind <code>(* -&gt; *) -&gt; *</code>. This fits the pattern of a functor from the functor category, with <code>k1 ~ k2 ~ k3 ~ *</code>. So the functor category in question is the category of endofunctors on <strong>Hask</strong> (that is, members of the standard <code>Functor</code> class), and the destination category is <strong>Hask</strong>. So it’s reasonable to expect record templates to be functorial in their argument:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- natural transformations between functors f and g</span>
@@ -113,7 +113,7 @@ ffmap id <span class="fu">=</span> id
 
 <span class="co">-- composition</span>
 ffmap (eta <span class="fu">.</span> phi) <span class="fu">=</span> ffmap eta <span class="fu">.</span> ffmap phi</code></pre></div>
-<p><img src="../images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" width="700" /></p>
+<p><img src="../images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" width="900" /></p>
 <p><code>ffmap</code> encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor <code>f</code> into <code>g</code>, then you can map a record of <code>f</code>s to a record of <code>g</code>s by embedding each <code>f</code>. (This is also sometimes called “hoisting”.) For example, the boring <code>Identity</code> functor can be embedded into an arbitrary <code>Applicative</code> by injecting the contained value using <code>pure</code>. We can use this to turn a total record into a partial one:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">generalise ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Identity</span> a <span class="ot">-&gt;</span> f a
 generalise (<span class="dt">Identity</span> x) <span class="fu">=</span> pure x
