@@ -2,7 +2,7 @@ body {
     color: black;
     font-size: 12pt;
     margin: 0px auto 0px auto;
-    width: 700px;
+    width: 900px;
 }
 
 div#header {
@@ -82,6 +82,17 @@ div#content header p {
 .math.display {
     display: block;
     text-align: center;
+}
+
+
+pre:not(.title), code {
+    background-color: #eff0f1;
+}
+pre {
+    padding: 0.3em;
+}
+p code, ul code, ol code {
+    padding: 0.1em 0.2em;
 }
 
 

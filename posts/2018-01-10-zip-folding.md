@@ -24,7 +24,7 @@ Until recently I felt rather embarrassed that my C# generic programming library 
 
 I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don't have a partner (the grey-coloured ones in the drawing):
 
-<img src="/images/2018-01-10-zip-folding/zip.jpg" alt="Pairing up nodes" width="700" />
+<img src="/images/2018-01-10-zip-folding/zip.jpg" alt="Pairing up nodes" width="900" />
 
 But I got stuck on how to plug those paired nodes back into a single tree representing the zipped trees. Nodes typically have space for a fixed number of children, but pairing up children will typically change that number. That is, a binary operator has precisely two children, but when zipping two binary operators together you need to do something with four children.
 
