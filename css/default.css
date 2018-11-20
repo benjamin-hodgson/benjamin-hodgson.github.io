@@ -1,6 +1,7 @@
 body {
     color: black;
     font-size: 12pt;
+    line-height: 15pt;
     margin: 0px auto 0px auto;
     width: 900px;
 }
@@ -91,8 +92,11 @@ pre:not(.title), code {
 pre {
     padding: 0.3em;
 }
-p code, ul code, ol code {
-    padding: 0.1em 0.2em;
+code {
+    padding: 1pt 2pt;
+}
+pre code {
+    padding: 0;
 }
 
 
