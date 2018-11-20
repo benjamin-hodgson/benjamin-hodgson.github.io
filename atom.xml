@@ -48,14 +48,14 @@
 <h2 id="eighty">Eighty</h2>
 <p><a href="https://github.com/benjamin-hodgson/Eighty">Eighty</a> (as in <em>eigh-ty-M-L</em>) is my attempt at striking a balance between these two extremes: not so abstract as to constitute a separate programming language, but not so concrete that you have to manipulate XML tags or strings manually. It’s a simple embedded domain-specific language which piggybacks on C#’s syntax, enabling you to write code resembling the HTML you’re generating. Rather than embedding C# into an HTML generator, Eighty embeds an HTML generator into C#.</p>
 <p>Here’s an example from <a href="https://github.com/benjamin-hodgson/Eighty/blob/master/README.md">the readme</a>:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="dt">var</span> html = <span class="fu">article</span>(@class: <span class="st">&quot;readme&quot;</span>)._(
-    <span class="fu">h1</span>(id: <span class="st">&quot;Eighty&quot;</span>)._(<span class="st">&quot;Eighty&quot;</span>),
-    <span class="fu">p_</span>(
-        <span class="st">&quot;Eighty (as in &quot;</span>,
-        <span class="fu">i_</span>(<span class="st">&quot;eigh-ty-M-L&quot;</span>),
-        <span class="st">&quot;) is a simple HTML generation library.&quot;</span>
-    )
-);</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb1-1" title="1"><span class="dt">var</span> html = <span class="fu">article</span>(@class: <span class="st">&quot;readme&quot;</span>)._(</a>
+<a class="sourceLine" id="cb1-2" title="2">    <span class="fu">h1</span>(id: <span class="st">&quot;Eighty&quot;</span>)._(<span class="st">&quot;Eighty&quot;</span>),</a>
+<a class="sourceLine" id="cb1-3" title="3">    <span class="fu">p_</span>(</a>
+<a class="sourceLine" id="cb1-4" title="4">        <span class="st">&quot;Eighty (as in &quot;</span>,</a>
+<a class="sourceLine" id="cb1-5" title="5">        <span class="fu">i_</span>(<span class="st">&quot;eigh-ty-M-L&quot;</span>),</a>
+<a class="sourceLine" id="cb1-6" title="6">        <span class="st">&quot;) is a simple HTML generation library.&quot;</span></a>
+<a class="sourceLine" id="cb1-7" title="7">    )</a>
+<a class="sourceLine" id="cb1-8" title="8">);</a></code></pre></div>
 <p>Eighty is organised around <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html">the <code>Html</code> class</a>, being an immutable chunk of HTML which knows how to render itself using <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html#Eighty_Html_Write_System_IO_TextWriter_">its <code>Write(TextWriter)</code> method</a>. <code>Html</code> defines a large collection of static methods (designed to be imported with <code>using static</code>), with names like <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html#Eighty_Html_h1_System_String_System_String_System_String_System_String_System_String_System_String_"><code>h1</code></a> and <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html#Eighty_Html_p_System_String_System_String_System_String_System_String_System_String_System_String_"><code>p</code></a>, which create <code>Html</code> values representing their respective tags, with a collection of children which are smaller <code>Html</code> values.</p>
 <p>Eighty adopts some simple conventions for its HTML-esque domain-specific language:</p>
 <ul>
@@ -66,7 +66,7 @@
 </ul>
 <h2 id="eighty-vs-razor">Eighty vs Razor</h2>
 <p>Of course, C# code will only ever look <em>a bit</em> like HTML. Razor code looks much more like HTML than this! This can be a drawback when you’re working with designers who want to read and write HTML — I’m planning to write a tool to convert HTML text into an Eighty expression to partially ease this pain point. But Eighty has two big advantages which make it simpler and easier than Razor to program with:</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>It plugs into your existing system. You don’t require any extra tools to work with Eighty: if you can compile C#, you can use Eighty.</li>
 <li>Programming with Eighty is <em>just programming</em>. <code>Html</code> instances are plain old immutable CLR objects, so you can use all your favourite techniques for abstraction and code reuse.</li>
 </ol>
@@ -78,8 +78,8 @@
 &lt;h1&gt;@Model.Title&lt;/h1&gt;</code></pre>
 <p>One important disadvantage of Razor’s <code>@model</code> construct is that it is dynamically checked. The controller’s <code>View</code> method takes an <code>object</code> for the <code>model</code> parameter. You get a runtime error, without any feedback from the compiler, if you pass in a model whose type doesn’t match the view’s expected model type.</p>
 <p>Since Eighty is embedded within C#, there’s no special syntax to declare the type of data a function depends on. You can just use a plain old parameter.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">Html <span class="fu">Example</span>(ExampleModel model)
-    =&gt; <span class="fu">h1_</span>(model.<span class="fu">Title</span>);</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb3-1" title="1">Html <span class="fu">Example</span>(ExampleModel model)</a>
+<a class="sourceLine" id="cb3-2" title="2">    =&gt; <span class="fu">h1_</span>(model.<span class="fu">Title</span>);</a></code></pre></div>
 <p>Since a template is a regular C# method, it’s much easier to run in a unit test harness than Razor. You can just call the method and make assertions about the generated HTML, either by looking at the string directly or by parsing it and traversing the resultant DOM.</p>
 <p>Eighty includes <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.IHtmlRenderer-1.html">an <code>IHtmlRenderer&lt;TModel&gt;</code> interface</a>, which captures this pattern of parameterising a chunk of HTML by a model, but its use is optional — it’s used primarily by Eighty’s ASP.NET integration packages.</p>
 <h3 id="control-flow">Control flow</h3>
@@ -94,115 +94,115 @@
     }
 &lt;/ul&gt;</code></pre>
 <p>With Eighty, it’s a question of building different <code>Html</code> values. You can use LINQ’s high-level functional looping constructs:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">return</span> <span class="fu">ul_</span>(
-    model.<span class="fu">Items</span>
-        .<span class="fu">Where</span>(item =&gt; item.<span class="fu">Visible</span>)
-        .<span class="fu">Select</span>(item =&gt; <span class="fu">li_</span>(item.<span class="fu">Value</span>))
-);</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">return</span> <span class="fu">ul_</span>(</a>
+<a class="sourceLine" id="cb5-2" title="2">    model.<span class="fu">Items</span></a>
+<a class="sourceLine" id="cb5-3" title="3">        .<span class="fu">Where</span>(item =&gt; item.<span class="fu">Visible</span>)</a>
+<a class="sourceLine" id="cb5-4" title="4">        .<span class="fu">Select</span>(item =&gt; <span class="fu">li_</span>(item.<span class="fu">Value</span>))</a>
+<a class="sourceLine" id="cb5-5" title="5">);</a></code></pre></div>
 <p>Or you can write your own loop and build a list:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="dt">var</span> lis = <span class="kw">new</span> List&lt;Html&gt;();
-<span class="kw">foreach</span> (var item <span class="kw">in</span> model.<span class="fu">Items</span>)
-{
-    <span class="kw">if</span> (item.<span class="fu">Visible</span>)
-    {
-        lis.<span class="fu">Add</span>(<span class="fu">li_</span>(item.<span class="fu">Value</span>));
-    }
-}
-<span class="kw">return</span> <span class="fu">ul_</span>(lis);</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb6-1" title="1"><span class="dt">var</span> lis = <span class="kw">new</span> List&lt;Html&gt;();</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="kw">foreach</span> (<span class="dt">var</span> item <span class="kw">in</span> model.<span class="fu">Items</span>)</a>
+<a class="sourceLine" id="cb6-3" title="3">{</a>
+<a class="sourceLine" id="cb6-4" title="4">    <span class="kw">if</span> (item.<span class="fu">Visible</span>)</a>
+<a class="sourceLine" id="cb6-5" title="5">    {</a>
+<a class="sourceLine" id="cb6-6" title="6">        lis.<span class="fu">Add</span>(<span class="fu">li_</span>(item.<span class="fu">Value</span>));</a>
+<a class="sourceLine" id="cb6-7" title="7">    }</a>
+<a class="sourceLine" id="cb6-8" title="8">}</a>
+<a class="sourceLine" id="cb6-9" title="9"><span class="kw">return</span> <span class="fu">ul_</span>(lis);</a></code></pre></div>
 <p>Mixing markup with C# is not a problem, because markup <em>is</em> C#.</p>
 <h3 id="partials-and-helpers">Partials and Helpers</h3>
 <p>Razor’s two main tools for code reuse are <em>partial views</em> and <em>helpers</em>. For the purposes of this article, they’re roughly equivalent. Partial views can be returned directly from a controller but their model type is checked at runtime, whereas helpers’ parameters are checked by the compiler but they can only be invoked from within a Razor view.</p>
 <p>Eighty handles both of these uses in the simplest of ways: <em>calling a function</em>. If I want to include an HTML snippet in more than one place, I can just extract it into a method returning an <code>Html</code> object. Transliterating an example from <a href="https://docs.microsoft.com/en-us/aspnet/web-pages/overview/ui-layouts-and-themes/creating-and-using-a-helper-in-an-aspnet-web-pages-site">the MVC documentation</a>:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">Html <span class="fu">MakeNote</span>(<span class="dt">string</span> content)
-    =&gt; <span class="fu">div</span>(@class: <span class="st">&quot;note&quot;</span>)._(
-        <span class="fu">p_</span>(
-            <span class="fu">strong_</span>(<span class="st">&quot;Note&quot;</span>),
-            <span class="fu">Raw</span>(<span class="st">&quot;&amp;nbsp;&amp;nbsp; &quot;</span>),
-            content
-        )
-    );
-
-Html <span class="fu">SomeHtmlContainingANote</span>()
-    =&gt; <span class="fu">article_</span>(
-        <span class="fu">p_</span>(<span class="st">&quot;This is some opening paragraph text&quot;</span>),
-        <span class="fu">MakeNote</span>(<span class="st">&quot;My test note content&quot;</span>),
-        <span class="fu">p_</span>(<span class="st">&quot;This is some following text&quot;</span>)
-    );</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb7-1" title="1">Html <span class="fu">MakeNote</span>(<span class="dt">string</span> content)</a>
+<a class="sourceLine" id="cb7-2" title="2">    =&gt; <span class="fu">div</span>(@class: <span class="st">&quot;note&quot;</span>)._(</a>
+<a class="sourceLine" id="cb7-3" title="3">        <span class="fu">p_</span>(</a>
+<a class="sourceLine" id="cb7-4" title="4">            <span class="fu">strong_</span>(<span class="st">&quot;Note&quot;</span>),</a>
+<a class="sourceLine" id="cb7-5" title="5">            <span class="fu">Raw</span>(<span class="st">&quot;&amp;nbsp;&amp;nbsp; &quot;</span>),</a>
+<a class="sourceLine" id="cb7-6" title="6">            content</a>
+<a class="sourceLine" id="cb7-7" title="7">        )</a>
+<a class="sourceLine" id="cb7-8" title="8">    );</a>
+<a class="sourceLine" id="cb7-9" title="9"></a>
+<a class="sourceLine" id="cb7-10" title="10">Html <span class="fu">SomeHtmlContainingANote</span>()</a>
+<a class="sourceLine" id="cb7-11" title="11">    =&gt; <span class="fu">article_</span>(</a>
+<a class="sourceLine" id="cb7-12" title="12">        <span class="fu">p_</span>(<span class="st">&quot;This is some opening paragraph text&quot;</span>),</a>
+<a class="sourceLine" id="cb7-13" title="13">        <span class="fu">MakeNote</span>(<span class="st">&quot;My test note content&quot;</span>),</a>
+<a class="sourceLine" id="cb7-14" title="14">        <span class="fu">p_</span>(<span class="st">&quot;This is some following text&quot;</span>)</a>
+<a class="sourceLine" id="cb7-15" title="15">    );</a></code></pre></div>
 <p>This is the best of both worlds: types are checked by the compiler as usual, but the returned <code>Html</code> value is a perfectly good standalone chunk of HTML, and can be rendered separately if necessary.</p>
 <p><code>Html</code> values being ordinary C# values, Eighty actually supports more types of reuse than Razor does. For example, you can pass a chunk of HTML as an argument, which is not easy to do with Razor:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">Html <span class="fu">RepeatFiveTimes</span>(Html html)
-    =&gt; _(Enumerable.<span class="fu">Repeat</span>(html, <span class="dv">5</span>));</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb8-1" title="1">Html <span class="fu">RepeatFiveTimes</span>(Html html)</a>
+<a class="sourceLine" id="cb8-2" title="2">    =&gt; <span class="fu">_</span>(Enumerable.<span class="fu">Repeat</span>(html, <span class="dv">5</span>));</a></code></pre></div>
 <p>Since <code>Html</code> values are immutable, you can safely share them between different HTML documents, across different threads, etc. Sharing parts of your HTML document that don’t change can be an important optimisation.</p>
 <h3 id="layouts">Layouts</h3>
 <p>Razor lets you define a shared <em>layout</em> page, which acts as a template for the other pages in your application. For example, you might put the <code>html</code> and <code>body</code> tags in a layout page, and use the built in <code>RenderBody</code> helper to render the concrete page’s body inside the <code>body</code> tag. This is also where global navs and the like are defined.</p>
 <p>One way to handle global layouts and sections in Eighty would be to define an abstract base class. Each section becomes an abstract method, allowing individual pages to fill in their own HTML for those sections.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">abstract</span> <span class="kw">class</span> Layout
-{
-    <span class="kw">public</span> Html <span class="fu">GetHtml</span>()
-        =&gt; <span class="fu">doctypeHtml_</span>(
-            <span class="fu">head</span>(
-                <span class="fu">link</span>(
-                    rel: <span class="st">&quot;stylesheet&quot;</span>,
-                    type: <span class="st">&quot;text/css&quot;</span>,
-                    href: <span class="st">&quot;default.css&quot;</span>
-                ),
-                <span class="fu">Css</span>(),
-                <span class="fu">script</span>(
-                    type: <span class="st">&quot;text/javascript&quot;</span>,
-                    src: <span class="st">&quot;jquery-3.3.1.min.js&quot;</span>
-                ),
-                <span class="fu">Js</span>()
-            ),
-            <span class="fu">body</span>(
-                <span class="fu">Body</span>()
-            )
-        );
-
-    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Css</span>();
-    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Js</span>();
-    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Body</span>();
-}</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">abstract</span> <span class="kw">class</span> Layout</a>
+<a class="sourceLine" id="cb9-2" title="2">{</a>
+<a class="sourceLine" id="cb9-3" title="3">    <span class="kw">public</span> Html <span class="fu">GetHtml</span>()</a>
+<a class="sourceLine" id="cb9-4" title="4">        =&gt; <span class="fu">doctypeHtml_</span>(</a>
+<a class="sourceLine" id="cb9-5" title="5">            <span class="fu">head</span>(</a>
+<a class="sourceLine" id="cb9-6" title="6">                <span class="fu">link</span>(</a>
+<a class="sourceLine" id="cb9-7" title="7">                    rel: <span class="st">&quot;stylesheet&quot;</span>,</a>
+<a class="sourceLine" id="cb9-8" title="8">                    type: <span class="st">&quot;text/css&quot;</span>,</a>
+<a class="sourceLine" id="cb9-9" title="9">                    href: <span class="st">&quot;default.css&quot;</span></a>
+<a class="sourceLine" id="cb9-10" title="10">                ),</a>
+<a class="sourceLine" id="cb9-11" title="11">                <span class="fu">Css</span>(),</a>
+<a class="sourceLine" id="cb9-12" title="12">                <span class="fu">script</span>(</a>
+<a class="sourceLine" id="cb9-13" title="13">                    type: <span class="st">&quot;text/javascript&quot;</span>,</a>
+<a class="sourceLine" id="cb9-14" title="14">                    src: <span class="st">&quot;jquery-3.3.1.min.js&quot;</span></a>
+<a class="sourceLine" id="cb9-15" title="15">                ),</a>
+<a class="sourceLine" id="cb9-16" title="16">                <span class="fu">Js</span>()</a>
+<a class="sourceLine" id="cb9-17" title="17">            ),</a>
+<a class="sourceLine" id="cb9-18" title="18">            <span class="fu">body</span>(</a>
+<a class="sourceLine" id="cb9-19" title="19">                <span class="fu">Body</span>()</a>
+<a class="sourceLine" id="cb9-20" title="20">            )</a>
+<a class="sourceLine" id="cb9-21" title="21">        );</a>
+<a class="sourceLine" id="cb9-22" title="22"></a>
+<a class="sourceLine" id="cb9-23" title="23">    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Css</span>();</a>
+<a class="sourceLine" id="cb9-24" title="24">    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Js</span>();</a>
+<a class="sourceLine" id="cb9-25" title="25">    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Body</span>();</a>
+<a class="sourceLine" id="cb9-26" title="26">}</a></code></pre></div>
 <p>Then, inheriting a layout is as easy as inheriting a class.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">class</span> DashboardPage : Layout
-{
-    <span class="kw">private</span> DashboardModel _model;
-
-    <span class="kw">public</span> <span class="fu">Dashboard</span>(DashboardModel model)
-    {
-        _model = model;
-    }
-
-    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Css</span>()
-        =&gt; <span class="co">/* Dashboard-specific CSS */</span>;
-
-    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Js</span>()
-        =&gt; <span class="co">/* Dashboard-specific scripts */</span>;
-
-    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Body</span>()
-        =&gt; <span class="co">/* The body of the dashboard page */</span>;
-}</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">class</span> DashboardPage : Layout</a>
+<a class="sourceLine" id="cb10-2" title="2">{</a>
+<a class="sourceLine" id="cb10-3" title="3">    <span class="kw">private</span> DashboardModel _model;</a>
+<a class="sourceLine" id="cb10-4" title="4"></a>
+<a class="sourceLine" id="cb10-5" title="5">    <span class="kw">public</span> <span class="fu">Dashboard</span>(DashboardModel model)</a>
+<a class="sourceLine" id="cb10-6" title="6">    {</a>
+<a class="sourceLine" id="cb10-7" title="7">        _model = model;</a>
+<a class="sourceLine" id="cb10-8" title="8">    }</a>
+<a class="sourceLine" id="cb10-9" title="9"></a>
+<a class="sourceLine" id="cb10-10" title="10">    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Css</span>()</a>
+<a class="sourceLine" id="cb10-11" title="11">        =&gt; <span class="co">/* Dashboard-specific CSS */</span>;</a>
+<a class="sourceLine" id="cb10-12" title="12"></a>
+<a class="sourceLine" id="cb10-13" title="13">    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Js</span>()</a>
+<a class="sourceLine" id="cb10-14" title="14">        =&gt; <span class="co">/* Dashboard-specific scripts */</span>;</a>
+<a class="sourceLine" id="cb10-15" title="15"></a>
+<a class="sourceLine" id="cb10-16" title="16">    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Body</span>()</a>
+<a class="sourceLine" id="cb10-17" title="17">        =&gt; <span class="co">/* The body of the dashboard page */</span>;</a>
+<a class="sourceLine" id="cb10-18" title="18">}</a></code></pre></div>
 <h2 id="twenty">Twenty</h2>
 <p>Eighty comes bundled with a second HTML generation library called Twenty. Twenty is harder to use correctly than Eighty, and its API is more verbose, but it’s faster.</p>
 <p>HTML tags have to be balanced: every opening tag has to have a matching closing tag and vice versa. While an <code>Html</code> value is being written to a <code>TextWriter</code>, Eighty manages the stack of currently-open tags using the call stack. Each tag writes its opening tag, tells its children to write themselves, and then writes its closing tag. This is possible because <code>Html</code> is an ordinary reference type; the objects you build with methods like <code>p()</code> and <code>h1()</code> are tree-shaped objects representing a DOM of statically-unknown size.</p>
 <p>Twenty instead takes an imperative view of HTML generation. Each tag method writes an opening tag to the <code>TextWriter</code> immediately, and returns an <code>IDisposable</code> which writes out the closing tag when it’s disposed. You, the programmer, use C#’s <code>using</code> statement to ensure that the <code>Dispose</code> method is called as soon as the children have been written. The structure of your HTML document is still visible in the code, but it’s present in the nesting of <code>using</code> statements, rather than by the structure of a tree-shaped object.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">class</span> MyHtmlBuilder : HtmlBuilder
-{
-    <span class="kw">protected</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Build</span>()
-    {
-        <span class="kw">using</span> (<span class="fu">article</span>(@class: <span class="st">&quot;readme&quot;</span>))
-        {
-            <span class="kw">using</span> (<span class="fu">h1</span>(id: <span class="st">&quot;Eighty&quot;</span>))
-                <span class="fu">Text</span>(<span class="st">&quot;Eighty&quot;</span>);
-            <span class="kw">using</span> (<span class="fu">p</span>())
-            {
-                <span class="fu">Text</span>(<span class="st">&quot;Eighty (as in &quot;</span>);
-                <span class="kw">using</span> (<span class="fu">i</span>())
-                    <span class="fu">Text</span>(<span class="st">&quot;eigh-ty-M-L&quot;</span>);
-                <span class="fu">Text</span>(<span class="st">&quot;) is a simple HTML generation library.&quot;</span>);
-            }
-        }
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">class</span> MyHtmlBuilder : HtmlBuilder</a>
+<a class="sourceLine" id="cb11-2" title="2">{</a>
+<a class="sourceLine" id="cb11-3" title="3">    <span class="kw">protected</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Build</span>()</a>
+<a class="sourceLine" id="cb11-4" title="4">    {</a>
+<a class="sourceLine" id="cb11-5" title="5">        <span class="kw">using</span> (<span class="fu">article</span>(@class: <span class="st">&quot;readme&quot;</span>))</a>
+<a class="sourceLine" id="cb11-6" title="6">        {</a>
+<a class="sourceLine" id="cb11-7" title="7">            <span class="kw">using</span> (<span class="fu">h1</span>(id: <span class="st">&quot;Eighty&quot;</span>))</a>
+<a class="sourceLine" id="cb11-8" title="8">                <span class="fu">Text</span>(<span class="st">&quot;Eighty&quot;</span>);</a>
+<a class="sourceLine" id="cb11-9" title="9">            <span class="kw">using</span> (<span class="fu">p</span>())</a>
+<a class="sourceLine" id="cb11-10" title="10">            {</a>
+<a class="sourceLine" id="cb11-11" title="11">                <span class="fu">Text</span>(<span class="st">&quot;Eighty (as in &quot;</span>);</a>
+<a class="sourceLine" id="cb11-12" title="12">                <span class="kw">using</span> (<span class="fu">i</span>())</a>
+<a class="sourceLine" id="cb11-13" title="13">                    <span class="fu">Text</span>(<span class="st">&quot;eigh-ty-M-L&quot;</span>);</a>
+<a class="sourceLine" id="cb11-14" title="14">                <span class="fu">Text</span>(<span class="st">&quot;) is a simple HTML generation library.&quot;</span>);</a>
+<a class="sourceLine" id="cb11-15" title="15">            }</a>
+<a class="sourceLine" id="cb11-16" title="16">        }</a>
+<a class="sourceLine" id="cb11-17" title="17">    }</a>
+<a class="sourceLine" id="cb11-18" title="18">}</a></code></pre></div>
 <p>Perhaps this is a bit of an abuse of <code>IDisposable</code>, and the <code>using</code> syntax is comparatively noisy, but this trick allows Twenty to operate quickly and without generating any garbage while still making for a reasonable DSL. Compared to Eighty, Twenty does lose out on some flexibility and safety:</p>
 <ul>
 <li>You mustn’t forget a <code>using</code> statement, or call <code>Dispose</code> more than once, or Twenty will output malformed HTML. Eighty, on the other hand, will never generate bad HTML (notwithstanding the use of <code>Raw</code>).</li>
@@ -259,11 +259,11 @@ Html <span class="fu">SomeHtmlContainingANote</span>()
 </div>
 
 <p>One of my favourite little gems of functional programming is the following implementation of the dot product:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">dot ::</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> <span class="dt">Double</span>
-xs <span class="ot">`dot`</span> ys <span class="fu">=</span> sum (zipWith (<span class="fu">*</span>) xs ys)</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">dot ::</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> <span class="dt">Double</span></a>
+<a class="sourceLine" id="cb1-2" title="2">xs <span class="ot">`dot`</span> ys <span class="fu">=</span> <span class="fu">sum</span> (<span class="fu">zipWith</span> (<span class="fu">*</span>) xs ys)</a></code></pre></div>
 <p><code>dot</code> zips two lists of numbers, multiplying each pair of elements using <code>(*)</code>, and then aggregates the results with <code>sum</code>. It’s like a <em>map-reduce</em> program, but it processes two collections, not one. It generalises rather beautifully to any zippily <code>Applicative</code> <code>Foldable</code> container whose elements form a <code>Semiring</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">dot ::</span> (<span class="dt">Semiring</span> a, <span class="dt">Applicative</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a
-xs <span class="ot">`dot`</span> ys <span class="fu">=</span> foldl&#39; (<span class="fu">&lt;+&gt;</span>) zero (liftA2 (<span class="fu">&lt;.&gt;</span>) xs ys)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">dot ::</span> (<span class="dt">Semiring</span> a, <span class="dt">Applicative</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb2-2" title="2">xs <span class="ot">`dot`</span> ys <span class="fu">=</span> foldl&#39; (<span class="fu">&lt;+&gt;</span>) zero (liftA2 (<span class="fu">&lt;.&gt;</span>) xs ys)</a></code></pre></div>
 <p>I think I’m particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It’s a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call <em>zip-folding</em>.</p>
 <hr />
 <p>Until recently I felt rather embarrassed that my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> didn’t have a good story for consuming more than one tree at a time. I had lots of tools for <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs">querying</a>, <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs">editing</a>, and <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs">tearing down</a> single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you’re unit testing a parser or a transformation pass, you need to compare the output tree to the one that you expected.</p>
@@ -274,128 +274,128 @@ xs <span class="ot">`dot`</span> ys <span class="fu">=</span> foldl&#39; (<span 
 <hr />
 <p>Guess where this is going: you can’t <em>zip</em> trees to produce a new tree, but you can <em>zip-fold</em> trees to produce a value. The idea is to take pairs of nodes in a tree and combine them with the results of zipping their children.</p>
 <p>Let’s start by looking at (an abbreviated version of) Sawmill’s existing <code>Fold</code>. <code>Fold</code> says <em>if you give me a way to combine a node with the results of folding its children, I can recursively fold the entire tree to produce a single summary value</em>.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> U Fold&lt;T, U&gt;(
-    <span class="kw">this</span> T value,
-    Func&lt;T, Children&lt;U&gt;, U&gt; func,
-) where T : IRewritable&lt;T&gt;
-    =&gt; <span class="fu">func</span>(
-        value,
-        value.<span class="fu">GetChildren</span>()
-            .<span class="fu">Select</span>(child =&gt; child.<span class="fu">Fold</span>(func))
-    );</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">public</span> <span class="kw">static</span> U Fold&lt;T, U&gt;(</a>
+<a class="sourceLine" id="cb3-2" title="2">    <span class="kw">this</span> T value,</a>
+<a class="sourceLine" id="cb3-3" title="3">    Func&lt;T, Children&lt;U&gt;, U&gt; func,</a>
+<a class="sourceLine" id="cb3-4" title="4">) where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb3-5" title="5">    =&gt; <span class="fu">func</span>(</a>
+<a class="sourceLine" id="cb3-6" title="6">        value,</a>
+<a class="sourceLine" id="cb3-7" title="7">        value.<span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb3-8" title="8">            .<span class="fu">Select</span>(child =&gt; child.<span class="fu">Fold</span>(func))</a>
+<a class="sourceLine" id="cb3-9" title="9">    );</a></code></pre></div>
 <p>Revisiting <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">the JQL example</a>, <code>Fold</code> will take an input tree like <code>[c#] and (not [javascript] or salary:50000gbp)</code> and compute the expression:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="fu">func</span>(
-    <span class="kw">new</span> <span class="fu">AndNode</span>(<span class="co">/* ... */</span>),
-    Children.<span class="fu">Two</span>(
-        <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;()),
-        <span class="fu">func</span>(
-            <span class="kw">new</span> <span class="fu">OrNode</span>(<span class="co">/* ... */</span>),
-            Children.<span class="fu">Two</span>(
-                <span class="fu">func</span>(
-                    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="co">/* ... */</span>),
-                    Children.<span class="fu">One</span>(
-                        <span class="fu">func</span>(
-                            <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),
-                            Children.<span class="fu">None</span>&lt;U&gt;()
-                        )
-                    )
-                ),
-                <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;())
-            )
-        )
-    )
-)</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb4-1" title="1"><span class="fu">func</span>(</a>
+<a class="sourceLine" id="cb4-2" title="2">    <span class="kw">new</span> <span class="fu">AndNode</span>(<span class="co">/* ... */</span>),</a>
+<a class="sourceLine" id="cb4-3" title="3">    Children.<span class="fu">Two</span>(</a>
+<a class="sourceLine" id="cb4-4" title="4">        <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;()),</a>
+<a class="sourceLine" id="cb4-5" title="5">        <span class="fu">func</span>(</a>
+<a class="sourceLine" id="cb4-6" title="6">            <span class="kw">new</span> <span class="fu">OrNode</span>(<span class="co">/* ... */</span>),</a>
+<a class="sourceLine" id="cb4-7" title="7">            Children.<span class="fu">Two</span>(</a>
+<a class="sourceLine" id="cb4-8" title="8">                <span class="fu">func</span>(</a>
+<a class="sourceLine" id="cb4-9" title="9">                    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="co">/* ... */</span>),</a>
+<a class="sourceLine" id="cb4-10" title="10">                    Children.<span class="fu">One</span>(</a>
+<a class="sourceLine" id="cb4-11" title="11">                        <span class="fu">func</span>(</a>
+<a class="sourceLine" id="cb4-12" title="12">                            <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),</a>
+<a class="sourceLine" id="cb4-13" title="13">                            Children.<span class="fu">None</span>&lt;U&gt;()</a>
+<a class="sourceLine" id="cb4-14" title="14">                        )</a>
+<a class="sourceLine" id="cb4-15" title="15">                    )</a>
+<a class="sourceLine" id="cb4-16" title="16">                ),</a>
+<a class="sourceLine" id="cb4-17" title="17">                <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;())</a>
+<a class="sourceLine" id="cb4-18" title="18">            )</a>
+<a class="sourceLine" id="cb4-19" title="19">        )</a>
+<a class="sourceLine" id="cb4-20" title="20">    )</a>
+<a class="sourceLine" id="cb4-21" title="21">)</a></code></pre></div>
 <p><code>Fold</code> traverses a tree from bottom to top, applying <code>func</code> to each subtree and the current set of intermediate results.</p>
 <p><code>ZipFold</code> works by analogy to <code>Fold</code>. It says <em>if you give me a way to combine two nodes with the results of zip-folding their children, I can recursively zip the two entire trees to produce a single summary value</em>. <code>ZipFold</code> pairs up the children of the two input nodes using the standard <code>Enumerable.Zip</code>, recursively zip-folds each pair, and then feeds the results to <code>func</code>. Note that the length of the <code>IEnumerable</code> that’s passed to <code>func</code> is the length of the smaller of the two nodes’ collections of children.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(
-    <span class="kw">this</span> T value1,
-    T value2
-    Func&lt;T, T, IEnumerable&lt;U&gt;, U&gt; zipFunc,
-) where T : IRewritable&lt;T&gt;
-    =&gt; <span class="fu">zipFunc</span>(
-        value1,
-        value2,
-        value1.<span class="fu">GetChildren</span>().<span class="fu">Zip</span>(
-            value2.<span class="fu">GetChildren</span>(),
-            (child1, child2) =&gt; child1.<span class="fu">ZipFold</span>(child2, zipFunc)
-        )
-    );</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(</a>
+<a class="sourceLine" id="cb5-2" title="2">    <span class="kw">this</span> T value1,</a>
+<a class="sourceLine" id="cb5-3" title="3">    T value2</a>
+<a class="sourceLine" id="cb5-4" title="4">    Func&lt;T, T, IEnumerable&lt;U&gt;, U&gt; zipFunc,</a>
+<a class="sourceLine" id="cb5-5" title="5">) where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb5-6" title="6">    =&gt; <span class="fu">zipFunc</span>(</a>
+<a class="sourceLine" id="cb5-7" title="7">        value1,</a>
+<a class="sourceLine" id="cb5-8" title="8">        value2,</a>
+<a class="sourceLine" id="cb5-9" title="9">        value1.<span class="fu">GetChildren</span>().<span class="fu">Zip</span>(</a>
+<a class="sourceLine" id="cb5-10" title="10">            value2.<span class="fu">GetChildren</span>(),</a>
+<a class="sourceLine" id="cb5-11" title="11">            (child1, child2) =&gt; child1.<span class="fu">ZipFold</span>(child2, zipFunc)</a>
+<a class="sourceLine" id="cb5-12" title="12">        )</a>
+<a class="sourceLine" id="cb5-13" title="13">    );</a></code></pre></div>
 <p>The two trees are zipped together and torn down in a single pass.</p>
 <p>Here’s how it looks in Haskell, using the <a href="https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html"><code>Control.Lens.Plated</code></a> API. Haskellers like to use tongue-in-cheek Greek names for recursion schemes. Apparently the Greek word for “zip” is “fermouár”, so I’m calling this a <em>fermomorphism</em>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> r
-fermo f x y <span class="fu">=</span> f x y <span class="fu">$</span>
-    zipWith (fermo f) (toListOf plate x) (toListOf plate y)</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> r</a>
+<a class="sourceLine" id="cb6-2" title="2">fermo f x y <span class="fu">=</span> f x y <span class="fu">$</span></a>
+<a class="sourceLine" id="cb6-3" title="3">    <span class="fu">zipWith</span> (fermo f) (toListOf plate x) (toListOf plate y)</a></code></pre></div>
 <p>As an example: <code>ZipFold</code> allows you to concisely test a pair of trees for equality, by looking only at one pair of nodes at a time.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)
-    =&gt; j1.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(
-        j2,
-        (n1, n2, childrenEqual) =&gt;
-        {
-            <span class="kw">switch</span> (n1)
-            {
-                <span class="kw">case</span> SalaryNode s1 when n2 <span class="kw">is</span> SalaryNode s2:
-                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span>
-                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;
-                <span class="kw">case</span> TagNode t1 when n2 <span class="kw">is</span> TagNode t2:
-                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;
-                <span class="kw">case</span> AndNode a1 when n2 <span class="kw">is</span> AndNode a2:
-                <span class="kw">case</span> OrNode o1 when n2 <span class="kw">is</span> OrNode o2:
-                <span class="kw">case</span> NotNode a1 when n2 <span class="kw">is</span> NotNode a2:
-                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);
-                <span class="kw">default</span>:
-                    <span class="kw">return</span> <span class="kw">false</span>;
-            }
-        }
-    );</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)</a>
+<a class="sourceLine" id="cb7-2" title="2">    =&gt; j1.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(</a>
+<a class="sourceLine" id="cb7-3" title="3">        j2,</a>
+<a class="sourceLine" id="cb7-4" title="4">        (n1, n2, childrenEqual) =&gt;</a>
+<a class="sourceLine" id="cb7-5" title="5">        {</a>
+<a class="sourceLine" id="cb7-6" title="6">            <span class="kw">switch</span> (n1)</a>
+<a class="sourceLine" id="cb7-7" title="7">            {</a>
+<a class="sourceLine" id="cb7-8" title="8">                <span class="kw">case</span> SalaryNode s1 when n2 <span class="kw">is</span> SalaryNode s2:</a>
+<a class="sourceLine" id="cb7-9" title="9">                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span></a>
+<a class="sourceLine" id="cb7-10" title="10">                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;</a>
+<a class="sourceLine" id="cb7-11" title="11">                <span class="kw">case</span> TagNode t1 when n2 <span class="kw">is</span> TagNode t2:</a>
+<a class="sourceLine" id="cb7-12" title="12">                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;</a>
+<a class="sourceLine" id="cb7-13" title="13">                <span class="kw">case</span> AndNode a1 when n2 <span class="kw">is</span> AndNode a2:</a>
+<a class="sourceLine" id="cb7-14" title="14">                <span class="kw">case</span> OrNode o1 when n2 <span class="kw">is</span> OrNode o2:</a>
+<a class="sourceLine" id="cb7-15" title="15">                <span class="kw">case</span> NotNode a1 when n2 <span class="kw">is</span> NotNode a2:</a>
+<a class="sourceLine" id="cb7-16" title="16">                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);</a>
+<a class="sourceLine" id="cb7-17" title="17">                <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb7-18" title="18">                    <span class="kw">return</span> <span class="kw">false</span>;</a>
+<a class="sourceLine" id="cb7-19" title="19">            }</a>
+<a class="sourceLine" id="cb7-20" title="20">        }</a>
+<a class="sourceLine" id="cb7-21" title="21">    );</a></code></pre></div>
 <p>The <code>ZipFold</code> that you’ll find in Sawmill is actually an <em>n</em>-ary zip-fold. Instead of taking two <code>T</code>s, and passing two <code>T</code>s to <code>func</code>, it works with an arbitrary number of <code>T</code>s. Here’s the code:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(
-    <span class="kw">this</span> T[] values,
-    Func&lt;T[], IEnumerable&lt;U&gt;, U&gt; func,
-) where T : IRewritable&lt;T&gt;
-    =&gt; <span class="fu">func</span>(values, xs.<span class="fu">ZipChildren</span>(children =&gt; children.<span class="fu">ZipFold</span>(func)));
-
-<span class="kw">private</span> <span class="kw">static</span> IEnumerable&lt;U&gt; ZipChildren&lt;T, U&gt;(
-    <span class="kw">this</span> T[] input,
-    Func&lt;T[], U&gt; zipFunc
-) where T : IRewritable&lt;T&gt;
-{
-    <span class="dt">var</span> enumerators = input
-        .<span class="fu">Select</span>(x =&gt; x.<span class="fu">GetChildren</span>().<span class="fu">GetEnumerator</span>())
-        .<span class="fu">ToArray</span>();
-
-    <span class="kw">while</span> (enumerators.<span class="fu">All</span>(e =&gt; e.<span class="fu">MoveNext</span>()))
-    {
-        <span class="kw">yield</span> <span class="kw">return</span> <span class="fu">zipFunc</span>(
-            enumerators.<span class="fu">Select</span>(e =&gt; e.<span class="fu">Current</span>).<span class="fu">ToArray</span>()
-        );
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(</a>
+<a class="sourceLine" id="cb8-2" title="2">    <span class="kw">this</span> T[] values,</a>
+<a class="sourceLine" id="cb8-3" title="3">    Func&lt;T[], IEnumerable&lt;U&gt;, U&gt; func,</a>
+<a class="sourceLine" id="cb8-4" title="4">) where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb8-5" title="5">    =&gt; <span class="fu">func</span>(values, xs.<span class="fu">ZipChildren</span>(children =&gt; children.<span class="fu">ZipFold</span>(func)));</a>
+<a class="sourceLine" id="cb8-6" title="6"></a>
+<a class="sourceLine" id="cb8-7" title="7"><span class="kw">private</span> <span class="kw">static</span> IEnumerable&lt;U&gt; ZipChildren&lt;T, U&gt;(</a>
+<a class="sourceLine" id="cb8-8" title="8">    <span class="kw">this</span> T[] input,</a>
+<a class="sourceLine" id="cb8-9" title="9">    Func&lt;T[], U&gt; zipFunc</a>
+<a class="sourceLine" id="cb8-10" title="10">) where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb8-11" title="11">{</a>
+<a class="sourceLine" id="cb8-12" title="12">    <span class="dt">var</span> enumerators = input</a>
+<a class="sourceLine" id="cb8-13" title="13">        .<span class="fu">Select</span>(x =&gt; x.<span class="fu">GetChildren</span>().<span class="fu">GetEnumerator</span>())</a>
+<a class="sourceLine" id="cb8-14" title="14">        .<span class="fu">ToArray</span>();</a>
+<a class="sourceLine" id="cb8-15" title="15"></a>
+<a class="sourceLine" id="cb8-16" title="16">    <span class="kw">while</span> (enumerators.<span class="fu">All</span>(e =&gt; e.<span class="fu">MoveNext</span>()))</a>
+<a class="sourceLine" id="cb8-17" title="17">    {</a>
+<a class="sourceLine" id="cb8-18" title="18">        <span class="kw">yield</span> <span class="kw">return</span> <span class="fu">zipFunc</span>(</a>
+<a class="sourceLine" id="cb8-19" title="19">            enumerators.<span class="fu">Select</span>(e =&gt; e.<span class="fu">Current</span>).<span class="fu">ToArray</span>()</a>
+<a class="sourceLine" id="cb8-20" title="20">        );</a>
+<a class="sourceLine" id="cb8-21" title="21">    }</a>
+<a class="sourceLine" id="cb8-22" title="22">}</a></code></pre></div>
 <p>Sadly, the invariant that <code>zipFunc</code> receives the same number of <code>T</code>s as were passed to <code>ZipFold</code> is not expressible in C#’s type system. So as a consumer of <code>ZipFold</code>, you just have to trust that <code>zipFunc</code>’s argument is of a certain size. In the <code>Equal</code> example, that size is two, because we’re consuming two trees:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)
-    =&gt; <span class="kw">new</span>[] { j1, j2 }.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(
-        (ns, childrenEqual) =&gt;
-        {
-            <span class="kw">switch</span> (ns[<span class="dv">0</span>])
-            {
-                <span class="kw">case</span> SalaryNode s1 when ns[<span class="dv">1</span>] <span class="kw">is</span> SalaryNode s2:
-                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span>
-                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;
-                <span class="kw">case</span> TagNode t1 when ns[<span class="dv">1</span>] <span class="kw">is</span> TagNode t2:
-                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;
-                <span class="kw">case</span> AndNode a1 when ns[<span class="dv">1</span>] <span class="kw">is</span> AndNode a2:
-                <span class="kw">case</span> OrNode o1 when ns[<span class="dv">1</span>] <span class="kw">is</span> OrNode o2:
-                <span class="kw">case</span> NotNode n1 when ns[<span class="dv">1</span>] <span class="kw">is</span> NotNode n2:
-                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);
-                <span class="kw">default</span>:
-                    <span class="kw">return</span> <span class="kw">false</span>;
-            }
-        }
-    );</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)</a>
+<a class="sourceLine" id="cb9-2" title="2">    =&gt; <span class="kw">new</span>[] { j1, j2 }.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(</a>
+<a class="sourceLine" id="cb9-3" title="3">        (ns, childrenEqual) =&gt;</a>
+<a class="sourceLine" id="cb9-4" title="4">        {</a>
+<a class="sourceLine" id="cb9-5" title="5">            <span class="kw">switch</span> (ns[<span class="dv">0</span>])</a>
+<a class="sourceLine" id="cb9-6" title="6">            {</a>
+<a class="sourceLine" id="cb9-7" title="7">                <span class="kw">case</span> SalaryNode s1 when ns[<span class="dv">1</span>] <span class="kw">is</span> SalaryNode s2:</a>
+<a class="sourceLine" id="cb9-8" title="8">                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span></a>
+<a class="sourceLine" id="cb9-9" title="9">                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;</a>
+<a class="sourceLine" id="cb9-10" title="10">                <span class="kw">case</span> TagNode t1 when ns[<span class="dv">1</span>] <span class="kw">is</span> TagNode t2:</a>
+<a class="sourceLine" id="cb9-11" title="11">                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;</a>
+<a class="sourceLine" id="cb9-12" title="12">                <span class="kw">case</span> AndNode a1 when ns[<span class="dv">1</span>] <span class="kw">is</span> AndNode a2:</a>
+<a class="sourceLine" id="cb9-13" title="13">                <span class="kw">case</span> OrNode o1 when ns[<span class="dv">1</span>] <span class="kw">is</span> OrNode o2:</a>
+<a class="sourceLine" id="cb9-14" title="14">                <span class="kw">case</span> NotNode n1 when ns[<span class="dv">1</span>] <span class="kw">is</span> NotNode n2:</a>
+<a class="sourceLine" id="cb9-15" title="15">                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);</a>
+<a class="sourceLine" id="cb9-16" title="16">                <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb9-17" title="17">                    <span class="kw">return</span> <span class="kw">false</span>;</a>
+<a class="sourceLine" id="cb9-18" title="18">            }</a>
+<a class="sourceLine" id="cb9-19" title="19">        }</a>
+<a class="sourceLine" id="cb9-20" title="20">    );</a></code></pre></div>
 <p>Here’s the Haskell transliteration of this <em>n</em>-ary zip-fold function, which <code>traverse</code>s in the <code>ZipList</code> <code>Applicative</code> to concisely zip <em>n</em> lists of children:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> r
-fermo f xs <span class="fu">=</span> f xs (
-    map (fermo f) <span class="fu">$</span> getZipList <span class="fu">$</span> traverse (<span class="dt">ZipList</span> <span class="fu">.</span> toListOf plate) xs
-    )</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> r</a>
+<a class="sourceLine" id="cb10-2" title="2">fermo f xs <span class="fu">=</span> f xs (</a>
+<a class="sourceLine" id="cb10-3" title="3">    <span class="fu">map</span> (fermo f) <span class="fu">$</span> getZipList <span class="fu">$</span> <span class="fu">traverse</span> (<span class="dt">ZipList</span> <span class="fu">.</span> toListOf plate) xs</a>
+<a class="sourceLine" id="cb10-4" title="4">    )</a></code></pre></div>
 <p><code>ZipFold</code> is available in <a href="https://www.nuget.org/packages/Sawmill/">version 1.3.0 of Sawmill</a>.</p>
 
 <section class="comments">
@@ -429,265 +429,265 @@ fermo f xs <span class="fu">=</span> f xs (
 <p>One of the fun things about category theory is that once you’ve learned an idea in one context it’s easy to apply it to another one. Of the numerous categories available to Haskell programmers, <strong>Hask</strong>, the category of Haskell types and functions, gets the lion’s share of the attention. Working with standard abstractions in more overlooked categories is a great way to reuse ideas: it makes you look clever, like you’ve invented something new, but actually all you’ve done is put the building blocks together differently. I won’t tell if you don’t.</p>
 <h2 id="templates-reusable-records">Templates: Reusable Records</h2>
 <p>Every now and then I’ll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and “draft” checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">CardType</span> <span class="fu">=</span> <span class="dt">Visa</span> <span class="fu">|</span> <span class="dt">AmEx</span> <span class="fu">|</span> <span class="dt">Mastercard</span>
-
-<span class="kw">data</span> <span class="dt">Form</span> <span class="fu">=</span> <span class="dt">Form</span> {
-<span class="ot">    form_email ::</span> <span class="dt">Text</span>,
-<span class="ot">    form_cardType ::</span> <span class="dt">CardType</span>,
-<span class="ot">    form_cardNumber ::</span> <span class="dt">Text</span>,
-<span class="ot">    form_cardExpiry ::</span> <span class="dt">Day</span>
-}
-
-<span class="kw">data</span> <span class="dt">DraftForm</span> <span class="fu">=</span> <span class="dt">DraftForm</span> {
-<span class="ot">    draftForm_email ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,
-<span class="ot">    draftForm_cardType ::</span> <span class="dt">Maybe</span> <span class="dt">CardType</span>,
-<span class="ot">    draftForm_cardNumber ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,
-<span class="ot">    draftForm_cardExpiry ::</span> <span class="dt">Maybe</span> <span class="dt">Day</span>
-}
-
-<span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span>
-toForm (<span class="dt">DraftForm</span>
-    (<span class="dt">Just</span> email)
-    (<span class="dt">Just</span> cardType)
-    (<span class="dt">Just</span> cardNumber)
-    (<span class="dt">Just</span> cardExpiry)) <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span>
-        <span class="dt">Form</span> email cardType cardNumber cardExpiry
-toForm _ <span class="fu">=</span> <span class="dt">Nothing</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">CardType</span> <span class="fu">=</span> <span class="dt">Visa</span> <span class="fu">|</span> <span class="dt">AmEx</span> <span class="fu">|</span> <span class="dt">Mastercard</span></a>
+<a class="sourceLine" id="cb1-2" title="2"></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">data</span> <span class="dt">Form</span> <span class="fu">=</span> <span class="dt">Form</span> {</a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="ot">    form_email ::</span> <span class="dt">Text</span>,</a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="ot">    form_cardType ::</span> <span class="dt">CardType</span>,</a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="ot">    form_cardNumber ::</span> <span class="dt">Text</span>,</a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="ot">    form_cardExpiry ::</span> <span class="dt">Day</span></a>
+<a class="sourceLine" id="cb1-8" title="8">}</a>
+<a class="sourceLine" id="cb1-9" title="9"></a>
+<a class="sourceLine" id="cb1-10" title="10"><span class="kw">data</span> <span class="dt">DraftForm</span> <span class="fu">=</span> <span class="dt">DraftForm</span> {</a>
+<a class="sourceLine" id="cb1-11" title="11"><span class="ot">    draftForm_email ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</a>
+<a class="sourceLine" id="cb1-12" title="12"><span class="ot">    draftForm_cardType ::</span> <span class="dt">Maybe</span> <span class="dt">CardType</span>,</a>
+<a class="sourceLine" id="cb1-13" title="13"><span class="ot">    draftForm_cardNumber ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</a>
+<a class="sourceLine" id="cb1-14" title="14"><span class="ot">    draftForm_cardExpiry ::</span> <span class="dt">Maybe</span> <span class="dt">Day</span></a>
+<a class="sourceLine" id="cb1-15" title="15">}</a>
+<a class="sourceLine" id="cb1-16" title="16"></a>
+<a class="sourceLine" id="cb1-17" title="17"><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></a>
+<a class="sourceLine" id="cb1-18" title="18">toForm (<span class="dt">DraftForm</span></a>
+<a class="sourceLine" id="cb1-19" title="19">    (<span class="dt">Just</span> email)</a>
+<a class="sourceLine" id="cb1-20" title="20">    (<span class="dt">Just</span> cardType)</a>
+<a class="sourceLine" id="cb1-21" title="21">    (<span class="dt">Just</span> cardNumber)</a>
+<a class="sourceLine" id="cb1-22" title="22">    (<span class="dt">Just</span> cardExpiry)) <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span></a>
+<a class="sourceLine" id="cb1-23" title="23">        <span class="dt">Form</span> email cardType cardNumber cardExpiry</a>
+<a class="sourceLine" id="cb1-24" title="24">toForm _ <span class="fu">=</span> <span class="dt">Nothing</span></a></code></pre></div>
 <p>Now, the standard trick to de-duplicate these two types is to derive both from what I’ll call a <em>template</em> type, wrapping each field of the template in some type constructor <code>f</code>. You recover <code>Form</code> by setting <code>f</code> to the boring <code>Identity</code> functor, and you get <code>DraftForm</code> by setting <code>f</code> to <code>Maybe</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">FormTemplate</span> f <span class="fu">=</span> <span class="dt">FormTemplate</span> {
-<span class="ot">    _email ::</span> f <span class="dt">Text</span>,
-<span class="ot">    _cardType ::</span> f <span class="dt">CardType</span>,
-<span class="ot">    _cardNumber ::</span> f <span class="dt">Text</span>,
-<span class="ot">    _cardExpiry ::</span> f <span class="dt">Day</span>
-}
-<span class="kw">type</span> <span class="dt">Form</span> <span class="fu">=</span> <span class="dt">FormTemplate</span> <span class="dt">Identity</span>
-<span class="kw">type</span> <span class="dt">DraftForm</span> <span class="fu">=</span> <span class="dt">FormTemplate</span> <span class="dt">Maybe</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">data</span> <span class="dt">FormTemplate</span> f <span class="fu">=</span> <span class="dt">FormTemplate</span> {</a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="ot">    _email ::</span> f <span class="dt">Text</span>,</a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="ot">    _cardType ::</span> f <span class="dt">CardType</span>,</a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="ot">    _cardNumber ::</span> f <span class="dt">Text</span>,</a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="ot">    _cardExpiry ::</span> f <span class="dt">Day</span></a>
+<a class="sourceLine" id="cb2-6" title="6">}</a>
+<a class="sourceLine" id="cb2-7" title="7"><span class="kw">type</span> <span class="dt">Form</span> <span class="fu">=</span> <span class="dt">FormTemplate</span> <span class="dt">Identity</span></a>
+<a class="sourceLine" id="cb2-8" title="8"><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="fu">=</span> <span class="dt">FormTemplate</span> <span class="dt">Maybe</span></a></code></pre></div>
 <p>So a template is a record type parameterised by a type constructor. It’ll generally have a kind of <code>(* -&gt; *) -&gt; *</code>. The fields of the record are the type constructor applied to a variety of different type arguments. Working with a template typically involves coming up with an interesting type constructor <code>(* -&gt; *)</code> and plugging it in to get interestingly-typed fields. You can think of a record as a container of <code>f</code>s.</p>
 <p>This trick has become Haskell folklore - I couldn’t tell you where I first saw it - but I’ve only seen a few people talk about what happens when you treat templates as first class citizens. To get used to this style, a simple example is giving names to specific instantiations of arbitrary templates:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Record</span> t <span class="fu">=</span> t <span class="dt">Identity</span>
-<span class="kw">type</span> <span class="dt">Partial</span> t <span class="fu">=</span> t <span class="dt">Maybe</span>
-
-<span class="kw">type</span> <span class="dt">Form</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">FormTemplate</span>
-<span class="kw">type</span> <span class="dt">DraftForm</span> <span class="fu">=</span> <span class="dt">Partial</span> <span class="dt">FormTemplate</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">type</span> <span class="dt">Record</span> t <span class="fu">=</span> t <span class="dt">Identity</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="kw">type</span> <span class="dt">Partial</span> t <span class="fu">=</span> t <span class="dt">Maybe</span></a>
+<a class="sourceLine" id="cb3-3" title="3"></a>
+<a class="sourceLine" id="cb3-4" title="4"><span class="kw">type</span> <span class="dt">Form</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">FormTemplate</span></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="fu">=</span> <span class="dt">Partial</span> <span class="dt">FormTemplate</span></a></code></pre></div>
 <p>The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I’ll be taking familiar tools for working with containers of <em>values</em> - <code>Functor</code>, <code>Traversable</code>, <code>Representable</code> - and applying them to the context of containers of <em>functors</em>.</p>
 <h2 id="functors-from-the-category-of-endofunctors">Functors from the Category of Endofunctors</h2>
 <p>In Haskell, categories are represented as a <em>kind</em> <code>k</code> of objects and a <em>type constructor</em> <code>c :: k -&gt; k -&gt; *</code> of morphisms between those objects. If the category <code>C</code> has objects in <code>k1</code> and morphisms in <code>c</code>, and <code>D</code> has objects in <code>k2</code> and morphisms in <code>d</code>, then a functor from <code>C</code> to <code>D</code> is a type constructor <code>f :: k1 -&gt; k2</code> mapping objects paired with an operation <code>fmap :: c a b -&gt; d (f a) (f b)</code> mapping the morphisms. The standard <code>Functor</code> class is for <em>endofunctors on <strong>Hask</strong></em> - the special case in which <code>k1 ~ k2 ~ *</code> and <code>c ~ d ~ (-&gt;)</code>.</p>
 <p><img src="/images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" width="900" /></p>
 <p>Given two categories <code>C</code> and <code>D</code>, you can construct the category of functors between <code>C</code> and <code>D</code>, written as <code>[C, D]</code>. Objects in this category are functors from <code>C</code> to <code>D</code>, and morphisms are natural transformations between those functors. Since <code>[C, D]</code> is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that’d be a type of kind <code>(k1 -&gt; k2) -&gt; k3</code>. I’ll call such types <em>functor functors</em>.</p>
 <p>We’re talking about record templates of kind <code>(* -&gt; *) -&gt; *</code>. This fits the pattern of a functor from the functor category, with <code>k1 ~ k2 ~ k3 ~ *</code>. So the functor category in question is the category of endofunctors on <strong>Hask</strong> (that is, members of the standard <code>Functor</code> class), and the destination category is <strong>Hask</strong>. So it’s reasonable to expect record templates to be functorial in their argument:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- natural transformations between functors f and g</span>
-<span class="kw">type</span> f <span class="fu">~&gt;</span> g <span class="fu">=</span> forall x<span class="fu">.</span> f x <span class="ot">-&gt;</span> g x
-
-<span class="co">-- &quot;functor functors&quot;, functors from the functor category</span>
-<span class="kw">class</span> <span class="dt">FFunctor</span> f <span class="kw">where</span>
-<span class="ot">    ffmap ::</span> (<span class="dt">Functor</span> g, <span class="dt">Functor</span> h) <span class="ot">=&gt;</span> (g <span class="fu">~&gt;</span> h) <span class="ot">-&gt;</span> f g <span class="ot">-&gt;</span> f h
-
-<span class="kw">instance</span> <span class="dt">FFunctor</span> <span class="dt">FormTemplate</span> <span class="kw">where</span>
-    ffmap eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)
-        <span class="fu">=</span> <span class="dt">FormTemplate</span>
-            (eta email)
-            (eta cardType)
-            (eta cardNumber)
-            (eta cardExpiry)</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="co">-- natural transformations between functors f and g</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="kw">type</span> f <span class="fu">~&gt;</span> g <span class="fu">=</span> <span class="kw">forall</span> x<span class="fu">.</span> f x <span class="ot">-&gt;</span> g x</a>
+<a class="sourceLine" id="cb4-3" title="3"></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="co">-- &quot;functor functors&quot;, functors from the functor category</span></a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="kw">class</span> <span class="dt">FFunctor</span> f <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="ot">    ffmap ::</span> (<span class="dt">Functor</span> g, <span class="dt">Functor</span> h) <span class="ot">=&gt;</span> (g <span class="fu">~&gt;</span> h) <span class="ot">-&gt;</span> f g <span class="ot">-&gt;</span> f h</a>
+<a class="sourceLine" id="cb4-7" title="7"></a>
+<a class="sourceLine" id="cb4-8" title="8"><span class="kw">instance</span> <span class="dt">FFunctor</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-9" title="9">    ffmap eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</a>
+<a class="sourceLine" id="cb4-10" title="10">        <span class="fu">=</span> <span class="dt">FormTemplate</span></a>
+<a class="sourceLine" id="cb4-11" title="11">            (eta email)</a>
+<a class="sourceLine" id="cb4-12" title="12">            (eta cardType)</a>
+<a class="sourceLine" id="cb4-13" title="13">            (eta cardNumber)</a>
+<a class="sourceLine" id="cb4-14" title="14">            (eta cardExpiry)</a></code></pre></div>
 <p><code>FFunctor</code> comes with the usual functor laws. The only difference is the types.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- identity</span>
-ffmap id <span class="fu">=</span> id
-
-<span class="co">-- composition</span>
-ffmap (eta <span class="fu">.</span> phi) <span class="fu">=</span> ffmap eta <span class="fu">.</span> ffmap phi</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="co">-- identity</span></a>
+<a class="sourceLine" id="cb5-2" title="2">ffmap <span class="fu">id</span> <span class="fu">=</span> <span class="fu">id</span></a>
+<a class="sourceLine" id="cb5-3" title="3"></a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="co">-- composition</span></a>
+<a class="sourceLine" id="cb5-5" title="5">ffmap (eta <span class="fu">.</span> phi) <span class="fu">=</span> ffmap eta <span class="fu">.</span> ffmap phi</a></code></pre></div>
 <p><img src="/images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" width="900" /></p>
 <p><code>ffmap</code> encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor <code>f</code> into <code>g</code>, then you can map a record of <code>f</code>s to a record of <code>g</code>s by embedding each <code>f</code>. (This is also sometimes called “hoisting”.) For example, the boring <code>Identity</code> functor can be embedded into an arbitrary <code>Applicative</code> by injecting the contained value using <code>pure</code>. We can use this to turn a total record into a partial one:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">generalise ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Identity</span> a <span class="ot">-&gt;</span> f a
-generalise (<span class="dt">Identity</span> x) <span class="fu">=</span> pure x
-
-<span class="ot">toPartial ::</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t
-toPartial <span class="fu">=</span> ffmap generalise</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">generalise ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Identity</span> a <span class="ot">-&gt;</span> f a</a>
+<a class="sourceLine" id="cb6-2" title="2">generalise (<span class="dt">Identity</span> x) <span class="fu">=</span> <span class="fu">pure</span> x</a>
+<a class="sourceLine" id="cb6-3" title="3"></a>
+<a class="sourceLine" id="cb6-4" title="4"><span class="ot">toPartial ::</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t</a>
+<a class="sourceLine" id="cb6-5" title="5">toPartial <span class="fu">=</span> ffmap generalise</a></code></pre></div>
 <h2 id="traversing-records">Traversing Records</h2>
 <p>Now that we have a new dog, it’s natural to ask which old tricks we can teach it. With the intuition that a template <code>t f</code> is like a container of <code>f</code>s, what does it mean to traverse such a container? <code>sequenceA :: Applicative f =&gt; t (f a) -&gt; f (t a)</code> takes a container of strategies to produce values and sequences them to get a strategy to produce a container of values. Replacing <em>value</em> with <em>functor</em> in the above sentence, it’s clear that we need to decide on a notion of “strategy to produce a functor”. <a href="https://stackoverflow.com/questions/44187945/what-should-a-higher-order-traversable-class-look-like">With thanks to Li-yao Xia</a>, the simplest of such notions is a regular applicative functor <code>a</code> returning a functorial value <code>g x</code> - that is, <code>Compose a g</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FTraversable</span> t <span class="kw">where</span>
-<span class="ot">    ftraverse ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">Applicative</span> a)
-              <span class="ot">=&gt;</span> (f <span class="fu">~&gt;</span> <span class="dt">Compose</span> a g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> a (t g)
-    ftraverse eta <span class="fu">=</span> fsequence <span class="fu">.</span> ffmap eta
-<span class="ot">    fsequence ::</span> (<span class="dt">Functor</span> f, <span class="dt">Applicative</span> a)
-              <span class="ot">=&gt;</span> t (<span class="dt">Compose</span> a f) <span class="ot">-&gt;</span> a (t f)
-    fsequence <span class="fu">=</span> ftraverse id
-
-<span class="ot">ffmapDefault ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">FTraversable</span> t)
-             <span class="ot">=&gt;</span> (f <span class="fu">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g
-ffmapDefault eta <span class="fu">=</span>
-    runIdentity <span class="fu">.</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Identity</span> <span class="fu">.</span> eta)
-
-<span class="ot">fsequence&#39; ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)
-fsequence&#39; <span class="fu">=</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> fmap <span class="dt">Identity</span>)</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FTraversable</span> t <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="ot">    ftraverse ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">Applicative</span> a)</a>
+<a class="sourceLine" id="cb7-3" title="3">              <span class="ot">=&gt;</span> (f <span class="fu">~&gt;</span> <span class="dt">Compose</span> a g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> a (t g)</a>
+<a class="sourceLine" id="cb7-4" title="4">    ftraverse eta <span class="fu">=</span> fsequence <span class="fu">.</span> ffmap eta</a>
+<a class="sourceLine" id="cb7-5" title="5"><span class="ot">    fsequence ::</span> (<span class="dt">Functor</span> f, <span class="dt">Applicative</span> a)</a>
+<a class="sourceLine" id="cb7-6" title="6">              <span class="ot">=&gt;</span> t (<span class="dt">Compose</span> a f) <span class="ot">-&gt;</span> a (t f)</a>
+<a class="sourceLine" id="cb7-7" title="7">    fsequence <span class="fu">=</span> ftraverse <span class="fu">id</span></a>
+<a class="sourceLine" id="cb7-8" title="8"></a>
+<a class="sourceLine" id="cb7-9" title="9"><span class="ot">ffmapDefault ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">FTraversable</span> t)</a>
+<a class="sourceLine" id="cb7-10" title="10">             <span class="ot">=&gt;</span> (f <span class="fu">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</a>
+<a class="sourceLine" id="cb7-11" title="11">ffmapDefault eta <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-12" title="12">    runIdentity <span class="fu">.</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Identity</span> <span class="fu">.</span> eta)</a>
+<a class="sourceLine" id="cb7-13" title="13"></a>
+<a class="sourceLine" id="cb7-14" title="14"><span class="ot">fsequence&#39; ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</a>
+<a class="sourceLine" id="cb7-15" title="15">fsequence&#39; <span class="fu">=</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</a></code></pre></div>
 <p>The <code>FTraversable</code> laws come about by adjusting the <code>Traversable</code> laws to add some <code>Compose</code>-bookkeeping.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- naturality</span>
-nu <span class="fu">.</span> ftraverse eta <span class="fu">=</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> nu <span class="fu">.</span> getCompose <span class="fu">.</span> eta)
-<span class="co">-- for any applicative transformation nu</span>
-
-<span class="co">-- identity</span>
-ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Identity</span>) <span class="fu">=</span> <span class="dt">Identity</span>
-
-<span class="co">-- composition</span>
-ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap (getCompose<span class="fu">.</span>phi) <span class="fu">.</span> getCompose <span class="fu">.</span> eta)
-    <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap (ftraverse phi) <span class="fu">.</span> ftraverse eta</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="co">-- naturality</span></a>
+<a class="sourceLine" id="cb8-2" title="2">nu <span class="fu">.</span> ftraverse eta <span class="fu">=</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> nu <span class="fu">.</span> getCompose <span class="fu">.</span> eta)</a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="co">-- for any applicative transformation nu</span></a>
+<a class="sourceLine" id="cb8-4" title="4"></a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="co">-- identity</span></a>
+<a class="sourceLine" id="cb8-6" title="6">ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Identity</span>) <span class="fu">=</span> <span class="dt">Identity</span></a>
+<a class="sourceLine" id="cb8-7" title="7"></a>
+<a class="sourceLine" id="cb8-8" title="8"><span class="co">-- composition</span></a>
+<a class="sourceLine" id="cb8-9" title="9">ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Compose</span> <span class="fu">.</span> <span class="fu">fmap</span> (getCompose<span class="fu">.</span>phi) <span class="fu">.</span> getCompose <span class="fu">.</span> eta)</a>
+<a class="sourceLine" id="cb8-10" title="10">    <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> <span class="fu">fmap</span> (ftraverse phi) <span class="fu">.</span> ftraverse eta</a></code></pre></div>
 <p>Implementations of <code>traverse</code> look like implementations of <code>fmap</code> but in an applicative context. Likewise, implementations of <code>ftraverse</code> look like implementations of <code>ffmap</code> in an applicative context, with a few <code>getCompose</code>s scattered around.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">FTraversable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span>
-    ftraverse eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)
-        <span class="fu">=</span> <span class="dt">FormTemplate</span> <span class="fu">&lt;$&gt;</span>
-            (getCompose <span class="fu">$</span> eta email) <span class="fu">&lt;*&gt;</span>
-            (getCompose <span class="fu">$</span> eta cardType) <span class="fu">&lt;*&gt;</span>
-            (getCompose <span class="fu">$</span> eta cardNumber) <span class="fu">&lt;*&gt;</span>
-            (getCompose <span class="fu">$</span> eta cardExpiry)</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">instance</span> <span class="dt">FTraversable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-2" title="2">    ftraverse eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</a>
+<a class="sourceLine" id="cb9-3" title="3">        <span class="fu">=</span> <span class="dt">FormTemplate</span> <span class="fu">&lt;$&gt;</span></a>
+<a class="sourceLine" id="cb9-4" title="4">            (getCompose <span class="fu">$</span> eta email) <span class="fu">&lt;*&gt;</span></a>
+<a class="sourceLine" id="cb9-5" title="5">            (getCompose <span class="fu">$</span> eta cardType) <span class="fu">&lt;*&gt;</span></a>
+<a class="sourceLine" id="cb9-6" title="6">            (getCompose <span class="fu">$</span> eta cardNumber) <span class="fu">&lt;*&gt;</span></a>
+<a class="sourceLine" id="cb9-7" title="7">            (getCompose <span class="fu">$</span> eta cardExpiry)</a></code></pre></div>
 <p>This is where things start to get interesting. The <code>toForm</code> function, which converts a draft form to a regular form if all of its fields have been filled in, can be defined tersely in terms of <code>ftraverse</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">toRecord ::</span> <span class="dt">FTraversable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Record</span> t)
-toRecord <span class="fu">=</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> fmap <span class="dt">Identity</span>)
-
-<span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span>
-toForm <span class="fu">=</span> toRecord</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">toRecord ::</span> <span class="dt">FTraversable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Record</span> t)</a>
+<a class="sourceLine" id="cb10-2" title="2">toRecord <span class="fu">=</span> ftraverse (<span class="dt">Compose</span> <span class="fu">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></a>
+<a class="sourceLine" id="cb10-5" title="5">toForm <span class="fu">=</span> toRecord</a></code></pre></div>
 <p>Here’s another example: a generic program, defined by analogy to <code>Foldable</code>’s <code>foldMap</code>, to collapse the fields of a record into a monoidal value. Note that <code>f () -&gt; m</code> is isomorphic to, but simpler than, <code>forall x. f x -&gt; m</code>. Annoyingly, we have to give a type signature to <code>mkConst</code> to resolve the ambiguity over <code>g</code> in the call to <code>ftraverse</code>. I’m picking <code>Empty</code> as a way of demonstrating that I have nothing up my sleeves.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Empty</span> a <span class="kw">deriving</span> <span class="dt">Functor</span>
-
-<span class="ot">ffoldMap ::</span> forall f t m<span class="fu">.</span> (<span class="dt">Monoid</span> m, <span class="dt">Functor</span> f, <span class="dt">FTraversable</span> t)
-         <span class="ot">=&gt;</span> (f () <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> m
-ffoldMap f <span class="fu">=</span> getConst <span class="fu">.</span> ftraverse mkConst
-    <span class="kw">where</span>
-        <span class="co">-- using ScopedTypeVariables to bind f</span>
-<span class="ot">        mkConst ::</span> f x <span class="ot">-&gt;</span> <span class="dt">Compose</span> (<span class="dt">Const</span> m) <span class="dt">Empty</span> x
-        mkConst <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Const</span> <span class="fu">.</span> f <span class="fu">.</span> (<span class="fu">$&gt;</span> ())</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">data</span> <span class="dt">Empty</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></a>
+<a class="sourceLine" id="cb11-2" title="2"></a>
+<a class="sourceLine" id="cb11-3" title="3"><span class="ot">ffoldMap ::</span> <span class="kw">forall</span> f t m<span class="fu">.</span> (<span class="dt">Monoid</span> m, <span class="dt">Functor</span> f, <span class="dt">FTraversable</span> t)</a>
+<a class="sourceLine" id="cb11-4" title="4">         <span class="ot">=&gt;</span> (f () <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> m</a>
+<a class="sourceLine" id="cb11-5" title="5">ffoldMap f <span class="fu">=</span> getConst <span class="fu">.</span> ftraverse mkConst</a>
+<a class="sourceLine" id="cb11-6" title="6">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb11-7" title="7">        <span class="co">-- using ScopedTypeVariables to bind f</span></a>
+<a class="sourceLine" id="cb11-8" title="8"><span class="ot">        mkConst ::</span> f x <span class="ot">-&gt;</span> <span class="dt">Compose</span> (<span class="dt">Const</span> m) <span class="dt">Empty</span> x</a>
+<a class="sourceLine" id="cb11-9" title="9">        mkConst <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> <span class="dt">Const</span> <span class="fu">.</span> f <span class="fu">.</span> (<span class="fu">$&gt;</span> ())</a></code></pre></div>
 <h2 id="zipping-templates">Zipping templates</h2>
 <p>Given a pair of records of the same shape <code>t</code>, we should be able to combine them point-wise, matching up the fields of each: <code>fzip :: t f -&gt; t g -&gt; t (Product f g)</code>. In <strong>Hask</strong>, “combining point-wise” is exactly what the “reader” applicative <code>(-&gt;) r</code> does, so any functor which enjoys an isomorphism to <code>(-&gt;) r</code> for some <code>r</code> has at least a zippy <code>Applicative</code> instance. Such functors are called <em>representable functors</em> and they are members of the class <a href="https://hackage.haskell.org/package/adjunctions-4.3/docs/Data-Functor-Rep.html#t:Representable"><code>Representable</code></a>.</p>
 <p>Of course, we’re working with functors from the functor category, so the relevant notion of <code>Representable</code> will need a little adjustment. Instead of an isomorphism to a function <code>(-&gt;) r</code> we’ll use an isomorphism to a natural transformation <code>(~&gt;) r</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FRepresentable</span> t <span class="kw">where</span>
-    <span class="kw">type</span> <span class="dt">FRep</span><span class="ot"> t ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>
-<span class="ot">    ftabulate ::</span> (<span class="dt">FRep</span> t <span class="fu">~&gt;</span> f) <span class="ot">-&gt;</span> t f
-<span class="ot">    findex ::</span> t f <span class="ot">-&gt;</span> <span class="dt">FRep</span> t a <span class="ot">-&gt;</span> f a
-
-<span class="ot">fzipWith ::</span> <span class="dt">FRepresentable</span> t
-         <span class="ot">=&gt;</span> (forall x<span class="fu">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x)
-         <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h
-fzipWith f t u <span class="fu">=</span> ftabulate <span class="fu">$</span> \r <span class="ot">-&gt;</span> f (findex t r) (findex u r)
-
-<span class="ot">fzipWith3 ::</span> <span class="dt">FRepresentable</span> t
-          <span class="ot">=&gt;</span> (forall x<span class="fu">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x <span class="ot">-&gt;</span> k x)
-          <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h <span class="ot">-&gt;</span> t k
-fzipWith3 f t u v <span class="fu">=</span> ftabulate <span class="fu">$</span>
-    \r <span class="ot">-&gt;</span> f (findex t r) (findex u r) (findex v r)
-
-<span class="ot">fzip ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t (<span class="dt">Product</span> f g)
-fzip <span class="fu">=</span> fzipWith <span class="dt">Pair</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FRepresentable</span> t <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-2" title="2">    <span class="kw">type</span> <span class="dt">FRep</span><span class="ot"> t ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span></a>
+<a class="sourceLine" id="cb12-3" title="3"><span class="ot">    ftabulate ::</span> (<span class="dt">FRep</span> t <span class="fu">~&gt;</span> f) <span class="ot">-&gt;</span> t f</a>
+<a class="sourceLine" id="cb12-4" title="4"><span class="ot">    findex ::</span> t f <span class="ot">-&gt;</span> <span class="dt">FRep</span> t a <span class="ot">-&gt;</span> f a</a>
+<a class="sourceLine" id="cb12-5" title="5"></a>
+<a class="sourceLine" id="cb12-6" title="6"><span class="ot">fzipWith ::</span> <span class="dt">FRepresentable</span> t</a>
+<a class="sourceLine" id="cb12-7" title="7">         <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="fu">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x)</a>
+<a class="sourceLine" id="cb12-8" title="8">         <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h</a>
+<a class="sourceLine" id="cb12-9" title="9">fzipWith f t u <span class="fu">=</span> ftabulate <span class="fu">$</span> \r <span class="ot">-&gt;</span> f (findex t r) (findex u r)</a>
+<a class="sourceLine" id="cb12-10" title="10"></a>
+<a class="sourceLine" id="cb12-11" title="11"><span class="ot">fzipWith3 ::</span> <span class="dt">FRepresentable</span> t</a>
+<a class="sourceLine" id="cb12-12" title="12">          <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="fu">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x <span class="ot">-&gt;</span> k x)</a>
+<a class="sourceLine" id="cb12-13" title="13">          <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h <span class="ot">-&gt;</span> t k</a>
+<a class="sourceLine" id="cb12-14" title="14">fzipWith3 f t u v <span class="fu">=</span> ftabulate <span class="fu">$</span></a>
+<a class="sourceLine" id="cb12-15" title="15">    \r <span class="ot">-&gt;</span> f (findex t r) (findex u r) (findex v r)</a>
+<a class="sourceLine" id="cb12-16" title="16"></a>
+<a class="sourceLine" id="cb12-17" title="17"><span class="ot">fzip ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t (<span class="dt">Product</span> f g)</a>
+<a class="sourceLine" id="cb12-18" title="18">fzip <span class="fu">=</span> fzipWith <span class="dt">Pair</span></a></code></pre></div>
 <p>The laws for <code>FRepresentable</code> simply state that <code>ftabulate</code> and <code>findex</code> must witness an isomorphism:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- isomorphism</span>
-ftabulate <span class="fu">.</span> findex <span class="fu">=</span> findex <span class="fu">.</span> ftabulate <span class="fu">=</span> id</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="co">-- isomorphism</span></a>
+<a class="sourceLine" id="cb13-2" title="2">ftabulate <span class="fu">.</span> findex <span class="fu">=</span> findex <span class="fu">.</span> ftabulate <span class="fu">=</span> <span class="fu">id</span></a></code></pre></div>
 <p><code>FRep</code> will typically be a GADT: it tells you what type of value one should expect to find at a given position in a record.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">FormTemplateRep</span> a <span class="kw">where</span>
-    <span class="dt">Email</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span>
-    <span class="dt">CardType</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">CardType</span>
-    <span class="dt">CardNumber</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span>
-    <span class="dt">CardExpiry</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Day</span>
-
-<span class="kw">instance</span> <span class="dt">FRepresentable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span>
-    <span class="kw">type</span> <span class="dt">FRep</span> <span class="dt">FormTemplate</span> <span class="fu">=</span> <span class="dt">FormTemplateRep</span>
-
-    ftabulate eta <span class="fu">=</span> <span class="dt">FormTemplate</span>
-        (eta <span class="dt">Email</span>)
-        (eta <span class="dt">CardType</span>)
-        (eta <span class="dt">CardNumber</span>)
-        (eta <span class="dt">CardExpiry</span>)
-    
-    findex p <span class="dt">Email</span> <span class="fu">=</span> _email p
-    findex p <span class="dt">CardType</span> <span class="fu">=</span> _cardType p
-    findex p <span class="dt">CardNumber</span> <span class="fu">=</span> _cardNumber p
-    findex p <span class="dt">CardExpiry</span> <span class="fu">=</span> _cardExpiry p</code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">data</span> <span class="dt">FormTemplateRep</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb14-2" title="2">    <span class="dt">Email</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb14-3" title="3">    <span class="dt">CardType</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">CardType</span></a>
+<a class="sourceLine" id="cb14-4" title="4">    <span class="dt">CardNumber</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb14-5" title="5">    <span class="dt">CardExpiry</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Day</span></a>
+<a class="sourceLine" id="cb14-6" title="6"></a>
+<a class="sourceLine" id="cb14-7" title="7"><span class="kw">instance</span> <span class="dt">FRepresentable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb14-8" title="8">    <span class="kw">type</span> <span class="dt">FRep</span> <span class="dt">FormTemplate</span> <span class="fu">=</span> <span class="dt">FormTemplateRep</span></a>
+<a class="sourceLine" id="cb14-9" title="9"></a>
+<a class="sourceLine" id="cb14-10" title="10">    ftabulate eta <span class="fu">=</span> <span class="dt">FormTemplate</span></a>
+<a class="sourceLine" id="cb14-11" title="11">        (eta <span class="dt">Email</span>)</a>
+<a class="sourceLine" id="cb14-12" title="12">        (eta <span class="dt">CardType</span>)</a>
+<a class="sourceLine" id="cb14-13" title="13">        (eta <span class="dt">CardNumber</span>)</a>
+<a class="sourceLine" id="cb14-14" title="14">        (eta <span class="dt">CardExpiry</span>)</a>
+<a class="sourceLine" id="cb14-15" title="15">    </a>
+<a class="sourceLine" id="cb14-16" title="16">    findex p <span class="dt">Email</span> <span class="fu">=</span> _email p</a>
+<a class="sourceLine" id="cb14-17" title="17">    findex p <span class="dt">CardType</span> <span class="fu">=</span> _cardType p</a>
+<a class="sourceLine" id="cb14-18" title="18">    findex p <span class="dt">CardNumber</span> <span class="fu">=</span> _cardNumber p</a>
+<a class="sourceLine" id="cb14-19" title="19">    findex p <span class="dt">CardExpiry</span> <span class="fu">=</span> _cardExpiry p</a></code></pre></div>
 <p>Something useful you can do with this infrastructure: filling in defaults for missing values of a partial record. Or, looking at it the other way, overriding certain parts of a record.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">with ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t
-with <span class="fu">=</span> fzipWith override
-    <span class="kw">where</span> override x <span class="dt">Nothing</span> <span class="fu">=</span> x
-          override _ (<span class="dt">Just</span> y) <span class="fu">=</span> <span class="dt">Identity</span> y
-
-<span class="ot">fillInDefaults ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t
-fillInDefaults t defaults <span class="fu">=</span> defaults <span class="ot">`with`</span> t</code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">with ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</a>
+<a class="sourceLine" id="cb15-2" title="2">with <span class="fu">=</span> fzipWith override</a>
+<a class="sourceLine" id="cb15-3" title="3">    <span class="kw">where</span> override x <span class="dt">Nothing</span> <span class="fu">=</span> x</a>
+<a class="sourceLine" id="cb15-4" title="4">          override _ (<span class="dt">Just</span> y) <span class="fu">=</span> <span class="dt">Identity</span> y</a>
+<a class="sourceLine" id="cb15-5" title="5"></a>
+<a class="sourceLine" id="cb15-6" title="6"><span class="ot">fillInDefaults ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</a>
+<a class="sourceLine" id="cb15-7" title="7">fillInDefaults t defaults <span class="fu">=</span> defaults <span class="ot">`with`</span> t</a></code></pre></div>
 <p>You can also make a record of <code>Monoid</code> values into a <code>Monoid</code>, once again by zipping.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Wrap</span> t f <span class="fu">=</span> <span class="dt">Wrap</span> {<span class="ot"> unWrap ::</span> t f }
-makeWrapped <span class="ch">&#39;&#39;</span><span class="dt">Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span>
-
-<span class="kw">instance</span> (<span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> c) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Wrap</span> t (<span class="dt">Const</span> c)) <span class="kw">where</span>
-    mempty <span class="fu">=</span> <span class="dt">Wrap</span> <span class="fu">$</span> ftabulate (const (<span class="dt">Const</span> mempty))
-    <span class="dt">Wrap</span> t <span class="ot">`mappend`</span> <span class="dt">Wrap</span> u <span class="fu">=</span> <span class="dt">Wrap</span> <span class="fu">$</span> fzipWith mappend t u</code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">newtype</span> <span class="dt">Wrap</span> t f <span class="fu">=</span> <span class="dt">Wrap</span> {<span class="ot"> unWrap ::</span> t f }</a>
+<a class="sourceLine" id="cb16-2" title="2">makeWrapped &#39;<span class="dt">&#39;Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></a>
+<a class="sourceLine" id="cb16-3" title="3"></a>
+<a class="sourceLine" id="cb16-4" title="4"><span class="kw">instance</span> (<span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> c) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Wrap</span> t (<span class="dt">Const</span> c)) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-5" title="5">    <span class="fu">mempty</span> <span class="fu">=</span> <span class="dt">Wrap</span> <span class="fu">$</span> ftabulate (<span class="fu">const</span> (<span class="dt">Const</span> <span class="fu">mempty</span>))</a>
+<a class="sourceLine" id="cb16-6" title="6">    <span class="dt">Wrap</span> t <span class="ot">`mappend`</span> <span class="dt">Wrap</span> u <span class="fu">=</span> <span class="dt">Wrap</span> <span class="fu">$</span> fzipWith <span class="fu">mappend</span> t u</a></code></pre></div>
 <h2 id="lenses">Lenses</h2>
 <p>Rather than come up with a new notion of <code>Lens</code> formulated in terms of <code>FFunctor</code>, we can reuse the standard <code>Lens</code> type as long as we’re careful about how polymorphic lenses should be. Specifically, a lens into a record template should express no opinion as to which functor the template should be instantiated with.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="fu">=</span> <span class="dt">FLens</span> (forall f<span class="fu">.</span> <span class="dt">Lens&#39;</span> (t f) (f a))</code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="fu">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="fu">.</span> <span class="dt">Lens&#39;</span> (t f) (f a))</a></code></pre></div>
 <p>We can store a template’s lenses in an instance of the template itself!</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Lenses</span> t <span class="fu">=</span> t (<span class="dt">FLens</span> t)
-
-<span class="kw">class</span> <span class="dt">HasLenses</span> t <span class="kw">where</span>
-<span class="ot">    lenses ::</span> <span class="dt">Lenses</span> t
-
-makeLenses <span class="ch">&#39;&#39;</span><span class="dt">FormTemplate</span>
-<span class="kw">instance</span> <span class="dt">HasLenses</span> <span class="dt">FormTemplate</span> <span class="kw">where</span>
-    lenses <span class="fu">=</span> <span class="dt">FormTemplate</span> {
-        _email <span class="fu">=</span> <span class="dt">FLens</span> email,
-        _cardType <span class="fu">=</span> <span class="dt">FLens</span> cardType,
-        _cardNumber <span class="fu">=</span> <span class="dt">FLens</span> cardNumber,
-        _cardExpiry <span class="fu">=</span> <span class="dt">FLens</span> cardExpiry
-    }</code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="kw">type</span> <span class="dt">Lenses</span> t <span class="fu">=</span> t (<span class="dt">FLens</span> t)</a>
+<a class="sourceLine" id="cb18-2" title="2"></a>
+<a class="sourceLine" id="cb18-3" title="3"><span class="kw">class</span> <span class="dt">HasLenses</span> t <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-4" title="4"><span class="ot">    lenses ::</span> <span class="dt">Lenses</span> t</a>
+<a class="sourceLine" id="cb18-5" title="5"></a>
+<a class="sourceLine" id="cb18-6" title="6">makeLenses &#39;<span class="dt">&#39;FormTemplate</span></a>
+<a class="sourceLine" id="cb18-7" title="7"><span class="kw">instance</span> <span class="dt">HasLenses</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-8" title="8">    lenses <span class="fu">=</span> <span class="dt">FormTemplate</span> {</a>
+<a class="sourceLine" id="cb18-9" title="9">        _email <span class="fu">=</span> <span class="dt">FLens</span> email,</a>
+<a class="sourceLine" id="cb18-10" title="10">        _cardType <span class="fu">=</span> <span class="dt">FLens</span> cardType,</a>
+<a class="sourceLine" id="cb18-11" title="11">        _cardNumber <span class="fu">=</span> <span class="dt">FLens</span> cardNumber,</a>
+<a class="sourceLine" id="cb18-12" title="12">        _cardExpiry <span class="fu">=</span> <span class="dt">FLens</span> cardExpiry</a>
+<a class="sourceLine" id="cb18-13" title="13">    }</a></code></pre></div>
 <h2 id="compositional-validation">Compositional Validation</h2>
 <p>Now for an extended example: form validation. We’ll be making use of all of the tools from above - zipping, traversing, and mapping - to design a typed API for validating individual fields of a form.</p>
 <p><code>Either</code> isn’t a great choice for a validation monad, because <code>Either</code> aborts the computation at the first failure. You typically want to report all the errors in a form. Instead, we’ll be working with the following type, which is isomorphic to <code>Either</code> but with an <code>Applicative</code> instance which returns <em>all</em> of the failures in a given computation, combining the values using a <code>Monoid</code>. So it’s kind of a Frankensteinian mishmash of the <code>Either</code> and <code>Writer</code> applicatives.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Validation</span> e a <span class="fu">=</span> <span class="dt">Failure</span> e <span class="fu">|</span> <span class="dt">Success</span> a <span class="kw">deriving</span> <span class="dt">Functor</span>
-
-<span class="kw">instance</span> <span class="dt">Bifunctor</span> <span class="dt">Validation</span> <span class="kw">where</span>
-    bimap f g (<span class="dt">Failure</span> e) <span class="fu">=</span> <span class="dt">Failure</span> (f e)
-    bimap f g (<span class="dt">Success</span> x) <span class="fu">=</span> <span class="dt">Success</span> (g x)
-
-<span class="kw">instance</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="dt">Validation</span> e) <span class="kw">where</span>
-    pure <span class="fu">=</span> <span class="dt">Success</span>
-    <span class="dt">Success</span> f <span class="fu">&lt;*&gt;</span> <span class="dt">Success</span> x <span class="fu">=</span> <span class="dt">Success</span> (f x)
-    <span class="dt">Failure</span> e1 <span class="fu">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="fu">=</span> <span class="dt">Failure</span> (e1 <span class="ot">`mappend`</span> e2)
-    <span class="dt">Failure</span> e1 <span class="fu">&lt;*&gt;</span> _ <span class="fu">=</span> <span class="dt">Failure</span> e1
-    _ <span class="fu">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="fu">=</span> <span class="dt">Failure</span> e2</code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="kw">data</span> <span class="dt">Validation</span> e a <span class="fu">=</span> <span class="dt">Failure</span> e <span class="fu">|</span> <span class="dt">Success</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></a>
+<a class="sourceLine" id="cb19-2" title="2"></a>
+<a class="sourceLine" id="cb19-3" title="3"><span class="kw">instance</span> <span class="dt">Bifunctor</span> <span class="dt">Validation</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb19-4" title="4">    bimap f g (<span class="dt">Failure</span> e) <span class="fu">=</span> <span class="dt">Failure</span> (f e)</a>
+<a class="sourceLine" id="cb19-5" title="5">    bimap f g (<span class="dt">Success</span> x) <span class="fu">=</span> <span class="dt">Success</span> (g x)</a>
+<a class="sourceLine" id="cb19-6" title="6"></a>
+<a class="sourceLine" id="cb19-7" title="7"><span class="kw">instance</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="dt">Validation</span> e) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb19-8" title="8">    <span class="fu">pure</span> <span class="fu">=</span> <span class="dt">Success</span></a>
+<a class="sourceLine" id="cb19-9" title="9">    <span class="dt">Success</span> f <span class="fu">&lt;*&gt;</span> <span class="dt">Success</span> x <span class="fu">=</span> <span class="dt">Success</span> (f x)</a>
+<a class="sourceLine" id="cb19-10" title="10">    <span class="dt">Failure</span> e1 <span class="fu">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="fu">=</span> <span class="dt">Failure</span> (e1 <span class="ot">`mappend`</span> e2)</a>
+<a class="sourceLine" id="cb19-11" title="11">    <span class="dt">Failure</span> e1 <span class="fu">&lt;*&gt;</span> _ <span class="fu">=</span> <span class="dt">Failure</span> e1</a>
+<a class="sourceLine" id="cb19-12" title="12">    _ <span class="fu">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="fu">=</span> <span class="dt">Failure</span> e2</a></code></pre></div>
 <p>This <code>Applicative</code> instance has no compatible <code>Monad</code> instance.</p>
 <p>We’ll build a library for validation processes which examine a single field of a record at a time. A validation rule for a field typed <code>a</code> is a function which takes an <code>a</code> and returns a <code>Validation e a</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Validator</span> e a <span class="fu">=</span> <span class="dt">Validator</span> {<span class="ot"> runValidator ::</span> a <span class="ot">-&gt;</span> <span class="dt">Validation</span> e a }
-
-<span class="co">-- a validator which always succeeds</span>
-<span class="ot">noop ::</span> <span class="dt">Validator</span> e a
-noop <span class="fu">=</span> <span class="dt">Validator</span> <span class="dt">Success</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" title="1"><span class="kw">newtype</span> <span class="dt">Validator</span> e a <span class="fu">=</span> <span class="dt">Validator</span> {<span class="ot"> runValidator ::</span> a <span class="ot">-&gt;</span> <span class="dt">Validation</span> e a }</a>
+<a class="sourceLine" id="cb20-2" title="2"></a>
+<a class="sourceLine" id="cb20-3" title="3"><span class="co">-- a validator which always succeeds</span></a>
+<a class="sourceLine" id="cb20-4" title="4"><span class="ot">noop ::</span> <span class="dt">Validator</span> e a</a>
+<a class="sourceLine" id="cb20-5" title="5">noop <span class="fu">=</span> <span class="dt">Validator</span> <span class="dt">Success</span></a></code></pre></div>
 <p>If a given field has multiple validation rules, you can compose them under the assumption that each validator leaves its input unchanged.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&amp;&gt;) ::</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a
-<span class="dt">Validator</span> f <span class="fu">&amp;&gt;</span> <span class="dt">Validator</span> g <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> f x <span class="fu">*&gt;</span> g x
-
-<span class="co">-- for example</span>
-<span class="ot">emailValidator ::</span> <span class="dt">Validator</span> [<span class="dt">Text</span>] <span class="dt">Text</span>
-emailValidator <span class="fu">=</span> hasAtSymbol <span class="fu">&amp;&gt;</span> hasTopLevelDomain
-    <span class="kw">where</span>
-        hasAtSymbol <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \email <span class="ot">-&gt;</span> 
-            <span class="kw">if</span> <span class="st">&quot;@&quot;</span> <span class="ot">`isInfixOf`</span> email
-            <span class="kw">then</span> <span class="dt">Success</span> email
-            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;No @ in email&quot;</span>]
-        hasTopLevelDomain <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \email <span class="ot">-&gt;</span>
-            <span class="kw">if</span> any (<span class="ot">`isSuffixOf`</span> email) topLevelDomains
-            <span class="kw">then</span> <span class="dt">Success</span> email
-            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;Invalid TLD&quot;</span>]
-        topLevelDomains <span class="fu">=</span> [<span class="st">&quot;.com&quot;</span>, <span class="st">&quot;.org&quot;</span>, <span class="st">&quot;.co.uk&quot;</span>]  <span class="co">-- etc</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb21-1" title="1"><span class="ot">(&amp;&gt;) ::</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a</a>
+<a class="sourceLine" id="cb21-2" title="2"><span class="dt">Validator</span> f <span class="fu">&amp;&gt;</span> <span class="dt">Validator</span> g <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> f x <span class="fu">*&gt;</span> g x</a>
+<a class="sourceLine" id="cb21-3" title="3"></a>
+<a class="sourceLine" id="cb21-4" title="4"><span class="co">-- for example</span></a>
+<a class="sourceLine" id="cb21-5" title="5"><span class="ot">emailValidator ::</span> <span class="dt">Validator</span> [<span class="dt">Text</span>] <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb21-6" title="6">emailValidator <span class="fu">=</span> hasAtSymbol <span class="fu">&amp;&gt;</span> hasTopLevelDomain</a>
+<a class="sourceLine" id="cb21-7" title="7">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb21-8" title="8">        hasAtSymbol <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \email <span class="ot">-&gt;</span> </a>
+<a class="sourceLine" id="cb21-9" title="9">            <span class="kw">if</span> <span class="st">&quot;@&quot;</span> <span class="ot">`isInfixOf`</span> email</a>
+<a class="sourceLine" id="cb21-10" title="10">            <span class="kw">then</span> <span class="dt">Success</span> email</a>
+<a class="sourceLine" id="cb21-11" title="11">            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;No @ in email&quot;</span>]</a>
+<a class="sourceLine" id="cb21-12" title="12">        hasTopLevelDomain <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \email <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb21-13" title="13">            <span class="kw">if</span> <span class="fu">any</span> (<span class="ot">`isSuffixOf`</span> email) topLevelDomains</a>
+<a class="sourceLine" id="cb21-14" title="14">            <span class="kw">then</span> <span class="dt">Success</span> email</a>
+<a class="sourceLine" id="cb21-15" title="15">            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;Invalid TLD&quot;</span>]</a>
+<a class="sourceLine" id="cb21-16" title="16">        topLevelDomains <span class="fu">=</span> [<span class="st">&quot;.com&quot;</span>, <span class="st">&quot;.org&quot;</span>, <span class="st">&quot;.co.uk&quot;</span>]  <span class="co">-- etc</span></a></code></pre></div>
 <p>The plan is to store these <code>Validator</code>s in a record template, zip them along an instance of the record itself, and then traverse the result to get either a validated record or a collection of errors. To make things interesting, we’ll store the validation results for a given field in the matching field of another record.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Validators</span> e t <span class="fu">=</span> t (<span class="dt">Validator</span> e)
-<span class="kw">type</span> <span class="dt">Errors</span> e t <span class="fu">=</span> t (<span class="dt">Const</span> e)
-
-<span class="co">-- turn a record of validators into a validator of records</span>
-<span class="ot">validate ::</span> (<span class="dt">HasLenses</span> t, <span class="dt">FTraversable</span> t, <span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> e)
-         <span class="ot">=&gt;</span> <span class="dt">Validators</span> e t
-         <span class="ot">-&gt;</span> <span class="dt">Validator</span> (<span class="dt">Errors</span> e t) (<span class="dt">Record</span> t)
-validate validators <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \record <span class="ot">-&gt;</span>
-    first unWrap <span class="fu">$</span>
-    fsequence&#39; <span class="fu">$</span>
-    fzipWith3 applyValidator lenses validators record
-    <span class="kw">where</span>
-        applyValidator
-            (<span class="dt">FLens</span> lens)
-            (<span class="dt">Validator</span> validator)
-            (<span class="dt">Identity</span> value) <span class="fu">=</span>
-                <span class="kw">let</span> setError e <span class="fu">=</span> mempty <span class="fu">&amp;</span> _Wrapped&#39;<span class="fu">.</span>lens<span class="fu">.</span>_Wrapped&#39; <span class="fu">.~</span> e
-                <span class="kw">in</span> first setError <span class="fu">$</span> validator value</code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" title="1"><span class="kw">type</span> <span class="dt">Validators</span> e t <span class="fu">=</span> t (<span class="dt">Validator</span> e)</a>
+<a class="sourceLine" id="cb22-2" title="2"><span class="kw">type</span> <span class="dt">Errors</span> e t <span class="fu">=</span> t (<span class="dt">Const</span> e)</a>
+<a class="sourceLine" id="cb22-3" title="3"></a>
+<a class="sourceLine" id="cb22-4" title="4"><span class="co">-- turn a record of validators into a validator of records</span></a>
+<a class="sourceLine" id="cb22-5" title="5"><span class="ot">validate ::</span> (<span class="dt">HasLenses</span> t, <span class="dt">FTraversable</span> t, <span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> e)</a>
+<a class="sourceLine" id="cb22-6" title="6">         <span class="ot">=&gt;</span> <span class="dt">Validators</span> e t</a>
+<a class="sourceLine" id="cb22-7" title="7">         <span class="ot">-&gt;</span> <span class="dt">Validator</span> (<span class="dt">Errors</span> e t) (<span class="dt">Record</span> t)</a>
+<a class="sourceLine" id="cb22-8" title="8">validate validators <span class="fu">=</span> <span class="dt">Validator</span> <span class="fu">$</span> \record <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb22-9" title="9">    first unWrap <span class="fu">$</span></a>
+<a class="sourceLine" id="cb22-10" title="10">    fsequence&#39; <span class="fu">$</span></a>
+<a class="sourceLine" id="cb22-11" title="11">    fzipWith3 applyValidator lenses validators record</a>
+<a class="sourceLine" id="cb22-12" title="12">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb22-13" title="13">        applyValidator</a>
+<a class="sourceLine" id="cb22-14" title="14">            (<span class="dt">FLens</span> lens)</a>
+<a class="sourceLine" id="cb22-15" title="15">            (<span class="dt">Validator</span> validator)</a>
+<a class="sourceLine" id="cb22-16" title="16">            (<span class="dt">Identity</span> value) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb22-17" title="17">                <span class="kw">let</span> setError e <span class="fu">=</span> <span class="fu">mempty</span> <span class="fu">&amp;</span> _Wrapped&#39;<span class="fu">.</span>lens<span class="fu">.</span>_Wrapped&#39; <span class="fu">.~</span> e</a>
+<a class="sourceLine" id="cb22-18" title="18">                <span class="kw">in</span> first setError <span class="fu">$</span> validator value</a></code></pre></div>
 <p><code>applyValidator</code> takes a lens into a record field, a validator for that field and the value in that field. It applies the validator to the value; upon failure it stores the error message (<code>e</code>) in the correct field of the <code>Errors</code> record using the lens. <code>fzipWith3</code> handles the logic of running <code>applyValidator</code> for each field of the record, then <code>fsequence'</code> combines the resulting <code>Validation</code> applicative actions into a single one. So all of the errors from all of the fields are eventually collected into the matching fields of the <code>Errors</code> record and combined monoidally.</p>
 <p>A quick test, wherein I test validation on the email field:</p>
 <pre><code>ghci&gt; let formValidator = validate
@@ -729,33 +729,33 @@ Failure (FormTemplate {
 </ul>
 <p>One design decision I made when developing the <code>FFunctor</code> class was to give <code>ffmap</code> a <code>(Functor f, Functor g)</code> constraint, so you can only <code>ffmap</code> between types that are in fact functors. This is mathematically principled in some sense, but it has certain engineering tradeoffs compared to an unconstrained type for <code>ffmap</code>. It enables more instances of <code>FFunctor</code> - for example, you can only write <code>Fix</code>’s <code>ffmap</code> with a <code>Functor</code> constraint for either the input or output type parameters - but it rules out certain usages of <code>ffmap</code>. You can’t <code>ffmap</code> over a template containing <code>Validator</code>s, for example, because <code>Validator</code> is not a <code>Functor</code>. I <em>didn’t</em> put the same <code>Functor</code> constraints into <code>FRepresentable</code>’s methods. An <code>FRep</code> type typically won’t be functorial - it’ll be GADT-like - so adding a <code>Functor (FRep t)</code> constraint would be far too restrictive.</p>
 <p>You’ll notice that the concept of an applicative functor functor is conspicuously absent from my presentation above. <code>FApplicative</code> would probably look something like this:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> (f <span class="fu">:-&gt;</span> g) a <span class="fu">=</span> <span class="dt">Morph</span> {<span class="ot"> getMorph ::</span> f a <span class="ot">-&gt;</span> g a }
-
-<span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FApplicative</span> t <span class="kw">where</span>
-<span class="ot">    fpure ::</span> (forall a<span class="fu">.</span> f a) <span class="ot">-&gt;</span> t f
-<span class="ot">    fap ::</span> t (f <span class="fu">:-&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g
-
-<span class="ot">fliftA ::</span> <span class="dt">FApplicative</span> t <span class="ot">=&gt;</span> (f <span class="fu">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g
-fliftA eta t <span class="fu">=</span> fpure (<span class="dt">Morph</span> eta) <span class="ot">`fap`</span> t
-
-<span class="kw">instance</span> <span class="dt">FApplicative</span> <span class="dt">FormTemplate</span> <span class="kw">where</span>
-    fpure x <span class="fu">=</span> <span class="dt">FormTemplate</span> x x x x
-    fap
-        (<span class="dt">FormTemplate</span>
-            (<span class="dt">Morph</span> f1)
-            (<span class="dt">Morph</span> f2)
-            (<span class="dt">Morph</span> f3)
-            (<span class="dt">Morph</span> f4))
-        (<span class="dt">FormTemplate</span>
-            email
-            cardType
-            cardNumber
-            cardExpiry)
-        <span class="fu">=</span> <span class="dt">FormTemplate</span>
-            (f1 email)
-            (f2 cardType)
-            (f3 cardNumber)
-            (f4 cardExpiry)</code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" title="1"><span class="kw">newtype</span> (f <span class="fu">:-&gt;</span> g) a <span class="fu">=</span> <span class="dt">Morph</span> {<span class="ot"> getMorph ::</span> f a <span class="ot">-&gt;</span> g a }</a>
+<a class="sourceLine" id="cb24-2" title="2"></a>
+<a class="sourceLine" id="cb24-3" title="3"><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FApplicative</span> t <span class="kw">where</span></a>
+<a class="sourceLine" id="cb24-4" title="4"><span class="ot">    fpure ::</span> (<span class="kw">forall</span> a<span class="fu">.</span> f a) <span class="ot">-&gt;</span> t f</a>
+<a class="sourceLine" id="cb24-5" title="5"><span class="ot">    fap ::</span> t (f <span class="fu">:-&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</a>
+<a class="sourceLine" id="cb24-6" title="6"></a>
+<a class="sourceLine" id="cb24-7" title="7"><span class="ot">fliftA ::</span> <span class="dt">FApplicative</span> t <span class="ot">=&gt;</span> (f <span class="fu">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</a>
+<a class="sourceLine" id="cb24-8" title="8">fliftA eta t <span class="fu">=</span> fpure (<span class="dt">Morph</span> eta) <span class="ot">`fap`</span> t</a>
+<a class="sourceLine" id="cb24-9" title="9"></a>
+<a class="sourceLine" id="cb24-10" title="10"><span class="kw">instance</span> <span class="dt">FApplicative</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb24-11" title="11">    fpure x <span class="fu">=</span> <span class="dt">FormTemplate</span> x x x x</a>
+<a class="sourceLine" id="cb24-12" title="12">    fap</a>
+<a class="sourceLine" id="cb24-13" title="13">        (<span class="dt">FormTemplate</span></a>
+<a class="sourceLine" id="cb24-14" title="14">            (<span class="dt">Morph</span> f1)</a>
+<a class="sourceLine" id="cb24-15" title="15">            (<span class="dt">Morph</span> f2)</a>
+<a class="sourceLine" id="cb24-16" title="16">            (<span class="dt">Morph</span> f3)</a>
+<a class="sourceLine" id="cb24-17" title="17">            (<span class="dt">Morph</span> f4))</a>
+<a class="sourceLine" id="cb24-18" title="18">        (<span class="dt">FormTemplate</span></a>
+<a class="sourceLine" id="cb24-19" title="19">            email</a>
+<a class="sourceLine" id="cb24-20" title="20">            cardType</a>
+<a class="sourceLine" id="cb24-21" title="21">            cardNumber</a>
+<a class="sourceLine" id="cb24-22" title="22">            cardExpiry)</a>
+<a class="sourceLine" id="cb24-23" title="23">        <span class="fu">=</span> <span class="dt">FormTemplate</span></a>
+<a class="sourceLine" id="cb24-24" title="24">            (f1 email)</a>
+<a class="sourceLine" id="cb24-25" title="25">            (f2 cardType)</a>
+<a class="sourceLine" id="cb24-26" title="26">            (f3 cardNumber)</a>
+<a class="sourceLine" id="cb24-27" title="27">            (f4 cardExpiry)</a></code></pre></div>
 <p><code>FApplicative</code> is a more general interface than <code>FRepresentable</code>, in that it supports notions of composition other than zipping. However, that bookkeeping <code>:-&gt;</code> <code>newtype</code> wrapper is inconvenient. With the normal <code>Applicative</code> class you can map an <em>n</em>-ary function over <em>n</em> applicative values directly: <code>f &lt;$&gt; x &lt;*&gt; y &lt;*&gt; z</code>. With <code>FApplicative</code> you have to apply the <code>Morph</code> constructor as many times as <code>f</code> has arguments: <code>fpure (Morph $ \x -&gt; Morph $ \y -&gt; Morph $ \z -&gt; f x y z) `fap` t `fap` u `fap` v</code>, which becomes very unwieldy very quickly. (<a href="https://www.reddit.com/r/haskell/comments/78xxql/structures_of_arrays_functors_and_continuations/doy80ft/">/u/rampion has come up with nicer syntax for this</a>, but it involves <a href="https://gist.github.com/rampion/20291bde6c8568c11f9cc5923d9639eb#file-ffunctor-hs-L28">a more complicated formulation of <code>FApplicative</code></a>.) On the other hand, <code>FApplicative</code> does open up some interesting options for the design of <code>FTraversable</code>: one can traverse in an <code>FApplicative</code> rather than an <code>Applicative</code>. This gives some nice type signatures - <code>fsequence :: (FTraversable t, FApplicative f) =&gt; t f -&gt; f t</code> - and is strictly more general than the <code>FTraversable</code> I gave above, since any <code>Applicative</code> can be lifted into an <code>FApplicative</code> by composition (<code>newtype ComposeAt a f g = ComposeAt { getComposeAt :: f (g a) }</code>).</p>
 <p>How useful are these tools in practice? Would I structure a production application around functor functors? Probably not. It’s a question of balance - while it’s useful to recognise functorial structures in categories other than <strong>Hask</strong> as a thinking tool, actually representing such abstractions in code doesn’t always pay off. Haskell already has a rich ecosystem of tools for working with the <code>Functor</code> family, but there’s much less code in the wild that’s structured around functor functors. This is partly because <code>Functor</code> has the advantage of being a standard class in <code>base</code>, but it’s also because code built around functor functors is a little less convenient to work with, typically requiring some tedious <code>newtype</code> bookkeeping.</p>
 <p>Over the course of putting together this article I came across some work by others on this very topic. I’ve spotted versions of these classes being packaged with bigger libraries such as <a href="http://hackage.haskell.org/package/hedgehog-0.5.1/docs/Hedgehog-Internal-HTraversable.html"><code>hedgehog</code></a> and <a href="https://hackage.haskell.org/package/quickcheck-state-machine-0.2.0/docs/Test-StateMachine-Types-HFunctor.html"><code>quickcheck-state-machine</code></a>. There are also a few packages providing similar tools. The most mature of these seems to be <a href="http://hackage.haskell.org/package/rank2classes"><code>rank2classes</code></a>, which includes some Template Haskell tools for deriving instances; there’s also <a href="http://hackage.haskell.org/package/conkin">the Conkin package</a>, which has <a href="https://github.com/rampion/conkin/blob/master/README.md">a well-written tutorial</a> focusing on working with data in column-major order.</p>
@@ -794,271 +794,271 @@ fliftA eta t <span class="fu">=</span> fpure (<span class="dt">Morph</span> eta)
 <p>In this post I’m going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.</p>
 <h2 id="asts-and-operations">ASTs and operations</h2>
 <p>The JQL AST looks roughly like this:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode {}
-<span class="kw">class</span> AndNode : JqlNode
-{
-    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }
-    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> OrNode : JqlNode
-{
-    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }
-    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> NotNode : JqlNode
-{
-    <span class="kw">public</span> JqlNode Operand { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> SalaryNode : JqlNode
-{
-    <span class="kw">public</span> <span class="dt">int</span> Amount { <span class="kw">get</span>; }
-    <span class="kw">public</span> <span class="dt">string</span> Currency { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> TagNode : JqlNode
-{
-    <span class="kw">public</span> <span class="dt">string</span> Tag { <span class="kw">get</span>; }
-}</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode {}</a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">class</span> AndNode : JqlNode</a>
+<a class="sourceLine" id="cb1-3" title="3">{</a>
+<a class="sourceLine" id="cb1-4" title="4">    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-5" title="5">    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-6" title="6">}</a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="kw">class</span> OrNode : JqlNode</a>
+<a class="sourceLine" id="cb1-8" title="8">{</a>
+<a class="sourceLine" id="cb1-9" title="9">    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-10" title="10">    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-11" title="11">}</a>
+<a class="sourceLine" id="cb1-12" title="12"><span class="kw">class</span> NotNode : JqlNode</a>
+<a class="sourceLine" id="cb1-13" title="13">{</a>
+<a class="sourceLine" id="cb1-14" title="14">    <span class="kw">public</span> JqlNode Operand { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-15" title="15">}</a>
+<a class="sourceLine" id="cb1-16" title="16"><span class="kw">class</span> SalaryNode : JqlNode</a>
+<a class="sourceLine" id="cb1-17" title="17">{</a>
+<a class="sourceLine" id="cb1-18" title="18">    <span class="kw">public</span> <span class="dt">int</span> Amount { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-19" title="19">    <span class="kw">public</span> <span class="dt">string</span> Currency { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-20" title="20">}</a>
+<a class="sourceLine" id="cb1-21" title="21"><span class="kw">class</span> TagNode : JqlNode</a>
+<a class="sourceLine" id="cb1-22" title="22">{</a>
+<a class="sourceLine" id="cb1-23" title="23">    <span class="kw">public</span> <span class="dt">string</span> Tag { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-24" title="24">}</a></code></pre></div>
 <p>Each syntactic form in the source language is represented as a subclass of <code>JqlNode</code>. Using the example I gave above, the input string <code>[c#] and (not [javascript] or salary:50000gbp)</code> would be represented as:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">new</span> <span class="fu">AndNode</span>(
-    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),
-    <span class="kw">new</span> <span class="fu">OrNode</span>(
-        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-    )
-)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb2-2" title="2">    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),</a>
+<a class="sourceLine" id="cb2-3" title="3">    <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb2-4" title="4">        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb2-5" title="5">        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb2-6" title="6">    )</a>
+<a class="sourceLine" id="cb2-7" title="7">)</a></code></pre></div>
 <p><img src="/images/2017-11-13-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" width="900" /></p>
 <p>When you need to analyse a <code>JqlNode</code>, you use pattern matching to see what type of node you have, and recursively query the operands of <code>And</code>/<code>Or</code>/<code>Not</code> nodes. Here’s a function which searches for the <code>TagNode</code>s in a tree:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)
-{
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">return</span> <span class="kw">new</span>[] { t.<span class="fu">Tag</span> };
-        <span class="kw">case</span> AndNode a:
-            <span class="co">// recursively extract the tags from the two operands</span>
-            <span class="kw">return</span> <span class="fu">ExtractTags</span>(a.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(a.<span class="fu">Right</span>));
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">return</span> <span class="fu">ExtractTags</span>(o.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(o.<span class="fu">Right</span>));
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">return</span> <span class="fu">ExtractTags</span>(n.<span class="fu">Operand</span>);
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">return</span> Enumerable.<span class="fu">Empty</span>&lt;<span class="dt">string</span>&gt;();
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb3-1" title="1">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb3-2" title="2">{</a>
+<a class="sourceLine" id="cb3-3" title="3">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb3-4" title="4">    {</a>
+<a class="sourceLine" id="cb3-5" title="5">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb3-6" title="6">            <span class="kw">return</span> <span class="kw">new</span>[] { t.<span class="fu">Tag</span> };</a>
+<a class="sourceLine" id="cb3-7" title="7">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb3-8" title="8">            <span class="co">// recursively extract the tags from the two operands</span></a>
+<a class="sourceLine" id="cb3-9" title="9">            <span class="kw">return</span> <span class="fu">ExtractTags</span>(a.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(a.<span class="fu">Right</span>));</a>
+<a class="sourceLine" id="cb3-10" title="10">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb3-11" title="11">            <span class="kw">return</span> <span class="fu">ExtractTags</span>(o.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(o.<span class="fu">Right</span>));</a>
+<a class="sourceLine" id="cb3-12" title="12">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb3-13" title="13">            <span class="kw">return</span> <span class="fu">ExtractTags</span>(n.<span class="fu">Operand</span>);</a>
+<a class="sourceLine" id="cb3-14" title="14">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb3-15" title="15">            <span class="kw">return</span> Enumerable.<span class="fu">Empty</span>&lt;<span class="dt">string</span>&gt;();</a>
+<a class="sourceLine" id="cb3-16" title="16">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb3-17" title="17">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb3-18" title="18">    }</a>
+<a class="sourceLine" id="cb3-19" title="19">}</a></code></pre></div>
 <p>Transforming a <code>JqlNode</code> to produce a new <code>JqlNode</code> is a similar story: you recursively traverse the tree, taking it apart and putting it back together. Here’s an example of an optimisation step which never doesn’t remove double-negatives, so a query like <code>not (not [java])</code> gets simplified to <code>[java]</code>:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)
-{
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> NotNode n1 when n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2:
-            <span class="kw">return</span> <span class="fu">SimplifyDoubleNegatives</span>(n2.<span class="fu">Operand</span>);
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">return</span> t;
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">return</span> s;
-        <span class="kw">case</span> AndNode a:
-            <span class="co">// recursively process the operands and rebuild the node</span>
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(
-                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Left</span>),
-                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(
-                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Left</span>),
-                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(
-                <span class="fu">SimplifyDoubleNegatives</span>(n.<span class="fu">Operand</span>)
-            );
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb4-1" title="1">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb4-2" title="2">{</a>
+<a class="sourceLine" id="cb4-3" title="3">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb4-4" title="4">    {</a>
+<a class="sourceLine" id="cb4-5" title="5">        <span class="kw">case</span> NotNode n1 when n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2:</a>
+<a class="sourceLine" id="cb4-6" title="6">            <span class="kw">return</span> <span class="fu">SimplifyDoubleNegatives</span>(n2.<span class="fu">Operand</span>);</a>
+<a class="sourceLine" id="cb4-7" title="7">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb4-8" title="8">            <span class="kw">return</span> t;</a>
+<a class="sourceLine" id="cb4-9" title="9">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb4-10" title="10">            <span class="kw">return</span> s;</a>
+<a class="sourceLine" id="cb4-11" title="11">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb4-12" title="12">            <span class="co">// recursively process the operands and rebuild the node</span></a>
+<a class="sourceLine" id="cb4-13" title="13">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb4-14" title="14">                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb4-15" title="15">                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb4-16" title="16">            );</a>
+<a class="sourceLine" id="cb4-17" title="17">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb4-18" title="18">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb4-19" title="19">                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb4-20" title="20">                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb4-21" title="21">            );</a>
+<a class="sourceLine" id="cb4-22" title="22">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb4-23" title="23">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(</a>
+<a class="sourceLine" id="cb4-24" title="24">                <span class="fu">SimplifyDoubleNegatives</span>(n.<span class="fu">Operand</span>)</a>
+<a class="sourceLine" id="cb4-25" title="25">            );</a>
+<a class="sourceLine" id="cb4-26" title="26">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb4-27" title="27">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb4-28" title="28">    }</a>
+<a class="sourceLine" id="cb4-29" title="29">}</a></code></pre></div>
 <p>This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the <code>case</code>s was interesting (<code>case TagNode t</code> in <code>ExtractTags</code> and <code>case NotNode n1 when n1.Operand is NotNode n2</code> in <code>SimplifyDoubleNegatives</code>); the rest of each function was just boilerplate to recursively operate on nodes’ children. You’re interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of <code>JqlNode</code>, so around 90% of the code in each operation is boilerplate!</p>
 <h2 id="easier-querying">Easier Querying</h2>
 <p>Here’s the first insight that’ll help us improve on this situation. In <code>ExtractTags</code> we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you’re looking for. We’ll call the function which extracts the list of subtrees <code>SelfAndDescendants</code>.</p>
 <p>Given a tree like the example from above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>), <code>SelfAndDescendants</code> will yield every subtree in a depth-first, left-to-right manner:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">new</span> JqlNode[]
-{
-    <span class="kw">new</span> <span class="fu">AndNode</span>(
-        <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),
-        <span class="kw">new</span> <span class="fu">OrNode</span>(
-            <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-            <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-        )
-    ),
-    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),
-    <span class="kw">new</span> <span class="fu">OrNode</span>(
-        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-    ),
-    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),
-    <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-}</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">new</span> JqlNode[]</a>
+<a class="sourceLine" id="cb5-2" title="2">{</a>
+<a class="sourceLine" id="cb5-3" title="3">    <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb5-4" title="4">        <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),</a>
+<a class="sourceLine" id="cb5-5" title="5">        <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb5-6" title="6">            <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb5-7" title="7">            <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb5-8" title="8">        )</a>
+<a class="sourceLine" id="cb5-9" title="9">    ),</a>
+<a class="sourceLine" id="cb5-10" title="10">    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),</a>
+<a class="sourceLine" id="cb5-11" title="11">    <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb5-12" title="12">        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb5-13" title="13">        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb5-14" title="14">    ),</a>
+<a class="sourceLine" id="cb5-15" title="15">    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb5-16" title="16">    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),</a>
+<a class="sourceLine" id="cb5-17" title="17">    <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb5-18" title="18">}</a></code></pre></div>
 <p>Here’s <code>SelfAndDescendants</code> in use:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)
-    =&gt; node
-        .<span class="fu">SelfAndDescendants</span>()
-        .<span class="fu">OfType</span>&lt;TagNode&gt;()
-        .<span class="fu">Select</span>(n =&gt; n.<span class="fu">Tag</span>);</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb6-1" title="1">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb6-2" title="2">    =&gt; node</a>
+<a class="sourceLine" id="cb6-3" title="3">        .<span class="fu">SelfAndDescendants</span>()</a>
+<a class="sourceLine" id="cb6-4" title="4">        .<span class="fu">OfType</span>&lt;TagNode&gt;()</a>
+<a class="sourceLine" id="cb6-5" title="5">        .<span class="fu">Select</span>(n =&gt; n.<span class="fu">Tag</span>);</a></code></pre></div>
 <p>What an improvement! This code is much shorter, but more importantly it’s clearer and more direct. You can directly read off the intention of the code, rather than having to decipher the pattern of recursive calls. It’s also harder to get wrong - I personally am rather prone to forgetting to make a recursive call when I’m writing these sorts of functions. What’s more, <code>SelfAndDescendants</code> is totally reusable. If you can write a LINQ query, you can get whatever information you need from a <code>JqlNode</code>.</p>
 <p>Of course, the pattern-matching and recursion has to go somewhere, and that somewhere is the reusable <code>SelfAndDescendants</code> function.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> IEnumerable&lt;JqlNode&gt; <span class="fu">SelfAndDescendants</span>(<span class="kw">this</span> JqlNode node)
-{
-    <span class="kw">yield</span> <span class="kw">return</span> node;
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">yield</span> <span class="kw">break</span>;
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">yield</span> <span class="kw">break</span>;
-        <span class="kw">case</span> AndNode a:
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Left</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Right</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Left</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Right</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(n.<span class="fu">Operand</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">public</span> <span class="kw">static</span> IEnumerable&lt;JqlNode&gt; <span class="fu">SelfAndDescendants</span>(<span class="kw">this</span> JqlNode node)</a>
+<a class="sourceLine" id="cb7-2" title="2">{</a>
+<a class="sourceLine" id="cb7-3" title="3">    <span class="kw">yield</span> <span class="kw">return</span> node;</a>
+<a class="sourceLine" id="cb7-4" title="4">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb7-5" title="5">    {</a>
+<a class="sourceLine" id="cb7-6" title="6">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb7-7" title="7">            <span class="kw">yield</span> <span class="kw">break</span>;</a>
+<a class="sourceLine" id="cb7-8" title="8">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb7-9" title="9">            <span class="kw">yield</span> <span class="kw">break</span>;</a>
+<a class="sourceLine" id="cb7-10" title="10">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb7-11" title="11">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Left</span>))</a>
+<a class="sourceLine" id="cb7-12" title="12">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-13" title="13">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Right</span>))</a>
+<a class="sourceLine" id="cb7-14" title="14">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-15" title="15">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb7-16" title="16">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Left</span>))</a>
+<a class="sourceLine" id="cb7-17" title="17">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-18" title="18">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Right</span>))</a>
+<a class="sourceLine" id="cb7-19" title="19">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-20" title="20">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb7-21" title="21">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(n.<span class="fu">Operand</span>))</a>
+<a class="sourceLine" id="cb7-22" title="22">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-23" title="23">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb7-24" title="24">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb7-25" title="25">    }</a>
+<a class="sourceLine" id="cb7-26" title="26">}</a></code></pre></div>
 <p>Google crawls links between pages for you, so you can search the Web for a specific piece of information; <code>SelfAndDescendants</code> crawls pointers between nodes for you, so you can search a tree for a specific piece of information. Programming tree traversals by hand is like manually clicking every link on the Web!</p>
 <h2 id="a-reusable-transformer">A Reusable Transformer</h2>
 <p>How about transforming a JQL AST? <code>SimplifyDoubleNegatives</code> searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?</p>
 <p>To rewrite a tree, you search the tree for nodes satisfying the pattern you’re looking for and replace them. As with <code>SelfAndDescendants</code>, the trick is to separate the responsibilities of <em>looking at every node in the tree</em> and <em>deciding whether to replace a given node</em>. You can write a higher-order function - let’s call it <code>Rewrite</code> - which applies a <code>Func</code> to every node in a JQL tree from bottom to top; then it’s the <code>Func</code>’s job to decide what to do with each node.</p>
 <p>For example, <code>Rewrite</code> will take the query above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>) and a function <code>transformer</code>, and compute the expression:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">AndNode</span>(
-    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>)),
-    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">OrNode</span>(
-        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">NotNode</span>(
-            <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>))
-        )),
-        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>))
-    ))
-))</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb8-1" title="1"><span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb8-2" title="2">    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>)),</a>
+<a class="sourceLine" id="cb8-3" title="3">    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb8-4" title="4">        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">NotNode</span>(</a>
+<a class="sourceLine" id="cb8-5" title="5">            <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>))</a>
+<a class="sourceLine" id="cb8-6" title="6">        )),</a>
+<a class="sourceLine" id="cb8-7" title="7">        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>))</a>
+<a class="sourceLine" id="cb8-8" title="8">    ))</a>
+<a class="sourceLine" id="cb8-9" title="9">))</a></code></pre></div>
 <p>So <code>transformer</code> gets applied to every subtree exactly once. <code>Rewrite</code> is a mapping operation, like LINQ’s <code>Select</code>. Here’s how it’s implemented.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">static</span> JqlNode <span class="fu">Rewrite</span>(
-    <span class="kw">this</span> JqlNode node,
-    Func&lt;JqlNode, JqlNode&gt; transformer
-)
-{
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">return</span> <span class="fu">transformer</span>(t);
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">return</span> <span class="fu">transformer</span>(s);
-        <span class="kw">case</span> AndNode a:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(
-                <span class="fu">transformer</span>(a.<span class="fu">Left</span>),
-                <span class="fu">transformer</span>(a.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(
-                <span class="fu">transformer</span>(o.<span class="fu">Left</span>),
-                <span class="fu">transformer</span>(o.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="fu">transformer</span>(n.<span class="fu">Operand</span>));
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">static</span> JqlNode <span class="fu">Rewrite</span>(</a>
+<a class="sourceLine" id="cb9-2" title="2">    <span class="kw">this</span> JqlNode node,</a>
+<a class="sourceLine" id="cb9-3" title="3">    Func&lt;JqlNode, JqlNode&gt; transformer</a>
+<a class="sourceLine" id="cb9-4" title="4">)</a>
+<a class="sourceLine" id="cb9-5" title="5">{</a>
+<a class="sourceLine" id="cb9-6" title="6">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb9-7" title="7">    {</a>
+<a class="sourceLine" id="cb9-8" title="8">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb9-9" title="9">            <span class="kw">return</span> <span class="fu">transformer</span>(t);</a>
+<a class="sourceLine" id="cb9-10" title="10">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb9-11" title="11">            <span class="kw">return</span> <span class="fu">transformer</span>(s);</a>
+<a class="sourceLine" id="cb9-12" title="12">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb9-13" title="13">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb9-14" title="14">                <span class="fu">transformer</span>(a.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb9-15" title="15">                <span class="fu">transformer</span>(a.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb9-16" title="16">            );</a>
+<a class="sourceLine" id="cb9-17" title="17">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb9-18" title="18">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb9-19" title="19">                <span class="fu">transformer</span>(o.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb9-20" title="20">                <span class="fu">transformer</span>(o.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb9-21" title="21">            );</a>
+<a class="sourceLine" id="cb9-22" title="22">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb9-23" title="23">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="fu">transformer</span>(n.<span class="fu">Operand</span>));</a>
+<a class="sourceLine" id="cb9-24" title="24">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb9-25" title="25">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb9-26" title="26">    }</a>
+<a class="sourceLine" id="cb9-27" title="27">}</a></code></pre></div>
 <p>To use this <code>Rewrite</code> method, you write a transformation function which calculates a replacement for each node. If there’s no replacing to do, it just returns the same node. Like this:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)
-    =&gt; node.<span class="fu">Rewrite</span>(
-        n =&gt; n <span class="kw">is</span> NotNode n1 &amp;&amp; n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2
-            ? n2.<span class="fu">Operand</span>
-            : n
-    );</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb10-1" title="1">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb10-2" title="2">    =&gt; node.<span class="fu">Rewrite</span>(</a>
+<a class="sourceLine" id="cb10-3" title="3">        n =&gt; n <span class="kw">is</span> NotNode n1 &amp;&amp; n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2</a>
+<a class="sourceLine" id="cb10-4" title="4">            ? n2.<span class="fu">Operand</span></a>
+<a class="sourceLine" id="cb10-5" title="5">            : n</a>
+<a class="sourceLine" id="cb10-6" title="6">    );</a></code></pre></div>
 <p>Once again, this code is a huge improvement over the verbose version which used <code>switch</code> and recursion. <code>Rewrite</code> allows us to get straight to the point and only think about the parts of the tree we’re interested in.</p>
 <h2 id="from-pattern-to-library">From Pattern to Library</h2>
 <p><code>Rewrite</code> and <code>SelfAndDescendants</code> wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don’t constitute a library. <code>SelfAndDescendants</code> and <code>Rewrite</code>, as written above, have knowledge of <code>JqlNode</code> baked in to them; you have to hand-write equivalent functions to work on your own datatypes.</p>
 <p>We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has <em>children</em> which are also nodes.</p>
 <p><img src="/images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" width="900" /></p>
 <p>As the picture shows, you can reach every node in a tree just by looking at each node’s children. If you can show me how to replace your children, I can replace your children’s children and so on. So let’s use an interface to model the notion of an object with a collection of children.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
-{
-    IEnumerable&lt;T&gt; <span class="fu">GetChildren</span>();
-    T <span class="fu">SetChildren</span>(IEnumerable&lt;T&gt; newChildren);
-}</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb11-2" title="2">{</a>
+<a class="sourceLine" id="cb11-3" title="3">    IEnumerable&lt;T&gt; <span class="fu">GetChildren</span>();</a>
+<a class="sourceLine" id="cb11-4" title="4">    T <span class="fu">SetChildren</span>(IEnumerable&lt;T&gt; newChildren);</a>
+<a class="sourceLine" id="cb11-5" title="5">}</a></code></pre></div>
 <p>A type <code>T</code> is <em>rewritable</em> if it knows how to access its immediate children - in other words, if you can get and set an <code>IEnumerable&lt;T&gt;</code> representing a node’s children. We’re working with immutable trees, remember, so <code>SetChildren</code> doesn’t modify the current instance - it returns a new <code>T</code> the same as the current instance but with different children. Part of the contract of <code>IRewritable</code> is that you shouldn’t call <code>SetChildren</code> with a different number of children to what you got from <code>GetChildren</code>. For example, an <code>And</code> node always has two children, so you shouldn’t try to call <code>SetChildren</code> with only one child (because, how would the <code>And</code> node rebuild itself?).</p>
 <p>Now we can package up those <code>Rewrite</code> and <code>SelfAndDescendants</code> functions for any rewritable object, once and for all. If you show me how to reach each node’s immediate children, I can recursively apply that recipe to look at the children’s children and so on.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">static</span> IEnumerable&lt;T&gt; SelfAndDescendants&lt;T&gt;(<span class="kw">this</span> T node)
-    where T : IRewritable&lt;T&gt;
-{
-    <span class="kw">yield</span> <span class="kw">return</span> node;
-    <span class="kw">foreach</span> (var child <span class="kw">in</span> node.<span class="fu">GetChildren</span>())
-        <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(child))
-            <span class="kw">yield</span> <span class="kw">return</span> descendant;
-}
-<span class="kw">static</span> T Rewrite&lt;T&gt;(<span class="kw">this</span> T node, Func&lt;T, T&gt; transformer)
-    where T : IRewritable&lt;T&gt;
-{
-    <span class="dt">var</span> children = node.<span class="fu">GetChildren</span>();
-    <span class="dt">var</span> newChildren = children.<span class="fu">Select</span>(c =&gt; c.<span class="fu">Rewrite</span>(transformer)).<span class="fu">ToList</span>();
-    <span class="dt">var</span> nodeWithNewChildren = node.<span class="fu">SetChildren</span>(newChildren);
-    <span class="kw">return</span> <span class="fu">transformer</span>(nodeWithNewChildren);
-}</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">static</span> IEnumerable&lt;T&gt; SelfAndDescendants&lt;T&gt;(<span class="kw">this</span> T node)</a>
+<a class="sourceLine" id="cb12-2" title="2">    where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb12-3" title="3">{</a>
+<a class="sourceLine" id="cb12-4" title="4">    <span class="kw">yield</span> <span class="kw">return</span> node;</a>
+<a class="sourceLine" id="cb12-5" title="5">    <span class="kw">foreach</span> (<span class="dt">var</span> child <span class="kw">in</span> node.<span class="fu">GetChildren</span>())</a>
+<a class="sourceLine" id="cb12-6" title="6">        <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(child))</a>
+<a class="sourceLine" id="cb12-7" title="7">            <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb12-8" title="8">}</a>
+<a class="sourceLine" id="cb12-9" title="9"><span class="kw">static</span> T Rewrite&lt;T&gt;(<span class="kw">this</span> T node, Func&lt;T, T&gt; transformer)</a>
+<a class="sourceLine" id="cb12-10" title="10">    where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb12-11" title="11">{</a>
+<a class="sourceLine" id="cb12-12" title="12">    <span class="dt">var</span> children = node.<span class="fu">GetChildren</span>();</a>
+<a class="sourceLine" id="cb12-13" title="13">    <span class="dt">var</span> newChildren = children.<span class="fu">Select</span>(c =&gt; c.<span class="fu">Rewrite</span>(transformer)).<span class="fu">ToList</span>();</a>
+<a class="sourceLine" id="cb12-14" title="14">    <span class="dt">var</span> nodeWithNewChildren = node.<span class="fu">SetChildren</span>(newChildren);</a>
+<a class="sourceLine" id="cb12-15" title="15">    <span class="kw">return</span> <span class="fu">transformer</span>(nodeWithNewChildren);</a>
+<a class="sourceLine" id="cb12-16" title="16">}</a></code></pre></div>
 <p>You typically implement <code>IRewritable</code> abstractly on the base type, using overrides on each subclass to find the children.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode : IRewritable&lt;JqlNode&gt;
-{
-    <span class="kw">public</span> <span class="kw">abstract</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>();
-    <span class="kw">public</span> <span class="kw">abstract</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren);
-}
-<span class="kw">class</span> AndNode : JqlNode
-{
-    <span class="co">// fields as before</span>
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; <span class="kw">new</span>[] { Left, Right };
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">new</span> <span class="fu">AndNode</span>(
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), 
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)
-        );
-}
-<span class="kw">class</span> OrNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; <span class="kw">new</span>[] { Left, Right };
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">new</span> <span class="fu">OrNode</span>(
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), 
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)
-        );
-}
-<span class="kw">class</span> NotNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; <span class="kw">new</span>[] { Operand };
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">new</span> <span class="fu">NotNode</span>(newChildren.<span class="fu">Single</span>());
-}
-<span class="kw">class</span> SalaryNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">this</span>;
-}
-<span class="kw">class</span> TagNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">this</span>;
-}</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode : IRewritable&lt;JqlNode&gt;</a>
+<a class="sourceLine" id="cb13-2" title="2">{</a>
+<a class="sourceLine" id="cb13-3" title="3">    <span class="kw">public</span> <span class="kw">abstract</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>();</a>
+<a class="sourceLine" id="cb13-4" title="4">    <span class="kw">public</span> <span class="kw">abstract</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren);</a>
+<a class="sourceLine" id="cb13-5" title="5">}</a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="kw">class</span> AndNode : JqlNode</a>
+<a class="sourceLine" id="cb13-7" title="7">{</a>
+<a class="sourceLine" id="cb13-8" title="8">    <span class="co">// fields as before</span></a>
+<a class="sourceLine" id="cb13-9" title="9">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-10" title="10">        =&gt; <span class="kw">new</span>[] { Left, Right };</a>
+<a class="sourceLine" id="cb13-11" title="11">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-12" title="12">        =&gt; <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb13-13" title="13">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), </a>
+<a class="sourceLine" id="cb13-14" title="14">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb13-15" title="15">        );</a>
+<a class="sourceLine" id="cb13-16" title="16">}</a>
+<a class="sourceLine" id="cb13-17" title="17"><span class="kw">class</span> OrNode : JqlNode</a>
+<a class="sourceLine" id="cb13-18" title="18">{</a>
+<a class="sourceLine" id="cb13-19" title="19">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-20" title="20">        =&gt; <span class="kw">new</span>[] { Left, Right };</a>
+<a class="sourceLine" id="cb13-21" title="21">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-22" title="22">        =&gt; <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb13-23" title="23">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), </a>
+<a class="sourceLine" id="cb13-24" title="24">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb13-25" title="25">        );</a>
+<a class="sourceLine" id="cb13-26" title="26">}</a>
+<a class="sourceLine" id="cb13-27" title="27"><span class="kw">class</span> NotNode : JqlNode</a>
+<a class="sourceLine" id="cb13-28" title="28">{</a>
+<a class="sourceLine" id="cb13-29" title="29">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-30" title="30">        =&gt; <span class="kw">new</span>[] { Operand };</a>
+<a class="sourceLine" id="cb13-31" title="31">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-32" title="32">        =&gt; <span class="kw">new</span> <span class="fu">NotNode</span>(newChildren.<span class="fu">Single</span>());</a>
+<a class="sourceLine" id="cb13-33" title="33">}</a>
+<a class="sourceLine" id="cb13-34" title="34"><span class="kw">class</span> SalaryNode : JqlNode</a>
+<a class="sourceLine" id="cb13-35" title="35">{</a>
+<a class="sourceLine" id="cb13-36" title="36">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-37" title="37">        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();</a>
+<a class="sourceLine" id="cb13-38" title="38">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-39" title="39">        =&gt; <span class="kw">this</span>;</a>
+<a class="sourceLine" id="cb13-40" title="40">}</a>
+<a class="sourceLine" id="cb13-41" title="41"><span class="kw">class</span> TagNode : JqlNode</a>
+<a class="sourceLine" id="cb13-42" title="42">{</a>
+<a class="sourceLine" id="cb13-43" title="43">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-44" title="44">        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();</a>
+<a class="sourceLine" id="cb13-45" title="45">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-46" title="46">        =&gt; <span class="kw">this</span>;</a>
+<a class="sourceLine" id="cb13-47" title="47">}</a></code></pre></div>
 <p>Note that there isn’t a single line of recursion in the JQL-specific code. It’s all wrapped up in the <code>SelfAndDescendants</code> and <code>Rewrite</code> functions, which are totally generic and reusable for any type of tree.</p>
 <p>The old-fashioned way of writing reusable tree traversals is the Visitor pattern: you put the recursive traversal code in a base class, with virtual methods for each type of node that can be overridden to carry out specific operations. (This is how the Roslyn API works, for example.) <code>IRewritable</code> is a clear improvement over the Visitor pattern. Being designed around base classes and overriding, the Visitor pattern is far clunkier to use than the functional API I outlined above; and <code>IRewritable</code> allows operations like <code>Rewrite</code> can be written totally generically, whereas with the Visitor pattern every type of tree has its own Visitor base class.</p>
 <h2 id="sawmill">Sawmill</h2>

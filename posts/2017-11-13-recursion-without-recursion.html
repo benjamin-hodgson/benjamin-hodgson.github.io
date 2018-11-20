@@ -51,271 +51,271 @@
 <p>In this post I’m going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.</p>
 <h2 id="asts-and-operations">ASTs and operations</h2>
 <p>The JQL AST looks roughly like this:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode {}
-<span class="kw">class</span> AndNode : JqlNode
-{
-    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }
-    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> OrNode : JqlNode
-{
-    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }
-    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> NotNode : JqlNode
-{
-    <span class="kw">public</span> JqlNode Operand { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> SalaryNode : JqlNode
-{
-    <span class="kw">public</span> <span class="dt">int</span> Amount { <span class="kw">get</span>; }
-    <span class="kw">public</span> <span class="dt">string</span> Currency { <span class="kw">get</span>; }
-}
-<span class="kw">class</span> TagNode : JqlNode
-{
-    <span class="kw">public</span> <span class="dt">string</span> Tag { <span class="kw">get</span>; }
-}</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode {}</a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">class</span> AndNode : JqlNode</a>
+<a class="sourceLine" id="cb1-3" title="3">{</a>
+<a class="sourceLine" id="cb1-4" title="4">    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-5" title="5">    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-6" title="6">}</a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="kw">class</span> OrNode : JqlNode</a>
+<a class="sourceLine" id="cb1-8" title="8">{</a>
+<a class="sourceLine" id="cb1-9" title="9">    <span class="kw">public</span> JqlNode Left { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-10" title="10">    <span class="kw">public</span> JqlNode Right { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-11" title="11">}</a>
+<a class="sourceLine" id="cb1-12" title="12"><span class="kw">class</span> NotNode : JqlNode</a>
+<a class="sourceLine" id="cb1-13" title="13">{</a>
+<a class="sourceLine" id="cb1-14" title="14">    <span class="kw">public</span> JqlNode Operand { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-15" title="15">}</a>
+<a class="sourceLine" id="cb1-16" title="16"><span class="kw">class</span> SalaryNode : JqlNode</a>
+<a class="sourceLine" id="cb1-17" title="17">{</a>
+<a class="sourceLine" id="cb1-18" title="18">    <span class="kw">public</span> <span class="dt">int</span> Amount { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-19" title="19">    <span class="kw">public</span> <span class="dt">string</span> Currency { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-20" title="20">}</a>
+<a class="sourceLine" id="cb1-21" title="21"><span class="kw">class</span> TagNode : JqlNode</a>
+<a class="sourceLine" id="cb1-22" title="22">{</a>
+<a class="sourceLine" id="cb1-23" title="23">    <span class="kw">public</span> <span class="dt">string</span> Tag { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb1-24" title="24">}</a></code></pre></div>
 <p>Each syntactic form in the source language is represented as a subclass of <code>JqlNode</code>. Using the example I gave above, the input string <code>[c#] and (not [javascript] or salary:50000gbp)</code> would be represented as:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">new</span> <span class="fu">AndNode</span>(
-    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),
-    <span class="kw">new</span> <span class="fu">OrNode</span>(
-        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-    )
-)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb2-2" title="2">    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),</a>
+<a class="sourceLine" id="cb2-3" title="3">    <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb2-4" title="4">        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb2-5" title="5">        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb2-6" title="6">    )</a>
+<a class="sourceLine" id="cb2-7" title="7">)</a></code></pre></div>
 <p><img src="../images/2017-11-13-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" width="900" /></p>
 <p>When you need to analyse a <code>JqlNode</code>, you use pattern matching to see what type of node you have, and recursively query the operands of <code>And</code>/<code>Or</code>/<code>Not</code> nodes. Here’s a function which searches for the <code>TagNode</code>s in a tree:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)
-{
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">return</span> <span class="kw">new</span>[] { t.<span class="fu">Tag</span> };
-        <span class="kw">case</span> AndNode a:
-            <span class="co">// recursively extract the tags from the two operands</span>
-            <span class="kw">return</span> <span class="fu">ExtractTags</span>(a.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(a.<span class="fu">Right</span>));
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">return</span> <span class="fu">ExtractTags</span>(o.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(o.<span class="fu">Right</span>));
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">return</span> <span class="fu">ExtractTags</span>(n.<span class="fu">Operand</span>);
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">return</span> Enumerable.<span class="fu">Empty</span>&lt;<span class="dt">string</span>&gt;();
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb3-1" title="1">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb3-2" title="2">{</a>
+<a class="sourceLine" id="cb3-3" title="3">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb3-4" title="4">    {</a>
+<a class="sourceLine" id="cb3-5" title="5">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb3-6" title="6">            <span class="kw">return</span> <span class="kw">new</span>[] { t.<span class="fu">Tag</span> };</a>
+<a class="sourceLine" id="cb3-7" title="7">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb3-8" title="8">            <span class="co">// recursively extract the tags from the two operands</span></a>
+<a class="sourceLine" id="cb3-9" title="9">            <span class="kw">return</span> <span class="fu">ExtractTags</span>(a.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(a.<span class="fu">Right</span>));</a>
+<a class="sourceLine" id="cb3-10" title="10">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb3-11" title="11">            <span class="kw">return</span> <span class="fu">ExtractTags</span>(o.<span class="fu">Left</span>).<span class="fu">Concat</span>(<span class="fu">ExtractTags</span>(o.<span class="fu">Right</span>));</a>
+<a class="sourceLine" id="cb3-12" title="12">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb3-13" title="13">            <span class="kw">return</span> <span class="fu">ExtractTags</span>(n.<span class="fu">Operand</span>);</a>
+<a class="sourceLine" id="cb3-14" title="14">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb3-15" title="15">            <span class="kw">return</span> Enumerable.<span class="fu">Empty</span>&lt;<span class="dt">string</span>&gt;();</a>
+<a class="sourceLine" id="cb3-16" title="16">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb3-17" title="17">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb3-18" title="18">    }</a>
+<a class="sourceLine" id="cb3-19" title="19">}</a></code></pre></div>
 <p>Transforming a <code>JqlNode</code> to produce a new <code>JqlNode</code> is a similar story: you recursively traverse the tree, taking it apart and putting it back together. Here’s an example of an optimisation step which never doesn’t remove double-negatives, so a query like <code>not (not [java])</code> gets simplified to <code>[java]</code>:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)
-{
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> NotNode n1 when n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2:
-            <span class="kw">return</span> <span class="fu">SimplifyDoubleNegatives</span>(n2.<span class="fu">Operand</span>);
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">return</span> t;
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">return</span> s;
-        <span class="kw">case</span> AndNode a:
-            <span class="co">// recursively process the operands and rebuild the node</span>
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(
-                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Left</span>),
-                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(
-                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Left</span>),
-                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(
-                <span class="fu">SimplifyDoubleNegatives</span>(n.<span class="fu">Operand</span>)
-            );
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb4-1" title="1">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb4-2" title="2">{</a>
+<a class="sourceLine" id="cb4-3" title="3">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb4-4" title="4">    {</a>
+<a class="sourceLine" id="cb4-5" title="5">        <span class="kw">case</span> NotNode n1 when n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2:</a>
+<a class="sourceLine" id="cb4-6" title="6">            <span class="kw">return</span> <span class="fu">SimplifyDoubleNegatives</span>(n2.<span class="fu">Operand</span>);</a>
+<a class="sourceLine" id="cb4-7" title="7">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb4-8" title="8">            <span class="kw">return</span> t;</a>
+<a class="sourceLine" id="cb4-9" title="9">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb4-10" title="10">            <span class="kw">return</span> s;</a>
+<a class="sourceLine" id="cb4-11" title="11">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb4-12" title="12">            <span class="co">// recursively process the operands and rebuild the node</span></a>
+<a class="sourceLine" id="cb4-13" title="13">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb4-14" title="14">                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb4-15" title="15">                <span class="fu">SimplifyDoubleNegatives</span>(a.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb4-16" title="16">            );</a>
+<a class="sourceLine" id="cb4-17" title="17">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb4-18" title="18">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb4-19" title="19">                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb4-20" title="20">                <span class="fu">SimplifyDoubleNegatives</span>(o.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb4-21" title="21">            );</a>
+<a class="sourceLine" id="cb4-22" title="22">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb4-23" title="23">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(</a>
+<a class="sourceLine" id="cb4-24" title="24">                <span class="fu">SimplifyDoubleNegatives</span>(n.<span class="fu">Operand</span>)</a>
+<a class="sourceLine" id="cb4-25" title="25">            );</a>
+<a class="sourceLine" id="cb4-26" title="26">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb4-27" title="27">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb4-28" title="28">    }</a>
+<a class="sourceLine" id="cb4-29" title="29">}</a></code></pre></div>
 <p>This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the <code>case</code>s was interesting (<code>case TagNode t</code> in <code>ExtractTags</code> and <code>case NotNode n1 when n1.Operand is NotNode n2</code> in <code>SimplifyDoubleNegatives</code>); the rest of each function was just boilerplate to recursively operate on nodes’ children. You’re interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of <code>JqlNode</code>, so around 90% of the code in each operation is boilerplate!</p>
 <h2 id="easier-querying">Easier Querying</h2>
 <p>Here’s the first insight that’ll help us improve on this situation. In <code>ExtractTags</code> we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you’re looking for. We’ll call the function which extracts the list of subtrees <code>SelfAndDescendants</code>.</p>
 <p>Given a tree like the example from above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>), <code>SelfAndDescendants</code> will yield every subtree in a depth-first, left-to-right manner:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">new</span> JqlNode[]
-{
-    <span class="kw">new</span> <span class="fu">AndNode</span>(
-        <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),
-        <span class="kw">new</span> <span class="fu">OrNode</span>(
-            <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-            <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-        )
-    ),
-    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),
-    <span class="kw">new</span> <span class="fu">OrNode</span>(
-        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-    ),
-    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),
-    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),
-    <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)
-}</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">new</span> JqlNode[]</a>
+<a class="sourceLine" id="cb5-2" title="2">{</a>
+<a class="sourceLine" id="cb5-3" title="3">    <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb5-4" title="4">        <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),</a>
+<a class="sourceLine" id="cb5-5" title="5">        <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb5-6" title="6">            <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb5-7" title="7">            <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb5-8" title="8">        )</a>
+<a class="sourceLine" id="cb5-9" title="9">    ),</a>
+<a class="sourceLine" id="cb5-10" title="10">    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>),</a>
+<a class="sourceLine" id="cb5-11" title="11">    <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb5-12" title="12">        <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb5-13" title="13">        <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb5-14" title="14">    ),</a>
+<a class="sourceLine" id="cb5-15" title="15">    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>)),</a>
+<a class="sourceLine" id="cb5-16" title="16">    <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),</a>
+<a class="sourceLine" id="cb5-17" title="17">    <span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>)</a>
+<a class="sourceLine" id="cb5-18" title="18">}</a></code></pre></div>
 <p>Here’s <code>SelfAndDescendants</code> in use:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)
-    =&gt; node
-        .<span class="fu">SelfAndDescendants</span>()
-        .<span class="fu">OfType</span>&lt;TagNode&gt;()
-        .<span class="fu">Select</span>(n =&gt; n.<span class="fu">Tag</span>);</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb6-1" title="1">IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">ExtractTags</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb6-2" title="2">    =&gt; node</a>
+<a class="sourceLine" id="cb6-3" title="3">        .<span class="fu">SelfAndDescendants</span>()</a>
+<a class="sourceLine" id="cb6-4" title="4">        .<span class="fu">OfType</span>&lt;TagNode&gt;()</a>
+<a class="sourceLine" id="cb6-5" title="5">        .<span class="fu">Select</span>(n =&gt; n.<span class="fu">Tag</span>);</a></code></pre></div>
 <p>What an improvement! This code is much shorter, but more importantly it’s clearer and more direct. You can directly read off the intention of the code, rather than having to decipher the pattern of recursive calls. It’s also harder to get wrong - I personally am rather prone to forgetting to make a recursive call when I’m writing these sorts of functions. What’s more, <code>SelfAndDescendants</code> is totally reusable. If you can write a LINQ query, you can get whatever information you need from a <code>JqlNode</code>.</p>
 <p>Of course, the pattern-matching and recursion has to go somewhere, and that somewhere is the reusable <code>SelfAndDescendants</code> function.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">static</span> IEnumerable&lt;JqlNode&gt; <span class="fu">SelfAndDescendants</span>(<span class="kw">this</span> JqlNode node)
-{
-    <span class="kw">yield</span> <span class="kw">return</span> node;
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">yield</span> <span class="kw">break</span>;
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">yield</span> <span class="kw">break</span>;
-        <span class="kw">case</span> AndNode a:
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Left</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Right</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Left</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Right</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(n.<span class="fu">Operand</span>))
-                <span class="kw">yield</span> <span class="kw">return</span> descendant;
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">public</span> <span class="kw">static</span> IEnumerable&lt;JqlNode&gt; <span class="fu">SelfAndDescendants</span>(<span class="kw">this</span> JqlNode node)</a>
+<a class="sourceLine" id="cb7-2" title="2">{</a>
+<a class="sourceLine" id="cb7-3" title="3">    <span class="kw">yield</span> <span class="kw">return</span> node;</a>
+<a class="sourceLine" id="cb7-4" title="4">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb7-5" title="5">    {</a>
+<a class="sourceLine" id="cb7-6" title="6">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb7-7" title="7">            <span class="kw">yield</span> <span class="kw">break</span>;</a>
+<a class="sourceLine" id="cb7-8" title="8">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb7-9" title="9">            <span class="kw">yield</span> <span class="kw">break</span>;</a>
+<a class="sourceLine" id="cb7-10" title="10">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb7-11" title="11">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Left</span>))</a>
+<a class="sourceLine" id="cb7-12" title="12">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-13" title="13">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(a.<span class="fu">Right</span>))</a>
+<a class="sourceLine" id="cb7-14" title="14">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-15" title="15">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb7-16" title="16">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Left</span>))</a>
+<a class="sourceLine" id="cb7-17" title="17">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-18" title="18">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(o.<span class="fu">Right</span>))</a>
+<a class="sourceLine" id="cb7-19" title="19">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-20" title="20">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb7-21" title="21">            <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(n.<span class="fu">Operand</span>))</a>
+<a class="sourceLine" id="cb7-22" title="22">                <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb7-23" title="23">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb7-24" title="24">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb7-25" title="25">    }</a>
+<a class="sourceLine" id="cb7-26" title="26">}</a></code></pre></div>
 <p>Google crawls links between pages for you, so you can search the Web for a specific piece of information; <code>SelfAndDescendants</code> crawls pointers between nodes for you, so you can search a tree for a specific piece of information. Programming tree traversals by hand is like manually clicking every link on the Web!</p>
 <h2 id="a-reusable-transformer">A Reusable Transformer</h2>
 <p>How about transforming a JQL AST? <code>SimplifyDoubleNegatives</code> searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?</p>
 <p>To rewrite a tree, you search the tree for nodes satisfying the pattern you’re looking for and replace them. As with <code>SelfAndDescendants</code>, the trick is to separate the responsibilities of <em>looking at every node in the tree</em> and <em>deciding whether to replace a given node</em>. You can write a higher-order function - let’s call it <code>Rewrite</code> - which applies a <code>Func</code> to every node in a JQL tree from bottom to top; then it’s the <code>Func</code>’s job to decide what to do with each node.</p>
 <p>For example, <code>Rewrite</code> will take the query above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>) and a function <code>transformer</code>, and compute the expression:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">AndNode</span>(
-    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>)),
-    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">OrNode</span>(
-        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">NotNode</span>(
-            <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>))
-        )),
-        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>))
-    ))
-))</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb8-1" title="1"><span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb8-2" title="2">    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>)),</a>
+<a class="sourceLine" id="cb8-3" title="3">    <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb8-4" title="4">        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">NotNode</span>(</a>
+<a class="sourceLine" id="cb8-5" title="5">            <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>))</a>
+<a class="sourceLine" id="cb8-6" title="6">        )),</a>
+<a class="sourceLine" id="cb8-7" title="7">        <span class="fu">transformer</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>))</a>
+<a class="sourceLine" id="cb8-8" title="8">    ))</a>
+<a class="sourceLine" id="cb8-9" title="9">))</a></code></pre></div>
 <p>So <code>transformer</code> gets applied to every subtree exactly once. <code>Rewrite</code> is a mapping operation, like LINQ’s <code>Select</code>. Here’s how it’s implemented.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">static</span> JqlNode <span class="fu">Rewrite</span>(
-    <span class="kw">this</span> JqlNode node,
-    Func&lt;JqlNode, JqlNode&gt; transformer
-)
-{
-    <span class="kw">switch</span> (node)
-    {
-        <span class="kw">case</span> TagNode t:
-            <span class="kw">return</span> <span class="fu">transformer</span>(t);
-        <span class="kw">case</span> SalaryNode s:
-            <span class="kw">return</span> <span class="fu">transformer</span>(s);
-        <span class="kw">case</span> AndNode a:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(
-                <span class="fu">transformer</span>(a.<span class="fu">Left</span>),
-                <span class="fu">transformer</span>(a.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> OrNode o:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(
-                <span class="fu">transformer</span>(o.<span class="fu">Left</span>),
-                <span class="fu">transformer</span>(o.<span class="fu">Right</span>)
-            );
-        <span class="kw">case</span> NotNode n:
-            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="fu">transformer</span>(n.<span class="fu">Operand</span>));
-        <span class="kw">default</span>:
-            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));
-    }
-}</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">static</span> JqlNode <span class="fu">Rewrite</span>(</a>
+<a class="sourceLine" id="cb9-2" title="2">    <span class="kw">this</span> JqlNode node,</a>
+<a class="sourceLine" id="cb9-3" title="3">    Func&lt;JqlNode, JqlNode&gt; transformer</a>
+<a class="sourceLine" id="cb9-4" title="4">)</a>
+<a class="sourceLine" id="cb9-5" title="5">{</a>
+<a class="sourceLine" id="cb9-6" title="6">    <span class="kw">switch</span> (node)</a>
+<a class="sourceLine" id="cb9-7" title="7">    {</a>
+<a class="sourceLine" id="cb9-8" title="8">        <span class="kw">case</span> TagNode t:</a>
+<a class="sourceLine" id="cb9-9" title="9">            <span class="kw">return</span> <span class="fu">transformer</span>(t);</a>
+<a class="sourceLine" id="cb9-10" title="10">        <span class="kw">case</span> SalaryNode s:</a>
+<a class="sourceLine" id="cb9-11" title="11">            <span class="kw">return</span> <span class="fu">transformer</span>(s);</a>
+<a class="sourceLine" id="cb9-12" title="12">        <span class="kw">case</span> AndNode a:</a>
+<a class="sourceLine" id="cb9-13" title="13">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb9-14" title="14">                <span class="fu">transformer</span>(a.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb9-15" title="15">                <span class="fu">transformer</span>(a.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb9-16" title="16">            );</a>
+<a class="sourceLine" id="cb9-17" title="17">        <span class="kw">case</span> OrNode o:</a>
+<a class="sourceLine" id="cb9-18" title="18">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb9-19" title="19">                <span class="fu">transformer</span>(o.<span class="fu">Left</span>),</a>
+<a class="sourceLine" id="cb9-20" title="20">                <span class="fu">transformer</span>(o.<span class="fu">Right</span>)</a>
+<a class="sourceLine" id="cb9-21" title="21">            );</a>
+<a class="sourceLine" id="cb9-22" title="22">        <span class="kw">case</span> NotNode n:</a>
+<a class="sourceLine" id="cb9-23" title="23">            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="fu">transformer</span>(n.<span class="fu">Operand</span>));</a>
+<a class="sourceLine" id="cb9-24" title="24">        <span class="kw">default</span>:</a>
+<a class="sourceLine" id="cb9-25" title="25">            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span>(<span class="fu">nameof</span>(node));</a>
+<a class="sourceLine" id="cb9-26" title="26">    }</a>
+<a class="sourceLine" id="cb9-27" title="27">}</a></code></pre></div>
 <p>To use this <code>Rewrite</code> method, you write a transformation function which calculates a replacement for each node. If there’s no replacing to do, it just returns the same node. Like this:</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)
-    =&gt; node.<span class="fu">Rewrite</span>(
-        n =&gt; n <span class="kw">is</span> NotNode n1 &amp;&amp; n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2
-            ? n2.<span class="fu">Operand</span>
-            : n
-    );</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb10-1" title="1">JqlNode <span class="fu">SimplifyDoubleNegatives</span>(JqlNode node)</a>
+<a class="sourceLine" id="cb10-2" title="2">    =&gt; node.<span class="fu">Rewrite</span>(</a>
+<a class="sourceLine" id="cb10-3" title="3">        n =&gt; n <span class="kw">is</span> NotNode n1 &amp;&amp; n1.<span class="fu">Operand</span> <span class="kw">is</span> NotNode n2</a>
+<a class="sourceLine" id="cb10-4" title="4">            ? n2.<span class="fu">Operand</span></a>
+<a class="sourceLine" id="cb10-5" title="5">            : n</a>
+<a class="sourceLine" id="cb10-6" title="6">    );</a></code></pre></div>
 <p>Once again, this code is a huge improvement over the verbose version which used <code>switch</code> and recursion. <code>Rewrite</code> allows us to get straight to the point and only think about the parts of the tree we’re interested in.</p>
 <h2 id="from-pattern-to-library">From Pattern to Library</h2>
 <p><code>Rewrite</code> and <code>SelfAndDescendants</code> wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don’t constitute a library. <code>SelfAndDescendants</code> and <code>Rewrite</code>, as written above, have knowledge of <code>JqlNode</code> baked in to them; you have to hand-write equivalent functions to work on your own datatypes.</p>
 <p>We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has <em>children</em> which are also nodes.</p>
 <p><img src="../images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" width="900" /></p>
 <p>As the picture shows, you can reach every node in a tree just by looking at each node’s children. If you can show me how to replace your children, I can replace your children’s children and so on. So let’s use an interface to model the notion of an object with a collection of children.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
-{
-    IEnumerable&lt;T&gt; <span class="fu">GetChildren</span>();
-    T <span class="fu">SetChildren</span>(IEnumerable&lt;T&gt; newChildren);
-}</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb11-2" title="2">{</a>
+<a class="sourceLine" id="cb11-3" title="3">    IEnumerable&lt;T&gt; <span class="fu">GetChildren</span>();</a>
+<a class="sourceLine" id="cb11-4" title="4">    T <span class="fu">SetChildren</span>(IEnumerable&lt;T&gt; newChildren);</a>
+<a class="sourceLine" id="cb11-5" title="5">}</a></code></pre></div>
 <p>A type <code>T</code> is <em>rewritable</em> if it knows how to access its immediate children - in other words, if you can get and set an <code>IEnumerable&lt;T&gt;</code> representing a node’s children. We’re working with immutable trees, remember, so <code>SetChildren</code> doesn’t modify the current instance - it returns a new <code>T</code> the same as the current instance but with different children. Part of the contract of <code>IRewritable</code> is that you shouldn’t call <code>SetChildren</code> with a different number of children to what you got from <code>GetChildren</code>. For example, an <code>And</code> node always has two children, so you shouldn’t try to call <code>SetChildren</code> with only one child (because, how would the <code>And</code> node rebuild itself?).</p>
 <p>Now we can package up those <code>Rewrite</code> and <code>SelfAndDescendants</code> functions for any rewritable object, once and for all. If you show me how to reach each node’s immediate children, I can recursively apply that recipe to look at the children’s children and so on.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">static</span> IEnumerable&lt;T&gt; SelfAndDescendants&lt;T&gt;(<span class="kw">this</span> T node)
-    where T : IRewritable&lt;T&gt;
-{
-    <span class="kw">yield</span> <span class="kw">return</span> node;
-    <span class="kw">foreach</span> (var child <span class="kw">in</span> node.<span class="fu">GetChildren</span>())
-        <span class="kw">foreach</span> (var descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(child))
-            <span class="kw">yield</span> <span class="kw">return</span> descendant;
-}
-<span class="kw">static</span> T Rewrite&lt;T&gt;(<span class="kw">this</span> T node, Func&lt;T, T&gt; transformer)
-    where T : IRewritable&lt;T&gt;
-{
-    <span class="dt">var</span> children = node.<span class="fu">GetChildren</span>();
-    <span class="dt">var</span> newChildren = children.<span class="fu">Select</span>(c =&gt; c.<span class="fu">Rewrite</span>(transformer)).<span class="fu">ToList</span>();
-    <span class="dt">var</span> nodeWithNewChildren = node.<span class="fu">SetChildren</span>(newChildren);
-    <span class="kw">return</span> <span class="fu">transformer</span>(nodeWithNewChildren);
-}</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">static</span> IEnumerable&lt;T&gt; SelfAndDescendants&lt;T&gt;(<span class="kw">this</span> T node)</a>
+<a class="sourceLine" id="cb12-2" title="2">    where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb12-3" title="3">{</a>
+<a class="sourceLine" id="cb12-4" title="4">    <span class="kw">yield</span> <span class="kw">return</span> node;</a>
+<a class="sourceLine" id="cb12-5" title="5">    <span class="kw">foreach</span> (<span class="dt">var</span> child <span class="kw">in</span> node.<span class="fu">GetChildren</span>())</a>
+<a class="sourceLine" id="cb12-6" title="6">        <span class="kw">foreach</span> (<span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span>(child))</a>
+<a class="sourceLine" id="cb12-7" title="7">            <span class="kw">yield</span> <span class="kw">return</span> descendant;</a>
+<a class="sourceLine" id="cb12-8" title="8">}</a>
+<a class="sourceLine" id="cb12-9" title="9"><span class="kw">static</span> T Rewrite&lt;T&gt;(<span class="kw">this</span> T node, Func&lt;T, T&gt; transformer)</a>
+<a class="sourceLine" id="cb12-10" title="10">    where T : IRewritable&lt;T&gt;</a>
+<a class="sourceLine" id="cb12-11" title="11">{</a>
+<a class="sourceLine" id="cb12-12" title="12">    <span class="dt">var</span> children = node.<span class="fu">GetChildren</span>();</a>
+<a class="sourceLine" id="cb12-13" title="13">    <span class="dt">var</span> newChildren = children.<span class="fu">Select</span>(c =&gt; c.<span class="fu">Rewrite</span>(transformer)).<span class="fu">ToList</span>();</a>
+<a class="sourceLine" id="cb12-14" title="14">    <span class="dt">var</span> nodeWithNewChildren = node.<span class="fu">SetChildren</span>(newChildren);</a>
+<a class="sourceLine" id="cb12-15" title="15">    <span class="kw">return</span> <span class="fu">transformer</span>(nodeWithNewChildren);</a>
+<a class="sourceLine" id="cb12-16" title="16">}</a></code></pre></div>
 <p>You typically implement <code>IRewritable</code> abstractly on the base type, using overrides on each subclass to find the children.</p>
-<div class="sourceCode"><pre class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode : IRewritable&lt;JqlNode&gt;
-{
-    <span class="kw">public</span> <span class="kw">abstract</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>();
-    <span class="kw">public</span> <span class="kw">abstract</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren);
-}
-<span class="kw">class</span> AndNode : JqlNode
-{
-    <span class="co">// fields as before</span>
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; <span class="kw">new</span>[] { Left, Right };
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">new</span> <span class="fu">AndNode</span>(
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), 
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)
-        );
-}
-<span class="kw">class</span> OrNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; <span class="kw">new</span>[] { Left, Right };
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">new</span> <span class="fu">OrNode</span>(
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), 
-            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)
-        );
-}
-<span class="kw">class</span> NotNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; <span class="kw">new</span>[] { Operand };
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">new</span> <span class="fu">NotNode</span>(newChildren.<span class="fu">Single</span>());
-}
-<span class="kw">class</span> SalaryNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">this</span>;
-}
-<span class="kw">class</span> TagNode : JqlNode
-{
-    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()
-        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();
-    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)
-        =&gt; <span class="kw">this</span>;
-}</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">abstract</span> <span class="kw">class</span> JqlNode : IRewritable&lt;JqlNode&gt;</a>
+<a class="sourceLine" id="cb13-2" title="2">{</a>
+<a class="sourceLine" id="cb13-3" title="3">    <span class="kw">public</span> <span class="kw">abstract</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>();</a>
+<a class="sourceLine" id="cb13-4" title="4">    <span class="kw">public</span> <span class="kw">abstract</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren);</a>
+<a class="sourceLine" id="cb13-5" title="5">}</a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="kw">class</span> AndNode : JqlNode</a>
+<a class="sourceLine" id="cb13-7" title="7">{</a>
+<a class="sourceLine" id="cb13-8" title="8">    <span class="co">// fields as before</span></a>
+<a class="sourceLine" id="cb13-9" title="9">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-10" title="10">        =&gt; <span class="kw">new</span>[] { Left, Right };</a>
+<a class="sourceLine" id="cb13-11" title="11">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-12" title="12">        =&gt; <span class="kw">new</span> <span class="fu">AndNode</span>(</a>
+<a class="sourceLine" id="cb13-13" title="13">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), </a>
+<a class="sourceLine" id="cb13-14" title="14">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb13-15" title="15">        );</a>
+<a class="sourceLine" id="cb13-16" title="16">}</a>
+<a class="sourceLine" id="cb13-17" title="17"><span class="kw">class</span> OrNode : JqlNode</a>
+<a class="sourceLine" id="cb13-18" title="18">{</a>
+<a class="sourceLine" id="cb13-19" title="19">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-20" title="20">        =&gt; <span class="kw">new</span>[] { Left, Right };</a>
+<a class="sourceLine" id="cb13-21" title="21">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-22" title="22">        =&gt; <span class="kw">new</span> <span class="fu">OrNode</span>(</a>
+<a class="sourceLine" id="cb13-23" title="23">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">0</span>), </a>
+<a class="sourceLine" id="cb13-24" title="24">            newChildren.<span class="fu">ElementAt</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb13-25" title="25">        );</a>
+<a class="sourceLine" id="cb13-26" title="26">}</a>
+<a class="sourceLine" id="cb13-27" title="27"><span class="kw">class</span> NotNode : JqlNode</a>
+<a class="sourceLine" id="cb13-28" title="28">{</a>
+<a class="sourceLine" id="cb13-29" title="29">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-30" title="30">        =&gt; <span class="kw">new</span>[] { Operand };</a>
+<a class="sourceLine" id="cb13-31" title="31">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-32" title="32">        =&gt; <span class="kw">new</span> <span class="fu">NotNode</span>(newChildren.<span class="fu">Single</span>());</a>
+<a class="sourceLine" id="cb13-33" title="33">}</a>
+<a class="sourceLine" id="cb13-34" title="34"><span class="kw">class</span> SalaryNode : JqlNode</a>
+<a class="sourceLine" id="cb13-35" title="35">{</a>
+<a class="sourceLine" id="cb13-36" title="36">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-37" title="37">        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();</a>
+<a class="sourceLine" id="cb13-38" title="38">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-39" title="39">        =&gt; <span class="kw">this</span>;</a>
+<a class="sourceLine" id="cb13-40" title="40">}</a>
+<a class="sourceLine" id="cb13-41" title="41"><span class="kw">class</span> TagNode : JqlNode</a>
+<a class="sourceLine" id="cb13-42" title="42">{</a>
+<a class="sourceLine" id="cb13-43" title="43">    <span class="kw">public</span> <span class="kw">override</span> IEnumerable&lt;JqlNode&gt; <span class="fu">GetChildren</span>()</a>
+<a class="sourceLine" id="cb13-44" title="44">        =&gt; Enumerable.<span class="fu">Empty</span>&lt;JqlNode&gt;();</a>
+<a class="sourceLine" id="cb13-45" title="45">    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span>(IEnumerable&lt;JqlNode&gt; newChildren)</a>
+<a class="sourceLine" id="cb13-46" title="46">        =&gt; <span class="kw">this</span>;</a>
+<a class="sourceLine" id="cb13-47" title="47">}</a></code></pre></div>
 <p>Note that there isn’t a single line of recursion in the JQL-specific code. It’s all wrapped up in the <code>SelfAndDescendants</code> and <code>Rewrite</code> functions, which are totally generic and reusable for any type of tree.</p>
 <p>The old-fashioned way of writing reusable tree traversals is the Visitor pattern: you put the recursive traversal code in a base class, with virtual methods for each type of node that can be overridden to carry out specific operations. (This is how the Roslyn API works, for example.) <code>IRewritable</code> is a clear improvement over the Visitor pattern. Being designed around base classes and overriding, the Visitor pattern is far clunkier to use than the functional API I outlined above; and <code>IRewritable</code> allows operations like <code>Rewrite</code> can be written totally generically, whereas with the Visitor pattern every type of tree has its own Visitor base class.</p>
 <h2 id="sawmill">Sawmill</h2>
