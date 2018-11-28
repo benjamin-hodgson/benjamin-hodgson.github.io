@@ -1,5 +1,6 @@
 ---
 title: What Lurks Beneath the Waves
+subtitle: The Fourth Type of Variance
 ---
 
 Many programmers know about covariance, contravariance, and invariance. Not so many know about the fourth type of variance, or the relationship between them.
