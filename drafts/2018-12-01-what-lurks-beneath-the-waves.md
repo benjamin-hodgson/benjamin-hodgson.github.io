@@ -2,7 +2,7 @@
 title: What Lurks Beneath the Waves
 ---
 
-Many programmers know about covariance, contravariance, and invariance. Not so many know about the fourth type.
+Many programmers know about covariance, contravariance, and invariance. Not so many know about the fourth type of variance, or the relationship between them.
 
 
 Covariance
@@ -17,7 +17,7 @@ class Functor f where
 
 This chimes with the intuition that a functor is a container of sorts. If you can turn each `a` in the container into a `b`, then you can turn a container of `a`s into a container of `b`s by converting each item in the container. The arrows go in the same direction.
 
-A similar idea is visible in Scala's hierarchy of subtypes. Type parameters annotated with a `+` are _covariant_.
+A similar idea is visible in Scala's lattice of subtypes. Type parameters annotated with a `+` are covariant.
 
 ```scala
 sealed abstract class List[+A]
@@ -62,11 +62,11 @@ trait Ordering[-A] {
 }
 ```
 
-An ordering of `Animal`s _is an- ordering of `Cats`. If you can compare any two `Animals` (perhaps by comparing their cuteness), then you can certainly compare two cats. The subtype relationship goes in the opposite direction to that of the type parameter.
+An ordering of `Animal`s is an ordering of `Cats`. If you can compare any two `Animals` (perhaps by comparing their cuteness), then you can certainly compare two cats. The subtype relationship goes in the opposite direction to that of the type parameter.
 
 ```scala
 val animalOrdering : Ordering[Animal] = Ordering.by[Animal, Int](x => x.cuteness)
-var catOrdering : Ordering[Cat] = animalOrdering
+val catOrdering : Ordering[Cat] = animalOrdering
 ```
 
 Contravariant things are consumers. (Julie Moronuki has [the best explanation of contravariance](https://typeclasses.com/contravariance) that I know of.)
@@ -97,6 +97,7 @@ Invariance is more familiar in Scala. A type parameter unadorned with a sign is 
 
 ```scala
 class Container[A](var value : A) {
+    // A appears as both an input and an output
     def get() : A = value
     def set(x : A) : Unit = {
         value = x
@@ -114,7 +115,9 @@ animalContainer.set(Dog("Richard"))
 val cat : Cat = catContainer.get()  // uh oh, this'll return a `Dog`!
 ```
 
-By the same logic, a `Container[Animal]` is not a `Container[Cat]`.
+By the same logic, a `Container[Animal]` is not a `Container[Cat]`. Let me explicate the similarity between this and `Invariant` functors. For `f a` to be convertible to `f b`, `a` must be convertible to `b` _and_ `b` must be convertible to `a`. For `Container[A]` to be a subtype of `Container[B]`, `A` must be a subtype of `B` _and_ `B` must be a subtype of `A` (in other words, they must be the same type).
+
+Note that variance is a property of the type parameter (`A`), not the type constructor (`List`/`Ordering`). A given type constructor may have multiple parameters with different variances. `Function1[-A, +B]`, for example.
 
 
 The Semilattice of Variances
@@ -150,16 +153,16 @@ But, hmm, the picture seems asymmetric. Is variance really only a semilattice? O
 Phantom Variance
 ----------------
 
-Looking at the code above, it appears that `Functor` and `Contravariant` both specialise `Invariant` by not requiring one of `Invariant`'s function parameters. What if we didn't require either of them?
+Looking at the code above, it appears that `Functor` and `Contravariant` both specialise `Invariant` by ignoring one of `Invariant`'s function parameters. What if we ignored both of them?
 
 ```haskell
 class (Functor f, Contravariant f) => Phantom f where
     pmap :: f a -> f b
 ```
 
-This strange class says that you can map an `f a` to an `f b` without needing to map `a`s or `b`s at all! What does this mean, intuitively?
+This strange class says that you can map an `f a` to an `f b` without needing to map `a`s or `b`s at all! Intuitively, you can only convert `f a` to `f b` for free when `f` doesn't mention `a` anywhere in its body.
 
-A functor is `Invariant` when it has `a`s both as inputs and outputs. `Functor` specialises `Invariant` by promising that `f` doesn't have any input `a`s, so all you need to do is map the outputs. `Contravariant` specialises `Invariant` by promising that there are no output `a`s and all you need to do is map the inputs. So `Phantom` guarantees that there are no `a`s at all in the `f`!
+A functor is `Invariant` when it has `a`s both as inputs and outputs. `Functor` specialises `Invariant` by promising that `f` doesn't have any input `a`s, so all you need to do is map the outputs. `Contravariant` specialises `Invariant` by promising that there are no output `a`s and all you need to do is map the inputs. `Phantom`, being a special case of both covariance and contravariance, guarantees that there are no `a`s at all in the `f`.
 
 So the four types of variance form a nice lattice.
 
@@ -178,16 +181,18 @@ defaultContramap _ = pmap
 Phantom types show up every now and then in Haskell. They're used to decorate ordinary values with additional type-level information, either to layer on additional type safety or to give GHC a hint for type inference.
 
 ```haskell
-data Proxy a = Proxy
+data Proxy a = Proxy  -- from Data.Proxy
 instance Phantom Proxy where
     pmap _ = Proxy
 ```
 
-Haskell is the only mainstream language I know of with any real support for phantom types, in its [role system](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles). (With GHC's new `QuantifiedConstraints` feature, I'd consider adding `forall a b. Coercible (f a) (f b)` to `Phantom`'s superclasses.) There's no syntax for it in Scala, but if there was it'd mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.
+Haskell is the only language I know of with proper support for phantom types, in its [role system](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles). (`Phantom` roughly means `forall a b. Coercible (f a) (f b)`.) There's no syntax for it in Scala, but if there was it'd mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.
 
 ```scala
-case class Proxy[+-A]
+case class Proxy[±A]
 
 val catProxy = Proxy[Cat]()
 val dogProxy : Proxy[Dog] = catProxy
 ```
+
+`Proxy[A]` is always a subtype of `Proxy[B]` (and vice versa!), even when `A` and `B` are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry --- two different types can both be a subtype of each other --- so subtyping is no longer a partial order. As a language feature, phantom variance probably isn't actually all that desirable.
