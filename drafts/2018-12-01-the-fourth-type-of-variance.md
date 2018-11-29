@@ -1,9 +1,8 @@
 ---
-title: What Lurks Beneath the Waves
-subtitle: The Fourth Type of Variance
+title: The Fourth Type of Variance
 ---
 
-Many programmers know about covariance, contravariance, and invariance. Not so many know about the fourth type of variance, or the relationship between them.
+_Variance_ is a way to describe a relationship between different instantiations of the same polymorphic type. Many programmers know about covariance, contravariance, and invariance. Not so many know about the fourth type of variance, or the relationship between them.
 
 
 Covariance
@@ -44,7 +43,7 @@ class Contravariant f where
     contramap :: (b -> a) -> f a -> f b
 ```
 
-A contravariant functor is a _consumer_ of `a`s. If you can turn `b`s into `a`s, then you can turn a consumer of `a`s into a consumer of `b`s by converting the `b`s into `a`s before they go into the consumer.
+The arrows go in opposite directions. A contravariant functor is a _consumer_ of `a`s. If you can turn `b`s into `a`s, then you can turn a consumer of `a`s into a consumer of `b`s by converting the `b`s into `a`s before they go into the consumer.
 
 ```haskell
 newtype Comparer a = Comparer (a -> a -> Ord)
@@ -53,7 +52,7 @@ instance Contravariant Comparer where
     contramap f (Comparer p) = Comparer (\x y -> p (f x) (f y))
 ```
 
-The arrows go in opposite directions.
+Note how `f` is applied to `p`'s inputs.
 
 Scalaists use the `-` symbol to denote a contravariant parameter. (C#ers say `in`, as in `IComparer<in T>`.)
 
@@ -92,12 +91,14 @@ instance Invariant Operation where
     invmap f g (Operation op) = Operation (\x y -> f (g x `op` g y))
 ```
 
+Note how we use `f` on the output of `op` and `g` on the inputs.
+
 The only time I've actually seen this class used is in Ed Kmett's [article about attempting to represent higher-order abstract syntax generically](http://comonad.com/reader/2008/rotten-bananas/).
 
 Invariance is more familiar in Scala. A type parameter unadorned with a sign is invariant. It means there's no subtyping relationship between the parameter and the type.
 
 ```scala
-class Container[A](var value : A) {
+class Container[A](private var value : A) {
     // A appears as both an input and an output
     def get() : A = value
     def set(x : A) : Unit = {
@@ -113,12 +114,16 @@ val catContainer = new Container[Cat](Cat("Tilly"))
 val animalContainer : Container[Animal] = catContainer
 
 animalContainer.set(Dog("Richard"))
-val cat : Cat = catContainer.get()  // uh oh, this'll return a `Dog`!
+val cat : Cat = catContainer.get()  // uh oh, this'd return a `Dog`!
 ```
 
-By the same logic, a `Container[Animal]` is not a `Container[Cat]`. Let me explicate the similarity between this and `Invariant` functors. For `f a` to be convertible to `f b`, `a` must be convertible to `b` _and_ `b` must be convertible to `a`. For `Container[A]` to be a subtype of `Container[B]`, `A` must be a subtype of `B` _and_ `B` must be a subtype of `A` (in other words, they must be the same type).
+By the same logic, a `Container[Animal]` is not a `Container[Cat]`.
+
+Let me spell out the similarity between this and Haskell's `Invariant` functors. For `Operation a` to be convertible to `Operation b`, `a` must be convertible to `b` _and_ `b` must be convertible to `a`. For `Container[A]` to be a subtype of `Container[B]`, `A` must be a subtype of `B` _and_ `B` must be a subtype of `A` (that is, they must be the same type).
 
 Note that variance is a property of the type parameter (`A`), not the type constructor (`List`/`Ordering`). A given type constructor may have multiple parameters with different variances. `Function1[-A, +B]`, for example.
+
+<img src="/images/2018-12-01-the-fourth-type-of-variance/hierarchy.png" width="900" />
 
 
 The Semilattice of Variances
@@ -144,7 +149,7 @@ class Invariant f => Functor f where {- ... -}
 class Invariant f => Contravariant f where {- ... -}
 ```
 
-**PICTURE**
+<img src="/images/2018-12-01-the-fourth-type-of-variance/semilattice.jpg" width="900" />
 
 So there's this interesting relationship between the three types of variance. They form a little semilattice, of which `Invariant` is the supremum.
 
@@ -167,7 +172,7 @@ A functor is `Invariant` when it has `a`s both as inputs and outputs. `Functor` 
 
 So the four types of variance form a nice lattice.
 
-**PICTURE**
+<img src="/images/2018-12-01-the-fourth-type-of-variance/lattice.jpg" width="900" />
 
 For completeness, here are witnesses to the superclass constraints:
 
@@ -187,10 +192,10 @@ instance Phantom Proxy where
     pmap _ = Proxy
 ```
 
-Haskell is the only language I know of with proper support for phantom types, in its [role system](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles). (`Phantom` roughly means `forall a b. Coercible (f a) (f b)`.) There's no syntax for it in Scala, but if there was it'd mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.
+Haskell is the only language I know of with proper support for phantom types, in its [role system](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles). (`Phantom` roughly means `forall a b. Coercible (f a) (f b)`.) Scala doesn't support it, but it'd mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.
 
 ```scala
-case class Proxy[±A]
+case class Proxy[±A]  // hypothetical syntax
 
 val catProxy = Proxy[Cat]()
 val dogProxy : Proxy[Dog] = catProxy
