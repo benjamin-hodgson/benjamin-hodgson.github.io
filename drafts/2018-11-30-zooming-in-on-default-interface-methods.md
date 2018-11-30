@@ -28,7 +28,7 @@ class Product
 }
 ```
 
-**PICTURE**
+<img src="/images/2018-11-30-zooming-in-on-default-interface-methods/model.jpg" width="900" />
 
 (I've omitted the constructors; you can imagine your own.) These objects are immutable, meaning you can't modify them directly. The way to update an immutable object is to make a copy of that object with the relevant properties changed. This turns out to be surprisingly tedious when you're working inside a deeply nested structure:
 
@@ -87,15 +87,15 @@ class AddressL : ILens<Customer, Address>
 }
 ```
 
-**PICTURE**
+<img src="/images/2018-11-30-zooming-in-on-default-interface-methods/customer.jpg" width="900" />
 
 So a lens picks out a single property inside a given object.
 
 The power of lenses comes from their composability. Given a lens identifying a `T2` inside a `T1` (`ILens<T1, T2>`) and a lens identifying a `T3` inside a `T2` (`ILens<T2, T3>`), you can compose those lenses together to focus all the way from the `T1` to the `T3`.
 
-**PICTURE**
+You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I've given it the shortest name I can think of: `_`. (Readers of [an eariler post of mine](2018-03-16-eighty.html) will know of my fondness for `_`.)
 
-You can traverse any relationship in your data model by composing together a small number of atomic lenses. Composing lenses is so important that I've given it the shortest name I can think of: `_`. (Readers of [an eariler post of mine](2018-03-16-eighty.html) will know of my fondness for `_`.)
+<img src="/images/2018-11-30-zooming-in-on-default-interface-methods/postcode.jpg" width="900" />
 
 Compare this terse, declarative code with the tedious version of `UpdatePostcode` from the beginning:
 
@@ -237,9 +237,9 @@ class ProductsL : IMultiLens<Order, Product>
 }
 ```
 
-You can compose multi-lenses, too. If you have a multi-lens which finds $n$ `T2`s inside a `T1`, and a second multi-lens which finds $m$ `T3`s inside a `T2`, you can build a multi-lens which finds $nm$ `T3`s inside a `T1`. This works by looking through the second multi-lens at all $n$ of the first multi-lens's targets.
+<img src="/images/2018-11-30-zooming-in-on-default-interface-methods/products.jpg" width="900" />
 
-**PICTURE**
+You can compose multi-lenses, too. If you have a multi-lens which finds $n$ `T2`s inside a `T1`, and a second multi-lens which finds $m$ `T3`s inside a `T2`, you can build a multi-lens which finds $nm$ `T3`s inside a `T1`. This works by looking through the second multi-lens at all $n$ of the first multi-lens's targets.
 
 ```csharp
 static class LensExtensions
@@ -293,8 +293,6 @@ interface ILens<T, TProp> : IMultiLens<T, TProp>
 
 Inheriting from `IMultiLens` like this is just the same trick as inheriting from `IGetter`. It allows you to compose a lens with a multi-lens using `_`; the result will be a multi-lens.
 
-**PICTURE**
-
 If lenses are like a first-class `.`, then multi-lenses are like a first-class `Select`. Composing a lens onto the end of a multi-lens is like `Select`ing a field from each element of a list, with the added power of being able to write new values to the list. Like lenses, multi-lenses are point-free: you compose a multi-lens describing a path through a datatype, then apply that multi-lens to a specific instance of the datatype.
 
 ```csharp
@@ -304,6 +302,7 @@ Order TwentyPercentOff(Order order)
     return l.Map(order, x => x * 0.8);
 }
 ```
+<img src="/images/2018-11-30-zooming-in-on-default-interface-methods/product-and-price.jpg" width="900" />
 
 Incorporating the earlier `IGetter` fix, and extending `IMultiLens` upwards in parallel, leaves us with the following hierarchy.
 
@@ -335,7 +334,7 @@ interface ILens<T, TProp> : IGetter<T, TProp>, IMultiLens<T, TProp>
 }
 ```
 
-<img src="/images/2018-11-30-zooming-in-on-default-interface-methods/hierarchy.png" width="900" />
+<img src="/images/2018-11-30-zooming-in-on-default-interface-methods/hierarchy.jpg" width="900" />
 
 Default Interface Implementations
 ---------------------------------
@@ -421,7 +420,7 @@ Lenses are very useful in functional languages, but I would not recommend you us
 
 * **Code generation**. Almost all of the atomic lens classes you'd write for a business system are pure boilerplate --- exactly the sort of thing you'd expect a machine to write. You should be able to define an object, perhaps mark it up using an attribute, and get on with using lenses into that object in the rest of your program, with Intellisense support. You shouldn't ever need to see a lens's source code. Roslyn, the C# compiler, has no facilities for compile-time code injection like this. A lens library could bundle a source code generator, perhaps using Roslyn's API, which users run ahead-of-time --- many ORMs do this --- but that's a much less compelling user experience.
 
-  This may be a good use case for F#'s type providers. (In any case F# places more emphasis on immutability than C#, making lenses a more natural fit in the first place.) Presently you can't use a type provider to generate code based on another type (though [it appears to be planned](https://github.com/fsharp/fslang-design/issues/125)), and the fact that [there don't appear to be plans](https://github.com/fsharp/fslang-suggestions/issues/679#issuecomment-399411192) to support multiple inheritance in the F# source language. In principle one could implement the hierarchy in C# and consume it from an F# type provider.
+  This may be a good use case for F#'s type providers. (In any case F# places more emphasis on immutability than C#, making lenses a more natural fit in the first place.) Presently you can't use a type provider to generate code based on another type (though [it appears to be planned](https://github.com/fsharp/fslang-design/issues/125)), and [there don't seem to be plans](https://github.com/fsharp/fslang-suggestions/issues/679#issuecomment-399411192) to support multiple inheritance in the F# source language. In principle one could implement the hierarchy in C# and consume it from an F# type provider.
 
 * Two ergonomic complaints regarding C#'s support for **generics**:
   * **Type inference**. C# has only minimal support for type inference. This makes generic lenses unpleasant to use. The following lens picks out a `KeyValuePair`'s `Value`:
@@ -439,9 +438,9 @@ Lenses are very useful in functional languages, but I would not recommend you us
     ```
     Ideally the compiler would be able to deduce the `<string, int>` part by noticing that we're using it on a `KeyValuePair<string, int>`. This is difficult to implement in a subtyping-based language, though.
 
-  * **Generic type aliases**. `ValueL` should allow you to change the type of the value: `lens.Set(new KeyValuePair<string, string>("foo", "bar"), 3)` should return a `KeyValuePair<string, int>` --- that is, a new `KeyValuePair` with a different type to the original. It turns out that [lenses can support this](http://comonad.com/reader/2012/mirrored-lenses/), but you need _four_ type parameters: `ILens<in S, out T, out A, in B>`! The old `ILens<S, A>` is then equivalent to `ILens<S, S, A, A>`.
+  * **Generic type aliases**. [The most general formulation of lenses](http://comonad.com/reader/2012/mirrored-lenses/) actually has _four_ type parameters: `ILens<in S, out T, out A, in B>`! This is to support lenses into generic types, allowing you to change the type of the resulting structure by writing a different type into the lens. (`new ValueL().Set(new KeyValuePair<string, string>("foo", "bar"), 3)` should return a `KeyValuePair<string, int>` --- that is, a new `KeyValuePair` with a different type to the original.)
   
-    Ideally we'd be able to define a _type alias_, so that you can type `ILens<S, A>` for `ILens<S, S, A, A>`, but C# doesn't support this. ([A modest proposed extension to `using`](https://github.com/dotnet/roslyn/issues/3993) would largely service this complaint, reducing the noise to a few lines of boilerplate at the top of each file.)
+    The old `ILens<S, A>` is then equivalent to `ILens<S, S, A, A>`. Ideally we'd be able to define a _type alias_, so that you can type `ILens<S, A>` for `ILens<S, S, A, A>`, but C# doesn't support this. ([A modest proposed extension to `using`](https://github.com/dotnet/roslyn/issues/3993) would largely service this complaint, reducing the noise to a few lines of boilerplate at the top of each file.)
 
 * **Noisy syntax**. Haskell allows you to define custom symbolic operators, and `lens` ships a large collection of operators to debigulate your code. `new CustomerL()._(new AddressL())._(new PostcodeL()).Get(order)` is clunky in comparison to Haskell's cute OO-style `order^.customer.address.postcode`.
 
