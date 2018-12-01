@@ -30,7 +30,7 @@ val cats : List[Cat] = List(Cat("Tilly"), Cat("Charlie"), Cat("Izzy"))
 val animals : List[Animal] = cats
 ```
 
-Covariant things are producers.
+A type is covariant if its parameter appears as an output. Covariant things are producers.
 
 
 Contravariance
@@ -69,7 +69,7 @@ val animalOrdering : Ordering[Animal] = Ordering.by[Animal, Int](x => x.cuteness
 val catOrdering : Ordering[Cat] = animalOrdering
 ```
 
-Contravariant things are consumers. (Julie Moronuki has [the best explanation of contravariance](https://typeclasses.com/contravariance) that I know of.)
+A type is contravariant if its parameter appears as an input. Contravariant things are consumers. (Julie Moronuki has [the best explanation of contravariance](https://typeclasses.com/contravariance) that I know of.)
 
 
 Invariance
