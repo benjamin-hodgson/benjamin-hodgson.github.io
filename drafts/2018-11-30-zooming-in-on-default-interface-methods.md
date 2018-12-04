@@ -165,7 +165,7 @@ How would you write a lens which focuses on a list's `Count`? You can't set `Cou
 class CountL<T> : ILens<ImmutableList<T>, int>
 {
     public int Get(ImmutableList<T> l) => l.Count;
-    public ImmutableList<T> Set(int count) => /* ??? */;
+    public ImmutableList<T> Set(ImmutableList<T> l, int count) => /* ??? */;
 }
 ```
 
