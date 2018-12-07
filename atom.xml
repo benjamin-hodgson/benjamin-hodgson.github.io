@@ -73,12 +73,12 @@
 <a class="sourceLine" id="cb4-3" title="3">    TProp <span class="fu">Get</span>(T obj);</a>
 <a class="sourceLine" id="cb4-4" title="4">    T <span class="fu">Set</span>(T oldObj, TProp newVal);</a>
 <a class="sourceLine" id="cb4-5" title="5">}</a></code></pre></div>
-<p>For example, here’s a lens which focuses on a <code>Customer</code>’s <code>Address</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">class</span> AddressL : ILens&lt;Customer, Address&gt;</a>
+<p>For example, here’s a lens which focuses on an <code>Order</code>’s <code>Customer</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">class</span> CustomerL : ILens&lt;Order, Customer&gt;</a>
 <a class="sourceLine" id="cb5-2" title="2">{</a>
-<a class="sourceLine" id="cb5-3" title="3">    <span class="kw">public</span> Address <span class="fu">Get</span>(Customer c) =&gt; c.<span class="fu">Address</span>;</a>
+<a class="sourceLine" id="cb5-3" title="3">    <span class="kw">public</span> Customer <span class="fu">Get</span>(Order o) =&gt; o.<span class="fu">Customer</span>;</a>
 <a class="sourceLine" id="cb5-4" title="4"></a>
-<a class="sourceLine" id="cb5-5" title="5">    <span class="kw">public</span> Customer <span class="fu">Set</span>(Customer c, Address a) =&gt; <span class="kw">new</span> <span class="fu">Customer</span>(c.<span class="fu">Name</span>, a);</a>
+<a class="sourceLine" id="cb5-5" title="5">    <span class="kw">public</span> Order <span class="fu">Set</span>(Order o, Customer c) =&gt; <span class="kw">new</span> <span class="fu">Order</span>(c, o.<span class="fu">Products</span>);</a>
 <a class="sourceLine" id="cb5-6" title="6">}</a></code></pre></div>
 <p><img src="/images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" width="900" /></p>
 <p>So a lens picks out a single property inside a given object.</p>
