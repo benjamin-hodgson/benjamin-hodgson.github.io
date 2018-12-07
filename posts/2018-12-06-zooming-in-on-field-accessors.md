@@ -76,14 +76,14 @@ interface ILens<T, TProp>
 }
 ```
 
-For example, here's a lens which focuses on a `Customer`'s `Address`.
+For example, here's a lens which focuses on an `Order`'s `Customer`.
 
 ```csharp
-class AddressL : ILens<Customer, Address>
+class CustomerL : ILens<Order, Customer>
 {
-    public Address Get(Customer c) => c.Address;
+    public Customer Get(Order o) => o.Customer;
 
-    public Customer Set(Customer c, Address a) => new Customer(c.Name, a);
+    public Order Set(Order o, Customer c) => new Order(c, o.Products);
 }
 ```
 
