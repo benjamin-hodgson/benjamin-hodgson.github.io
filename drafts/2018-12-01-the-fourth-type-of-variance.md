@@ -2,80 +2,102 @@
 title: The Fourth Type of Variance
 ---
 
-_Variance_ is a way to describe a relationship between different instantiations of the same polymorphic type. Many programmers know about covariance, contravariance, and invariance. Not so many know about the fourth type of variance, or the relationship between them.
+Given a polymorphic type, like `List`, what can we say about the relationship between different usages of that type? If `A` and `B` are related, is `List[A]` related to `List[B]`? _Variance_ is the word for this type of relationship, and it turns out there are a few different answers to that question, depending on the type you're asking about.
 
 
 Covariance
 ----------
 
-Haskellers'll be familiar with _covariant functors_. It's the type of functor exhibited the the standard `Functor` class.
-
-```haskell
-class Functor f where
-    fmap :: (a -> b) -> f a -> f b
-```
-
-This chimes with the intuition that a functor is a container of sorts. If you can turn each `a` in the container into a `b`, then you can turn a container of `a`s into a container of `b`s by converting each item in the container. The arrows go in the same direction.
-
-A similar idea is visible in Scala's lattice of subtypes. Type parameters annotated with a `+` are covariant.
+Probably the most familiar situation is when the parameterised types are related in the same way as the parameter. This is the type of variance exhibited by most "container" types, like `List`.
 
 ```scala
 sealed abstract class List[+A]
-```
 
-A list of `Cat`s is a list of `Animal`s, because every `Cat` is an `Animal`. The subtype relationship of the container goes in the same direction as the subtype relationship of the elements. (In C# `+` is pronounced `out`, as in `IEnumerable<out T>`.)
-
-```scala
 val cats : List[Cat] = List(Cat("Tilly"), Cat("Charlie"), Cat("Izzy"))
 val animals : List[Animal] = cats
 ```
 
-A type is covariant if its parameter appears as an output. Covariant things are producers.
+`List`'s parameter `A` is annotated with `+`, so it'll be treated as covariant. This allows you to use a `List[Cat]` any time you need a `List[Animal]`. A list of `Cat`s is a list of `Animal`s, because every `Cat` is an `Animal`. The subtype relationship of the container goes in the same direction as the subtype relationship of the elements. (In C# `+` is pronounced `out`, as in `IEnumerable<out T>`.)
+
+Variance is visible even in non-subtyping-based languages. Haskellers'll be familiar with _covariant functors_. It's the type of functor exhibited the the standard `Functor` class.
+
+```haskell
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
+
+instance Functor [] where
+    fmap f xs = [f x | x <- xs]
+```
+
+This chimes with the intuition that a functor `f` is a container of sorts. If you can write a function to convert each `a` in the container into a `b`, then `fmap` can convert a container of `a`s into a container of `b`s by converting each item in the container.
+
+In general, a type is covariant if its parameter is used as an output. An object which produces `Cat`s can be used to produce `Animal`s. All you have to do is ignore the cattiness of the animals you get out of the producer.
 
 
 Contravariance
 --------------
 
-Less familiar are _contravariant functors_:
+_Contravariance_, covariance's evil twin, is the word for when the parameterised types are related in the opposite way as the parameters. Scala's `Ordering`, which determines which way round to put two objects (like C#'s `IComparer`), is an example of a contravariant type.
+
+```scala
+trait Ordering[-A] {
+    def apply(x : A, y : A) : Int
+}
+val animalOrdering : Ordering[Animal] = Ordering.by[Animal, Int](x => x.cuteness)
+val catOrdering : Ordering[Cat] = animalOrdering
+```
+
+The `-` symbol denotes a contravariant parameter, allowing us to use an `Ordering[Animal]` as an `Ordering[Cat]`. (C#ers say `in`, as in `IComparer<in T>`.) If you know how to compare two `Animal`s (perhaps by comparing their cuteness), you can certainly compare two `Cat`s. The subtype relationship of the comparers goes in the opposite direction to that of the parameters.
+
+The class of contravariant functors in Haskell is just like `Functor` but with the direction of one of the arrows flipped.
 
 ```haskell
 class Contravariant f where
     contramap :: (b -> a) -> f a -> f b
-```
 
-The arrows go in opposite directions. A contravariant functor is a _consumer_ of `a`s. If you can turn `b`s into `a`s, then you can turn a consumer of `a`s into a consumer of `b`s by converting the `b`s into `a`s before they go into the consumer.
-
-```haskell
 newtype Comparer a = Comparer (a -> a -> Ord)
 
 instance Contravariant Comparer where
     contramap f (Comparer p) = Comparer (\x y -> p (f x) (f y))
 ```
 
-Note how `f` is applied to `p`'s inputs.
+If you can turn `b`s into `a`s, then you can turn a comparer of `a`s into a comparer of `b`s by converting the `b`s into `a`s before they go into the comparer. Note how `f` is applied to `p`'s inputs in the implementation of `contramap`.
 
-Scalaists use the `-` symbol to denote a contravariant parameter. (C#ers say `in`, as in `IComparer<in T>`.)
+In general, a type is contravariant if its parameter appears as an input. An object which consumes `Animals` can be used to consume `Cat`s. All you have to do is forget about the cattiness of the animals before you put them into the consumer.
 
-```scala
-trait Ordering[-A] {
-    def apply(x : A, y : A) : Int
-}
-```
-
-An ordering of `Animal`s is an ordering of `Cats`. If you can compare any two `Animals` (perhaps by comparing their cuteness), then you can certainly compare two cats. The subtype relationship goes in the opposite direction to that of the type parameter.
-
-```scala
-val animalOrdering : Ordering[Animal] = Ordering.by[Animal, Int](x => x.cuteness)
-val catOrdering : Ordering[Cat] = animalOrdering
-```
-
-A type is contravariant if its parameter appears as an input. Contravariant things are consumers. (Julie Moronuki has [the best explanation of contravariance](https://typeclasses.com/contravariance) that I know of.)
+Julie Moronuki has [the best explanation of contravariance](https://typeclasses.com/contravariance) that I know of.
 
 
 Invariance
 ----------
 
-_Invariant functors_ are both producers and consumers.
+_Invariance_ is the word for when there's no relationship at all between different usages of a parameterised type.
+
+In Scala a type parameter unadorned with a sign is invariant. The following mutable set type is invariant:
+
+```scala
+trait Set[A] {
+    // A appears as both an input and an output
+    def add(item: A): Unit
+    def remove(item: A): Unit
+    def contains(item: A): Boolean
+    def items(): Iterable[A]
+}
+```
+
+In general, a type is invariant if its parameter appears as both an input and an output. You can't use `Set` covariantly, because `A` appears as an input to `contains`, and you can't use it contravariantly because `A` appears in `items`'s output. There's no subtyping relationship between the parameter and the type. A `Set[Cat]` is not a `Set[Animal]`. If it was, you'd be allowed to upcast it and then call `add` with a `Dog`:
+
+```scala
+val catSet = new Set[Cat](Cat("Tilly"))
+val animalSet: Set[Animal] = catSet
+
+animalSet.add(Dog("Richard"))
+for (cat: Cat <- catSet.items()) {}  // uh oh, one of the cats will actually be a dog!
+```
+
+The same logic applies to the opposite situation. A `Set[Animal]` is not a `Set[Cat]`.
+
+Here's a Haskell class defining `Invariant` functors.
 
 ```haskell
 class Invariant f where
@@ -93,37 +115,55 @@ instance Invariant Operation where
 
 Note how we use `f` on the output of `op` and `g` on the inputs.
 
-The only time I've actually seen this class used is in Ed Kmett's [article about attempting to represent higher-order abstract syntax generically](http://comonad.com/reader/2008/rotten-bananas/).
+The only time I've actually seen this class used is in [Ed Kmett's old article about attempting to represent higher-order abstract syntax generically](http://comonad.com/reader/2008/rotten-bananas/).
 
-Invariance is more familiar in Scala. A type parameter unadorned with a sign is invariant. It means there's no subtyping relationship between the parameter and the type.
-
-```scala
-class Container[A](private var value : A) {
-    // A appears as both an input and an output
-    def get() : A = value
-    def set(x : A) : Unit = {
-        value = x
-    }
-}
-```
-
-A `Container[Cat]` is not a `Container[Animal]`. If it was, you'd be allowed to upcast it and then call `set` with a `Dog`:
-
-```scala
-val catContainer = new Container[Cat](Cat("Tilly"))
-val animalContainer : Container[Animal] = catContainer
-
-animalContainer.set(Dog("Richard"))
-val cat : Cat = catContainer.get()  // uh oh, this'd return a `Dog`!
-```
-
-By the same logic, a `Container[Animal]` is not a `Container[Cat]`.
-
-Let me spell out the similarity between this and Haskell's `Invariant` functors. For `Operation a` to be convertible to `Operation b`, `a` must be convertible to `b` _and_ `b` must be convertible to `a`. For `Container[A]` to be a subtype of `Container[B]`, `A` must be a subtype of `B` _and_ `B` must be a subtype of `A` (that is, they must be the same type).
+Let me spell out the similarity between `Invariant` functors and Scala's subtype invariance. For `Operation a` to be convertible to `Operation b`, `a` must be convertible to `b` _and_ `b` must be convertible to `a`. For `Set[A]` to be a subtype of `Set[B]`, `A` must be a subtype of `B` _and_ `B` must be a subtype of `A` (that is, they must be the same type).
 
 Note that variance is a property of the type parameter (`A`), not the type constructor (`List`/`Ordering`). A given type constructor may have multiple parameters with different variances. `Function1[-A, +B]`, for example.
 
 <img src="/images/2018-12-01-the-fourth-type-of-variance/hierarchy.png" width="900" />
+
+
+Combining Variances
+-------------------
+
+An object which produces a producer of `A`s effectively produces `A`s. A type with a covariant type as an output is itself covariant.
+
+```scala
+// Container returns a covariant type, so Container is covariant
+trait Container[+A] {
+    def toList(): List[A]
+}
+```
+
+Consuming a producer of `A`s is basically the same as consuming `A`s. A type which has a covariant type as an input is contravariant.
+
+```scala
+// Printer consumes a covariant type, so it's contravariant
+trait Printer[-A] {
+    def printAll(items: List[A]): Unit
+}
+```
+
+Producing a consumer of `A`s is like consuming `A`s. A type with a contravariant type as an output is contravariant.
+
+```scala
+// Produces a contravariant type, so contravariant
+trait OrderingFactory[-A] {
+    def getOrdering(): Ordering[A]
+}
+```
+
+A consumer of consumers is itself a producer. (You have to be able to produce `A`s in order to feed them to the consumer.) A type with a contravariant type as an input is covariant.
+
+```scala
+// Consumes a contravariant type, so covariant
+trait Sortable[+A] {  
+    def sortBy(ordering: Ordering[A]): Unit
+}
+```
+
+Mnemonically, you can think of input parameters as meaning "times -1". `Ordering` takes `A`s as its inputs, so `Ordering` is negative. `Sortable` takes a (negative) `Ordering` as an input, so it's positive (-1 * -1 = 1). Printer takes a (positive) `List` as input, so it's negative. This explains Scala's choice of `+` and `-` as the syntax for its variance annotations.
 
 
 The Semilattice of Variances
@@ -174,7 +214,7 @@ So the four types of variance form a nice lattice.
 
 <img src="/images/2018-12-01-the-fourth-type-of-variance/lattice.jpg" width="900" />
 
-For completeness, here are witnesses to the superclass constraints:
+For completeness, here's the proof that the superclass constraints make sense:
 
 ```haskell
 defaultFmap :: Phantom f => (a -> b) -> f a -> f b
@@ -195,7 +235,7 @@ instance Phantom Proxy where
 Haskell is the only language I know of with proper support for phantom types, in its [role system](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles). (`Phantom` roughly means `forall a b. Coercible (f a) (f b)`.) Scala doesn't support it, but it'd mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.
 
 ```scala
-case class Proxy[±A]  // hypothetical syntax
+case class Proxy[±A]  // fantasy syntax
 
 val catProxy = Proxy[Cat]()
 val dogProxy : Proxy[Dog] = catProxy
