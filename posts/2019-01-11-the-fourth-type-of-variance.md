@@ -121,7 +121,7 @@ Let me spell out the similarity between `Invariant` functors and Scala's subtype
 
 Note that variance is a property of the type parameter (`A`), not the type constructor (`List`/`Ordering`). A given type constructor may have multiple parameters with different variances. `Function1[-A, +B]`, for example.
 
-<img src="/images/2018-12-01-the-fourth-type-of-variance/hierarchy.png" width="900" />
+<img src="/images/2019-01-11-the-fourth-type-of-variance/hierarchy.png" width="900" />
 
 
 Combining Variances
@@ -189,7 +189,7 @@ class Invariant f => Functor f where {- ... -}
 class Invariant f => Contravariant f where {- ... -}
 ```
 
-<img src="/images/2018-12-01-the-fourth-type-of-variance/semilattice.jpg" width="900" />
+<img src="/images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" width="900" />
 
 So there's this interesting relationship between the three types of variance. They form a little semilattice, of which `Invariant` is the supremum.
 
@@ -212,7 +212,7 @@ A functor is `Invariant` when it has `a`s both as inputs and outputs. `Functor` 
 
 So the four types of variance form a nice lattice.
 
-<img src="/images/2018-12-01-the-fourth-type-of-variance/lattice.jpg" width="900" />
+<img src="/images/2019-01-11-the-fourth-type-of-variance/lattice.jpg" width="900" />
 
 For completeness, here's the proof that the superclass constraints make sense:
 
