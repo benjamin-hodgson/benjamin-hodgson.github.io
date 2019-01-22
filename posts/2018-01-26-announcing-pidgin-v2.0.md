@@ -54,10 +54,10 @@ internal interface IParseState<TToken>
 }
 internal struct Result<T>
 {
-    // if Success is true, Result contains the parsed value and Error is null
-    // if Success is false, Result is null and Error contains error info
+    // if Success is true, Value contains the parsed value and Error is null
+    // if Success is false, Value is null and Error contains error info
     public bool Success { get; }
-    public T Result { get; }
+    public T Value { get; }
     public ParseError Error { get; }
 }
 ```
@@ -112,7 +112,7 @@ class ThenParser<TToken, T, U, R> : Parser<TToken, R>
         {
             return Result.Error(result2.Error);
         }
-        return Result.Success(_resultSelector(result1.Result, result2.Result));
+        return Result.Success(_resultSelector(result1.Value, result2.Value));
     }
 }
 ```
