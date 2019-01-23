@@ -132,7 +132,7 @@ Parse error.
 
 A mistake I made early on in Pidgin's development nearly two years ago(!) was trying to pre-compute the content of these error messages. Under the assumption that parsers are typically built once and then run repeatedly, I wrote some code to examine your parser upon construction and try to predict the ways it could fail on unexpected input, in order to avoid constructing error messages at runtime. This code calculated a set of "expected" input strings, accounting for `Then`s and `Or`s by concatenating the strings in the set and by unioning the sets respectively. (The idea was that a parser like `Keyword("public").Optional().Then(Keyword("class"))` would report that it expected `"class" or "public class"`.)
 
-This went catastrophically wrong for complex parsers. Here's an sketch of some code which parses left-associative mathematical operators with precedence, so `3^2 + 4 * 3^5 * 5` is parsed as `(3^2) + ((4 * (3^5)) * 5)`:
+This went catastrophically wrong for complex parsers. Here's a sketch of some code which parses left-associative mathematical operators with precedence, so `3^2 + 4 * 3^5 * 5` is parsed as `(3^2) + ((4 * (3^5)) * 5)`:
 
 ```csharp
 var atom = Number;
