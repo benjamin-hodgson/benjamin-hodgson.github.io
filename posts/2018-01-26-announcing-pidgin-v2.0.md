@@ -206,7 +206,7 @@ static class Unsafe
 Assorted Performance Improvements
 ---------------------------------
 
-Performance has always been one of Pidgin's priorities --- I'm proud that Pidgin is C#'s fastest parser combinator library (that I know of!) --- but there's always room for improvement. In my tests Pidgin still runs somewhat slower than F#'s FParsec library, for example.) In this release I made some architectural changes to `IParseState` to help close that gap.
+Performance has always been one of Pidgin's priorities --- I'm proud that Pidgin is C#'s fastest parser combinator library (that I know of!) --- but there's always room for improvement. In my tests Pidgin still runs somewhat slower than F#'s FParsec library, for example. In this release I made some architectural changes to `IParseState` to help close that gap.
 
 ### Buffering Uniformly
 
