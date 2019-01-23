@@ -212,7 +212,7 @@ Performance has always been one of Pidgin's priorities --- I'm proud that Pidgin
 
 As I mentioned earlier, Pidgin has several internal implementations of `IParseState`, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to _backtrack_ on failure (using the `Try` combinator), so you can't always discard a token as soon as you've seen it. Some `IParseState` implementations --- specifically the ones that are built on top of streaming storage (like `Stream`) --- therefore _buffer_ their input into an array. The ones that are backed by in-memory storage like `string` don't need to buffer because their data is already in memory.
 
-I decided to move the buffering logic to a shared part of the code. Now _all_ `IParseState` implementations buffer thier input, even the in-memory ones. On its own this should make the code slower (it's more expensive to copy a `string` into an array than not to!), but it enables all of the optimisations I'm about to describe.
+I decided to move the buffering logic to a shared part of the code. Now _all_ `IParseState` implementations buffer their input, even the in-memory ones. On its own this should make the code slower (it's more expensive to copy a `string` into an array than not to!), but it enables all of the optimisations I'm about to describe.
 
 
 ### De-Virtualisation & Inlining
