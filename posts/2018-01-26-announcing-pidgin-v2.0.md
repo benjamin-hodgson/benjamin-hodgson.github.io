@@ -15,7 +15,7 @@ I haven't written about Pidgin before, so allow me to briefly introduce it. Pidg
 * A collection of _primitive_ `Parser` objects which perform some simple individual parsing task
 * A collection of _combinator_ functions which can build complex `Parser`s out of simpler ones
 
-Taken together, we have an object model allowing you to compose parsers using an embedded domain-specific langauge. As a brief taste, here is a simple example parser which parses an identifier in a typical programming language.
+Taken together, we have an object model allowing you to write code resembling a high-level description of a parsing process. As a brief taste, here is a simple example parser which parses an identifier in a typical programming language.
 
 ```csharp
 Parser<char, string> Identifier =
@@ -27,9 +27,10 @@ Parser<char, string> Identifier =
 Assert.Equal("abc1", Identifier.ParseOrThrow("abc1"));
 ```
 
-* `Identifier` is a `Parser<char, string>`, meaning it's a parsing process which consumes a sequence of `char`s and produces a `string`.
-* `Letter` and `LetterOrDigit` are primitive parsers, each of which read a single character from the input string (ensuring that the character is alphabetical or alphanumeric, respectively).
-* `ManyString` is a combinator method which runs a parser repeatedly and packs the result into a `string` --- so `LetterOrDigit.ManyString()` is a parser which reads a sequence of alphanumeric characters.
+* `Identifier` is a `Parser<char, string>`, meaning it's a process which consumes a sequence of `char`s and produces a `string`.
+* `Letter` is a primitive parser which consumes and returns a single character from the input stream, moving it on to the next character. (If the character is not a letter, the parser fails and doesn't change the state of the input stream.)
+* `LetterOrDigit` is like `Letter` but for alphanumeric characters.
+* `ManyString` is a combinator method which runs a parser in a loop until it fails. It takes all of the smaller parser's results from the loop and packs them into a `string`. So `LetterOrDigit.ManyString()` is a parser which consumes and returns a sequence of alphanumeric characters.
 * `Then` is another combinator which runs two parsers in sequence and applies a function to the result. So, reading the parser as a whole, we can see that an `Identifier` consists of a single letter followed by a sequence of letters or digits.
 
 Parser combinators' power comes from their composability. The library comprises a small number of building blocks, which you can put together in rich and varied ways to build a parser which does what you need. The library's level of abstraction is a good fit for small-to-medium sized parsing tasks: it's not as high-level as a full-blown parser generator like Antlr, but it's much simpler to integrate. Rewriting our hand-written [JQL](https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html) parser in Pidgin took around four times less code.
@@ -135,8 +136,7 @@ A mistake I made early on in Pidgin's development nearly two years ago(!) was tr
 This went catastrophically wrong for complex parsers. Here's a sketch of some code which parses left-associative mathematical operators with precedence, so `3^2 + 4 * 3^5 * 5` is parsed as `(3^2) + ((4 * (3^5)) * 5)`:
 
 ```csharp
-var atom = Number;
-var topPrecedence = atom.Then(Char('^').Then(atom).Many());
+var topPrecedence = Number.Then(Char('^').Then(Number).Many());
 var midPrecedence = topPrecedence.Then(Char('*').Then(topPrecedence).Many());
 var lowPrecedence = midPrecedence.SeparatedBy(Char('+').Then(midPrecedence).Many());
 ```
@@ -145,7 +145,7 @@ var lowPrecedence = midPrecedence.SeparatedBy(Char('+').Then(midPrecedence).Many
 
 I made some attempts to optimise this by using more efficient data structures, but I realised this was a losing proposition and decided to throw it out altogether in v2.0. Error messages are now computed at runtime, when the error actually occurs. This means I can be more precise about what the parser was expecting at that particular point in the input: once a parsing process has committed to a branch I can report expected inputs _from that branch_, rather than reporting all possible expected inputs.
 
-Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the _prioritised choice_ operator `Or` works --- `String("foo").Or(String("bar"))` only tries `bar` if an attempt to parse `foo` failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saved its expected inputs in a stack implemented on top of pooled memory (using `ArrayPool`), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children's error messages adds some interesting complications here, which I've described in a [long comment](https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74).)
+Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the _prioritised choice_ operator `Or` works --- `String("foo").Or(String("bar"))` only tries `bar` if an attempt to parse `foo` failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using `ArrayPool`), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children's error messages adds some interesting complications here, which I've described in a [long comment](https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74).)
 
 
 `Span`
@@ -283,7 +283,7 @@ interface ITokenStream<TToken>
 }
 ```
 
-Why not design this signature as `void ReadInto(Span<TToken> span)`? I'd love to! Sadly that would preclude some implementations of `ITokenStream`. Methods like `stream.Read(Span<byte> span)` are available only on .NET Core, and as far as I'm aware Microsoft has no plans to backport them, so for compatibility with the desktop framework I'm stuck using arrays. This is irksome, as [I've said before](/posts/2018-12-06-zooming-in-on-field-accessors.html) --- what's the point of designing a feature for library authors if you're not going to support it properly? It's obvious that the desktop framework is reaching the end of its life. Microsoft should just grasp the nettle and admit it.
+Why not design this signature as `void ReadInto(Span<TToken> span)`? I'd love to! Sadly that would preclude some implementations of `ITokenStream`. Methods like `stream.Read(Span<byte> span)` are available only on .NET Core, and as far as I'm aware Microsoft has no plans to backport them, so for compatibility with the desktop framework I'm stuck using arrays. This is irksome, as [I've said before](/posts/2018-12-06-zooming-in-on-field-accessors.html) --- what's the point of designing a feature for library authors if you're not going to support it properly?
 
 `ReadInto` allows the `ParseState` to fill its buffer in chunks. But `ParseState`'s interface can also be chunk-ified --- some `Parser`s (like `String`) can predict how many characters they'll pull from the input. I added a `Peek` method to `ParseState` which returns a view into the `ParseState`'s buffer. (This makes `Peek` a little tricky to use correctly --- you have to be careful not to continue using the `Span` after a call to `Advance`, which may mutate the buffer.)
 
@@ -291,7 +291,25 @@ Why not design this signature as `void ReadInto(Span<TToken> span)`? I'd love to
 public ReadOnlySpan<TToken> Peek(int count);
 ```
 
-Using `Peek`, a parser like `String("foo")` can now look at three characters from the input to see if they match `foo`, rather than one at a time. This runs about 20% faster for long strings.
+Using `Peek`, a parser like `String("foo")` can now look at three characters from the input to see if they match `foo`, rather than one at a time.
+
+```csharp
+class StringParser : Parser<char, string>
+{
+    private readonly string _expected;
+    internal override Result<string> Parse(ref ParseState<char> state)
+    {
+        var span = state.Peek(_expected.Length);
+        if (!_expected.AsSpan().SequenceEqual(span))
+        {
+            return Result.Failure();
+        }
+        return Result.Success(_expected);
+    }
+}
+```
+
+This runs about 20% faster for long strings.
 
 
 Make Your Own Opportunities
