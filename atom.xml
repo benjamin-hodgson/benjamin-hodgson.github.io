@@ -8,8 +8,252 @@
         <name>Benjamin Hodgson</name>
         <email>bhodgson@stackoverflow.com</email>
     </author>
-    <updated>2019-01-11T00:00:00Z</updated>
+    <updated>2019-01-26T00:00:00Z</updated>
     <entry>
+    <title>Announcing Pidgin v2.0</title>
+    <link href="http://www.benjamin.pizza/posts/2019-01-26-announcing-pidgin-v2.0.html" />
+    <id>http://www.benjamin.pizza/posts/2019-01-26-announcing-pidgin-v2.0.html</id>
+    <published>2019-01-26T00:00:00Z</published>
+    <updated>2019-01-26T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on January 26, 2019
+    
+</div>
+
+<p>Happy birthday to me! I’m pleased to announce that version 2.0 of my functional parsing library, <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a>, is now available <a href="https://www.nuget.org/packages/Pidgin">on Nuget</a>. In this release I’ve focused on error messages, performance, and <code>Span</code> support.</p>
+<h2 id="parser-combinators">Parser Combinators</h2>
+<p>I haven’t written about Pidgin before, so allow me to briefly introduce it. Pidgin is a <a href="https://en.wikipedia.org/wiki/Parser_combinator"><em>parser combinator</em></a> library, meaning that it consists of three main concepts:</p>
+<ul>
+<li>A type <code>Parser</code> which models a <em>parsing process</em></li>
+<li>A collection of <em>primitive</em> <code>Parser</code> objects which perform some simple individual parsing task</li>
+<li>A collection of <em>combinator</em> functions which can build complex <code>Parser</code>s out of simpler ones</li>
+</ul>
+<p>Taken together, we have an object model allowing you to write code resembling a high-level description of a parsing process. As a brief taste, here is a simple example parser which parses an identifier in a typical programming language.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb1-1" title="1">Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; Identifier =</a>
+<a class="sourceLine" id="cb1-2" title="2">    Letter.<span class="fu">Then</span>(</a>
+<a class="sourceLine" id="cb1-3" title="3">        LetterOrDigit.<span class="fu">ManyString</span>(),</a>
+<a class="sourceLine" id="cb1-4" title="4">        (first, rest) =&gt; first + rest</a>
+<a class="sourceLine" id="cb1-5" title="5">    );</a>
+<a class="sourceLine" id="cb1-6" title="6"></a>
+<a class="sourceLine" id="cb1-7" title="7">Assert.<span class="fu">Equal</span>(<span class="st">&quot;abc1&quot;</span>, Identifier.<span class="fu">ParseOrThrow</span>(<span class="st">&quot;abc1&quot;</span>));</a></code></pre></div>
+<ul>
+<li><code>Identifier</code> is a <code>Parser&lt;char, string&gt;</code>, meaning it’s a process which consumes a sequence of <code>char</code>s and produces a <code>string</code>.</li>
+<li><code>Letter</code> is a primitive parser which consumes and returns a single character from the input stream, moving it on to the next character. (If the character is not a letter, the parser fails and doesn’t change the state of the input stream.)</li>
+<li><code>LetterOrDigit</code> is like <code>Letter</code> but for alphanumeric characters.</li>
+<li><code>ManyString</code> is a combinator method which runs a parser in a loop until it fails. It takes all of the smaller parser’s results from the loop and packs them into a <code>string</code>. So <code>LetterOrDigit.ManyString()</code> is a parser which consumes and returns a sequence of alphanumeric characters.</li>
+<li><code>Then</code> is another combinator which runs two parsers in sequence and applies a function to the result. So, reading the parser as a whole, we can see that an <code>Identifier</code> consists of a single letter followed by a sequence of letters or digits.</li>
+</ul>
+<p>Parser combinators’ power comes from their composability. The library comprises a small number of building blocks, which you can put together in rich and varied ways to build a parser which does what you need. The library’s level of abstraction is a good fit for small-to-medium sized parsing tasks: it’s not as high-level as a full-blown parser generator like Antlr, but it’s much simpler to integrate. Rewriting our hand-written <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">JQL</a> parser in Pidgin took around four times less code.</p>
+<p>That’s the overview — I won’t dive into a full tutorial on parser combinators because there are already <a href="http://www.lihaoyi.com/post/EasyParsingwithParserCombinators.html">plenty</a> <a href="http://webdoc.sub.gwdg.de/ebook/serien/ah/UU-CS/2008-044.pdf">of</a> <a href="https://news.ycombinator.com/item?id=14600079">those</a> a mere Google away.</p>
+<h3 id="how-it-works">How it works</h3>
+<p>Pidgin’s <code>Parser&lt;TToken, T&gt;</code> type represents a process which pulls <code>TToken</code>s one at a time from a (stateful) input stream, and either successfully returns a <code>T</code> or fails with an error message.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">public</span> <span class="kw">abstract</span> <span class="kw">class</span> Parser&lt;TToken, T&gt;</a>
+<a class="sourceLine" id="cb2-2" title="2">{</a>
+<a class="sourceLine" id="cb2-3" title="3">    <span class="kw">internal</span> <span class="kw">abstract</span> Result&lt;T&gt; <span class="fu">Parse</span>(IParseState&lt;TToken&gt; input);</a>
+<a class="sourceLine" id="cb2-4" title="4">}</a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="kw">internal</span> <span class="kw">interface</span> IParseState&lt;TToken&gt;</a>
+<a class="sourceLine" id="cb2-6" title="6">{</a>
+<a class="sourceLine" id="cb2-7" title="7">    TToken? <span class="fu">Peek</span>();  <span class="co">// null if at end of file</span></a>
+<a class="sourceLine" id="cb2-8" title="8">    <span class="dt">void</span> <span class="fu">Advance</span>();</a>
+<a class="sourceLine" id="cb2-9" title="9"></a>
+<a class="sourceLine" id="cb2-10" title="10">    <span class="co">// ... plus a few methods to facilitate backtracking etc</span></a>
+<a class="sourceLine" id="cb2-11" title="11">}</a>
+<a class="sourceLine" id="cb2-12" title="12"><span class="kw">internal</span> <span class="kw">struct</span> Result&lt;T&gt;</a>
+<a class="sourceLine" id="cb2-13" title="13">{</a>
+<a class="sourceLine" id="cb2-14" title="14">    <span class="co">// if Success is true, Value contains the parsed value and Error is null</span></a>
+<a class="sourceLine" id="cb2-15" title="15">    <span class="co">// if Success is false, Value is null and Error contains error info</span></a>
+<a class="sourceLine" id="cb2-16" title="16">    <span class="kw">public</span> <span class="dt">bool</span> Success { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb2-17" title="17">    <span class="kw">public</span> T Value { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb2-18" title="18">    <span class="kw">public</span> ParseError Error { <span class="kw">get</span>; }</a>
+<a class="sourceLine" id="cb2-19" title="19">}</a></code></pre></div>
+<p><code>IParseState</code> represents an iterator over the parser’s input (a sequence of <code>TToken</code>s). <code>Peek</code> returns the token at the current location in the input (or <code>null</code> if the parser has reached the end of the input) and <code>Advance</code> moves the stream on to the next token.</p>
+<p>Primitive parsers typically manipulate the <code>IParseState</code> directly. This parser matches a specific string:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">class</span> StringParser : Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt;</a>
+<a class="sourceLine" id="cb3-2" title="2">{</a>
+<a class="sourceLine" id="cb3-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> <span class="dt">string</span> _expected;</a>
+<a class="sourceLine" id="cb3-4" title="4"></a>
+<a class="sourceLine" id="cb3-5" title="5">    <span class="kw">internal</span> <span class="kw">override</span> Result&lt;<span class="dt">string</span>&gt; <span class="fu">Parse</span>(IParseState&lt;<span class="dt">char</span>&gt; input)</a>
+<a class="sourceLine" id="cb3-6" title="6">    {</a>
+<a class="sourceLine" id="cb3-7" title="7">        <span class="kw">foreach</span> (<span class="dt">var</span> c <span class="kw">in</span> _expected)</a>
+<a class="sourceLine" id="cb3-8" title="8">        {</a>
+<a class="sourceLine" id="cb3-9" title="9">            <span class="dt">var</span> token = input.<span class="fu">Peek</span>();</a>
+<a class="sourceLine" id="cb3-10" title="10">            <span class="kw">if</span> (!token.<span class="fu">HasValue</span>)</a>
+<a class="sourceLine" id="cb3-11" title="11">            {</a>
+<a class="sourceLine" id="cb3-12" title="12">                <span class="kw">return</span> Result.<span class="fu">Error</span>(ParseError.<span class="fu">EndOfFile</span>);</a>
+<a class="sourceLine" id="cb3-13" title="13">            }</a>
+<a class="sourceLine" id="cb3-14" title="14">            <span class="kw">if</span> (token.<span class="fu">Value</span> != c)</a>
+<a class="sourceLine" id="cb3-15" title="15">            {</a>
+<a class="sourceLine" id="cb3-16" title="16">                <span class="kw">return</span> Result.<span class="fu">Error</span>(ParseError.<span class="fu">UnexpectedToken</span>);</a>
+<a class="sourceLine" id="cb3-17" title="17">            }</a>
+<a class="sourceLine" id="cb3-18" title="18">            input.<span class="fu">Advance</span>();</a>
+<a class="sourceLine" id="cb3-19" title="19">        }</a>
+<a class="sourceLine" id="cb3-20" title="20">        <span class="kw">return</span> Result.<span class="fu">Success</span>(_expected);</a>
+<a class="sourceLine" id="cb3-21" title="21">    }</a>
+<a class="sourceLine" id="cb3-22" title="22">}</a></code></pre></div>
+<p>Higher-order parsers typically compose one or more smaller parsers, delegating to their <code>Parse</code> methods in some useful way. <code>Then</code> returns a parser which sequences two parsers and applies a mapping function to their results:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">class</span> ThenParser&lt;TToken, T, U, R&gt; : Parser&lt;TToken, R&gt;</a>
+<a class="sourceLine" id="cb4-2" title="2">{</a>
+<a class="sourceLine" id="cb4-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> Parser&lt;TToken, T&gt; _first;</a>
+<a class="sourceLine" id="cb4-4" title="4">    <span class="kw">private</span> <span class="kw">readonly</span> Parser&lt;TToken, U&gt; _second;</a>
+<a class="sourceLine" id="cb4-5" title="5">    <span class="kw">private</span> <span class="kw">readonly</span> Func&lt;T, U, R&gt; _resultSelector;</a>
+<a class="sourceLine" id="cb4-6" title="6"></a>
+<a class="sourceLine" id="cb4-7" title="7">    <span class="kw">internal</span> <span class="kw">override</span> Result&lt;R&gt; <span class="fu">Parse</span>(IParseState&lt;TToken&gt; input)</a>
+<a class="sourceLine" id="cb4-8" title="8">    {</a>
+<a class="sourceLine" id="cb4-9" title="9">        <span class="dt">var</span> result1 = _first.<span class="fu">Parse</span>(input);</a>
+<a class="sourceLine" id="cb4-10" title="10">        <span class="kw">if</span> (!result1.<span class="fu">Success</span>)</a>
+<a class="sourceLine" id="cb4-11" title="11">        {</a>
+<a class="sourceLine" id="cb4-12" title="12">            <span class="kw">return</span> Result.<span class="fu">Error</span>(result1.<span class="fu">Error</span>);</a>
+<a class="sourceLine" id="cb4-13" title="13">        }</a>
+<a class="sourceLine" id="cb4-14" title="14">        <span class="dt">var</span> result2 = _second.<span class="fu">Parse</span>(input);</a>
+<a class="sourceLine" id="cb4-15" title="15">        <span class="kw">if</span> (!result2.<span class="fu">Success</span>)</a>
+<a class="sourceLine" id="cb4-16" title="16">        {</a>
+<a class="sourceLine" id="cb4-17" title="17">            <span class="kw">return</span> Result.<span class="fu">Error</span>(result2.<span class="fu">Error</span>);</a>
+<a class="sourceLine" id="cb4-18" title="18">        }</a>
+<a class="sourceLine" id="cb4-19" title="19">        <span class="kw">return</span> Result.<span class="fu">Success</span>(_<span class="fu">resultSelector</span>(result1.<span class="fu">Value</span>, result2.<span class="fu">Value</span>));</a>
+<a class="sourceLine" id="cb4-20" title="20">    }</a>
+<a class="sourceLine" id="cb4-21" title="21">}</a></code></pre></div>
+<h2 id="error-messages">Error messages</h2>
+<p>Part of Pidgin’s job is to report when you gave a parser bad input. For example, the top level of a C# file must contain <code>class</code>es and <code>namespace</code>s, so feeding a C# parser the text <code>Console.WriteLine(&quot;foo&quot;);</code> (without an enclosing <code>class</code>) should fail with some information about the problem:</p>
+<pre><code>Parse error.
+    unexpected &#39;C&#39;
+    expected &quot;class&quot; or &quot;namespace&quot;
+    at line 1, col 1</code></pre>
+<p>A mistake I made early on in Pidgin’s development nearly two years ago(!) was trying to pre-compute the content of these error messages. Under the assumption that parsers are typically built once and then run repeatedly, I wrote some code to examine your parser upon construction and try to predict the ways it could fail on unexpected input, in order to avoid constructing error messages at runtime. This code calculated a set of “expected” input strings, accounting for <code>Then</code>s and <code>Or</code>s by concatenating the strings in the set and by unioning the sets respectively. (The idea was that a parser like <code>Keyword(&quot;public&quot;).Optional().Then(Keyword(&quot;class&quot;))</code> would report that it expected <code>&quot;class&quot; or &quot;public class&quot;</code>.)</p>
+<p>This went catastrophically wrong for complex parsers. Here’s a sketch of some code which parses left-associative mathematical operators with precedence, so <code>3^2 + 4 * 3^5 * 5</code> is parsed as <code>(3^2) + ((4 * (3^5)) * 5)</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb6-1" title="1"><span class="dt">var</span> topPrecedence = Number.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;^&#39;</span>).<span class="fu">Then</span>(Number).<span class="fu">Many</span>());</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="dt">var</span> midPrecedence = topPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;*&#39;</span>).<span class="fu">Then</span>(topPrecedence).<span class="fu">Many</span>());</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="dt">var</span> lowPrecedence = midPrecedence.<span class="fu">SeparatedBy</span>(<span class="fu">Char</span>(<span class="ch">&#39;+&#39;</span>).<span class="fu">Then</span>(midPrecedence).<span class="fu">Many</span>());</a></code></pre></div>
+<p><code>topPrecedence</code> expects a number, or a number followed by a sequence of exponents — two possibilities. <code>midPrecedence</code> therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications — four possibilities. <code>lowPrecedence</code> has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.</p>
+<p>I made some attempts to optimise this by using more efficient data structures, but I realised this was a losing proposition and decided to throw it out altogether in v2.0. Error messages are now computed at runtime, when the error actually occurs. This means I can be more precise about what the parser was expecting at that particular point in the input: once a parsing process has committed to a branch I can report expected inputs <em>from that branch</em>, rather than reporting all possible expected inputs.</p>
+<p>Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the <em>prioritised choice</em> operator <code>Or</code> works — <code>String(&quot;foo&quot;).Or(String(&quot;bar&quot;))</code> only tries <code>bar</code> if an attempt to parse <code>foo</code> failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using <code>ArrayPool</code>), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children’s error messages adds some interesting complications here, which I’ve described in a <a href="https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74">long comment</a>.)</p>
+<h2 id="span"><code>Span</code></h2>
+<blockquote>
+<p><strong>Note</strong>: You can watch <a href="https://twitter.com/g3rv4">my esteemed colleague Gervasio</a> and me carrying out the work I describe here in <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">a live-stream on YouTube</a>. It was pretty fun!</p>
+</blockquote>
+<p>I wanted to add support for parsing input stored in a <code>Span</code>. (<code>Span</code> is a new part of the BCL representing a reference to a contiguous block of memory such as a chunk of an array.) I already had functions which applied a <code>Parser</code> to a <code>string</code>, a <code>T[]</code>, a <code>Stream</code>, etc; I’d abstracted over these various input types using the aforementioned <code>IParseState</code> interface.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">internal</span> <span class="kw">interface</span> IParseState&lt;TToken&gt;</a>
+<a class="sourceLine" id="cb7-2" title="2">{</a>
+<a class="sourceLine" id="cb7-3" title="3">    TToken? <span class="fu">Peek</span>();</a>
+<a class="sourceLine" id="cb7-4" title="4">    <span class="dt">void</span> <span class="fu">Advance</span>();</a>
+<a class="sourceLine" id="cb7-5" title="5">}</a></code></pre></div>
+<p>So adding <code>Span</code> support basically means implementing <code>IParseState</code> on top of a <code>Span</code>. In theory this should be quite straightforward — a class which has a <code>Span</code> and keeps track of its current position:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">class</span> SpanTokenStream&lt;TToken&gt; : ITokenStream&lt;TToken&gt;</a>
+<a class="sourceLine" id="cb8-2" title="2">{</a>
+<a class="sourceLine" id="cb8-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> Span&lt;TToken&gt; _span;</a>
+<a class="sourceLine" id="cb8-4" title="4">    <span class="kw">private</span> <span class="dt">int</span> _current;</a>
+<a class="sourceLine" id="cb8-5" title="5"></a>
+<a class="sourceLine" id="cb8-6" title="6">    TToken? <span class="fu">Peek</span>() =&gt; _current &gt;= _span.<span class="fu">Length</span> ? <span class="kw">null</span> : _span[_current];</a>
+<a class="sourceLine" id="cb8-7" title="7">    </a>
+<a class="sourceLine" id="cb8-8" title="8">    <span class="dt">void</span> <span class="fu">Advance</span>()</a>
+<a class="sourceLine" id="cb8-9" title="9">    {</a>
+<a class="sourceLine" id="cb8-10" title="10">        _current++;</a>
+<a class="sourceLine" id="cb8-11" title="11">    }</a>
+<a class="sourceLine" id="cb8-12" title="12">}</a></code></pre></div>
+<p>But if you try and write this class, you’ll find that the compiler turns you away. <code>Span</code> is a <code>ref struct</code>, which means that it can only be stored on the stack. You can’t use a <code>Span</code> as a field of a <code>class</code>, or put it in an array, or box it (by upcasting it to an <code>interface</code> or <code>object</code>), or use it as a local variable in an <code>async</code> or <code>yield</code> method (because behind the scenes such methods copy their stack frame to the heap). (There are good reasons for this restriction, pertaining to memory safety.)</p>
+<p>How to implement <code>IParseState</code> without storing a <code>Span</code> on the heap? Because <code>IParseState</code> is an internal interface, I can make certain guarantees about its usage. Instances of <code>IParseState</code> have a limited life-span — each <code>IParseState</code> instance becomes garbage before the call to <code>Parse</code> returns, and <code>IParseState</code> instances are never accessed from multiple threads. So I can store the <code>Span</code> in <code>Parse</code>’s stack frame and put a pointer to that stack frame in the <code>IParseState</code>.</p>
+<p>This idea is complicated by the fact that <code>Span</code> is a <a href="https://stackoverflow.com/questions/42154908">managed type</a>, so you’re not allowed to declare a <code>Span&lt;T&gt;*</code>. (This restriction ensures that a managed object can’t accidentally become garbage while it’s still being referred to by an unmanaged pointer; this needn’t trouble us here as the <code>Span</code> is guaranteed to be reachable because it’s on the stack.)</p>
+<p>Fortunately, <a href="https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/">the <code>System.Runtime.CompilerServices.Unsafe</code> package</a> contains some dangerous tools to get around this memory safety restriction: <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe.aspointer"><code>Unsafe.AsPointer</code></a> coerces a <code>ref</code> to an untyped <code>void*</code> and <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe.asref"><code>Unsafe.AsRef</code></a> coerces it back. So my plan was to store a <code>ref Span&lt;T&gt;</code> as a <code>void*</code> on the heap, and coerce it back to a <code>ref Span&lt;T&gt;</code> using when I need to address it as a <code>Span</code>. (This is a similar hack to one that I used in <a href="/posts/2018-03-16-eighty.html">my HTML generation library</a>.)</p>
+<p>Unfortunately this doesn’t work either, because <code>Unsafe.AsPointer</code> is generic and you can’t use a <code>ref struct</code> as a type parameter! The compiler can’t be sure that <code>Unsafe.AsPointer</code> doesn’t box its argument, which of course is forbidden when the argument is a <code>Span</code>.</p>
+<p>I wound up implementing a type-specialised copy of those two <code>Unsafe</code> methods:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">static</span> <span class="kw">class</span> Unsafe</a>
+<a class="sourceLine" id="cb9-2" title="2">{</a>
+<a class="sourceLine" id="cb9-3" title="3">    <span class="kw">public</span> <span class="kw">static</span> <span class="dt">void</span>* AsPointer&lt;T&gt;(<span class="kw">ref</span> Span&lt;T&gt; span);</a>
+<a class="sourceLine" id="cb9-4" title="4">    <span class="kw">public</span> <span class="kw">static</span> <span class="kw">ref</span> Span&lt;T&gt; <span class="fu">AsRef</span>(<span class="dt">void</span>* ptr);</a>
+<a class="sourceLine" id="cb9-5" title="5">}</a></code></pre></div>
+<p><code>AsPointer</code> and <code>AsRef</code> are not expressible in C# (even <code>unsafe</code> C#); <code>System.Runtime.CompilerServices.Unsafe</code> is implemented in raw IL. My copies of those methods have stubs in C# which are filled in by rewriting the DLL’s IL in a post-compile step.</p>
+<h2 id="assorted-performance-improvements">Assorted Performance Improvements</h2>
+<p>Performance has always been one of Pidgin’s priorities — I’m proud that Pidgin is C#’s fastest parser combinator library (that I know of!) — but there’s always room for improvement. In my tests Pidgin still runs somewhat slower than F#’s FParsec library, for example. In this release I made some architectural changes to <code>IParseState</code> to help close that gap.</p>
+<h3 id="buffering-uniformly">Buffering Uniformly</h3>
+<p>As I mentioned earlier, Pidgin has several internal implementations of <code>IParseState</code>, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to <em>backtrack</em> on failure (using the <code>Try</code> combinator), so you can’t always discard a token as soon as you’ve seen it. Some <code>IParseState</code> implementations — specifically the ones that are built on top of streaming storage (like <code>Stream</code>) — therefore <em>buffer</em> their input into an array. The ones that are backed by in-memory storage like <code>string</code> don’t need to buffer because their data is already in memory.</p>
+<p>I decided to move the buffering logic to a shared part of the code. Now <em>all</em> <code>IParseState</code> implementations buffer their input, even the in-memory ones. On its own this should make the code slower (it’s more expensive to copy a <code>string</code> into an array than not to!), but it enables all of the optimisations I’m about to describe.</p>
+<h3 id="de-virtualisation-inlining">De-Virtualisation &amp; Inlining</h3>
+<p>Virtual method calls are comparatively expensive in .NET, and they happen frequently in Pidgin’s implementation because of <code>IParseState</code>’s design: a parser which consumes <em>n</em> tokens makes a minimum of <em>n</em> virtual calls to <code>Advance</code>.</p>
+<p>With the buffering code extracted into a single place, there was no longer any need to keep it behind an interface. I moved all the buffering and error handling code into a mutable struct which is stored on the stack and passed to the <code>Parser</code>s by reference. Now <code>Advance</code> and <code>Peek</code> are non-virtual.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">struct</span> ParseState&lt;TToken&gt;</a>
+<a class="sourceLine" id="cb10-2" title="2">{</a>
+<a class="sourceLine" id="cb10-3" title="3">    <span class="kw">private</span> TToken[] _buffer;</a>
+<a class="sourceLine" id="cb10-4" title="4">    <span class="kw">private</span> <span class="dt">int</span> _currentPosition;</a>
+<a class="sourceLine" id="cb10-5" title="5">    <span class="kw">private</span> ITokenStream&lt;TToken&gt; _stream;</a>
+<a class="sourceLine" id="cb10-6" title="6"></a>
+<a class="sourceLine" id="cb10-7" title="7">    <span class="kw">public</span> TToken? <span class="fu">Peek</span>() =&gt;</a>
+<a class="sourceLine" id="cb10-8" title="8">        _currentPosition &lt; <span class="dv">0</span> || _currentPosition &gt;= _buffer.<span class="fu">Length</span></a>
+<a class="sourceLine" id="cb10-9" title="9">            ? <span class="kw">null</span></a>
+<a class="sourceLine" id="cb10-10" title="10">            : _buffer[_currentPosition];</a>
+<a class="sourceLine" id="cb10-11" title="11">    </a>
+<a class="sourceLine" id="cb10-12" title="12">    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Advance</span>()</a>
+<a class="sourceLine" id="cb10-13" title="13">    {</a>
+<a class="sourceLine" id="cb10-14" title="14">        _currentPosition++;</a>
+<a class="sourceLine" id="cb10-15" title="15"></a>
+<a class="sourceLine" id="cb10-16" title="16">        <span class="kw">if</span> (_currentPosition &gt;= _buffer.<span class="fu">Length</span>)</a>
+<a class="sourceLine" id="cb10-17" title="17">        {</a>
+<a class="sourceLine" id="cb10-18" title="18">            <span class="fu">ReadStreamIntoBuffer</span>();</a>
+<a class="sourceLine" id="cb10-19" title="19">        }</a>
+<a class="sourceLine" id="cb10-20" title="20">    }</a>
+<a class="sourceLine" id="cb10-21" title="21">}</a>
+<a class="sourceLine" id="cb10-22" title="22"></a>
+<a class="sourceLine" id="cb10-23" title="23"><span class="kw">public</span> <span class="kw">abstract</span> <span class="kw">class</span> Parser&lt;TToken, T&gt;</a>
+<a class="sourceLine" id="cb10-24" title="24">{</a>
+<a class="sourceLine" id="cb10-25" title="25">    <span class="kw">internal</span> <span class="kw">abstract</span> Result&lt;T&gt; <span class="fu">Parse</span>(<span class="kw">ref</span> ParseState&lt;TToken&gt; state);</a>
+<a class="sourceLine" id="cb10-26" title="26">}</a></code></pre></div>
+<p>That’s a fairly general C# performance trick: put shared state in a mutable struct, store it on the stack, and pass it around as a <code>ref</code> parameter. This both reduces GC pressure and improves the CPU cache’s hit rate, because the execution stack is likely to be in cache.</p>
+<p>I also noticed that <code>Peek</code> was not <em>inlining</em> well. Inlining is an important optimisation carried out by the JIT compiler: if you call a method that’s short and simple enough, the compiler will just copy the method’s body into the current method instead of emitting code to call it. This can often enable further optimisations such as erasing array bounds checks.</p>
+<p>I split <code>Peek</code> up into a pair of properties:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">struct</span> ParseState&lt;TToken&gt;</a>
+<a class="sourceLine" id="cb11-2" title="2">{</a>
+<a class="sourceLine" id="cb11-3" title="3">    <span class="kw">private</span> TToken[] _buffer;</a>
+<a class="sourceLine" id="cb11-4" title="4">    <span class="kw">private</span> <span class="dt">int</span> _currentPosition;</a>
+<a class="sourceLine" id="cb11-5" title="5"></a>
+<a class="sourceLine" id="cb11-6" title="6">    <span class="kw">public</span> <span class="dt">bool</span> HasCurrent =&gt; _currentPos &gt;= <span class="dv">0</span> &amp;&amp; _currentPos &lt; _buffer.<span class="fu">Length</span>;</a>
+<a class="sourceLine" id="cb11-7" title="7">    <span class="kw">public</span> TToken Current =&gt; _buffer[_currentPosition];</a>
+<a class="sourceLine" id="cb11-8" title="8">}</a></code></pre></div>
+<p>These properties are short and non-virtual, so they are good inlining candidates. After inlining them, the JIT sees simple array-manipulating code, which it can easily optimise in the context of the containing method. This simple change resulted in a 15-20% performance improvement across the board.</p>
+<h3 id="chunking">Chunking</h3>
+<p>The <code>Stream</code> version of <code>Advance</code> called <code>stream.Read()</code>, which reads and returns a single byte from the stream. This is not as efficient as <code>stream.Read(byte[])</code>, which reads a chunk of bytes from the stream and copies them into an array. (The former requires <em>n</em> virtual method calls to read <em>n</em> bytes, whereas the latter requires only <em>n / <code>array.Length</code></em>.)</p>
+<p>I replaced <code>ITokenStream</code>’s <code>Advance</code> and <code>Peek</code> methods with a method which reads a chunk of tokens into the <code>ParseState</code>’s buffer.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">interface</span> ITokenStream&lt;TToken&gt;</a>
+<a class="sourceLine" id="cb12-2" title="2">{</a>
+<a class="sourceLine" id="cb12-3" title="3">    <span class="dt">void</span> <span class="fu">ReadInto</span>(TToken[] buffer, <span class="dt">int</span> start, <span class="dt">int</span> count);</a>
+<a class="sourceLine" id="cb12-4" title="4">}</a></code></pre></div>
+<p>Why not design this signature as <code>void ReadInto(Span&lt;TToken&gt; span)</code>? I’d love to! Sadly that would preclude some implementations of <code>ITokenStream</code>. Methods like <code>stream.Read(Span&lt;byte&gt; span)</code> are available only on .NET Core, and as far as I’m aware Microsoft has no plans to backport them, so for compatibility with the desktop framework I’m stuck using arrays. This is irksome, as <a href="/posts/2018-12-06-zooming-in-on-field-accessors.html">I’ve said before</a> — what’s the point of designing a feature for library authors if you’re not going to support it properly?</p>
+<p><code>ReadInto</code> allows the <code>ParseState</code> to fill its buffer in chunks. But <code>ParseState</code>’s interface can also be chunk-ified — some <code>Parser</code>s (like <code>String</code>) can predict how many characters they’ll pull from the input. I added a <code>Peek</code> method to <code>ParseState</code> which returns a view into the <code>ParseState</code>’s buffer. (This makes <code>Peek</code> a little tricky to use correctly — you have to be careful not to continue using the <code>Span</code> after a call to <code>Advance</code>, which may mutate the buffer.)</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">public</span> ReadOnlySpan&lt;TToken&gt; <span class="fu">Peek</span>(<span class="dt">int</span> count);</a></code></pre></div>
+<p>Using <code>Peek</code>, a parser like <code>String(&quot;foo&quot;)</code> can now look at three characters from the input to see if they match <code>foo</code>, rather than one at a time.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">class</span> StringParser : Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt;</a>
+<a class="sourceLine" id="cb14-2" title="2">{</a>
+<a class="sourceLine" id="cb14-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> <span class="dt">string</span> _expected;</a>
+<a class="sourceLine" id="cb14-4" title="4">    <span class="kw">internal</span> <span class="kw">override</span> Result&lt;<span class="dt">string</span>&gt; <span class="fu">Parse</span>(<span class="kw">ref</span> ParseState&lt;<span class="dt">char</span>&gt; state)</a>
+<a class="sourceLine" id="cb14-5" title="5">    {</a>
+<a class="sourceLine" id="cb14-6" title="6">        <span class="dt">var</span> span = state.<span class="fu">Peek</span>(_expected.<span class="fu">Length</span>);</a>
+<a class="sourceLine" id="cb14-7" title="7">        <span class="kw">if</span> (!_expected.<span class="fu">AsSpan</span>().<span class="fu">SequenceEqual</span>(span))</a>
+<a class="sourceLine" id="cb14-8" title="8">        {</a>
+<a class="sourceLine" id="cb14-9" title="9">            <span class="kw">return</span> Result.<span class="fu">Failure</span>();</a>
+<a class="sourceLine" id="cb14-10" title="10">        }</a>
+<a class="sourceLine" id="cb14-11" title="11">        <span class="kw">return</span> Result.<span class="fu">Success</span>(_expected);</a>
+<a class="sourceLine" id="cb14-12" title="12">    }</a>
+<a class="sourceLine" id="cb14-13" title="13">}</a></code></pre></div>
+<p>This runs about 20% faster for long strings.</p>
+<h2 id="make-your-own-opportunities">Make Your Own Opportunities</h2>
+<p>Indulge me for a moment while I dispense some unsolicited career advice. For a long time, performance engineering was something that <a href="https://twitter.com/marcgravell/">other</a>, <a href="https://twitter.com/davidfowl">cleverer</a> <a href="https://mattwarren.org/">people</a> did while I observed from a distance with awe. Why is ASP.NET fast? Because the guys that wrote it are Actual Wizards.</p>
+<p>I’ve been lucky enough to work with some of those clever people for a few years now, and actually they’re not Actual Wizards. They just have more experience than me — they know how to use and interpret profiles and benchmarks, they’ve seen enough to know what does and doesn’t work, and they’ve had practice coming up with ideas to improve performance.</p>
+<p>The good news is that performance optimisation usually doesn’t involve fiddly low-level programming like this — simply being aware of when your code performs IO makes a big difference — and it’s never too early or late to start building your experience level, no matter where you are in your career. For me, that meant setting myself the goal of making my open source libraries as fast as I could. For you, it could mean picking a slow part of your codebase at work and trying to make it faster, or pair-programming with a colleague, or thoroughly reading through some unfamiliar code. Making your own opportunities to learn new things is the best way to get better.</p>
+
+<section class="comments">
+    <h1>Comments</h1>
+
+    <ol class="comments-list">
+        
+            <li class="comment">
+    
+        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on January 26, 2018</h2>
+    
+    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2018-01-26-announcing-pidgin-v2.0/example.md">send me a pull request</a>.</p></div>
+</li>
+        
+    </ol>
+</section>
+]]></summary>
+</entry>
+<entry>
     <title>The Fourth Type of Variance</title>
     <link href="http://www.benjamin.pizza/posts/2019-01-11-the-fourth-type-of-variance.html" />
     <id>http://www.benjamin.pizza/posts/2019-01-11-the-fourth-type-of-variance.html</id>
@@ -746,250 +990,6 @@
         <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on March 16, 2018</h2>
     
     <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2018-03-16-eighty/example.md">send me a pull request</a>.</p></div>
-</li>
-        
-    </ol>
-</section>
-]]></summary>
-</entry>
-<entry>
-    <title>Announcing Pidgin v2.0</title>
-    <link href="http://www.benjamin.pizza/posts/2018-01-26-announcing-pidgin-v2.0.html" />
-    <id>http://www.benjamin.pizza/posts/2018-01-26-announcing-pidgin-v2.0.html</id>
-    <published>2018-01-26T00:00:00Z</published>
-    <updated>2018-01-26T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
-    Posted on January 26, 2018
-    
-</div>
-
-<p>Happy birthday to me! I’m pleased to announce that version 2.0 of my functional parsing library, <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a>, is now available <a href="https://www.nuget.org/packages/Pidgin">on Nuget</a>. In this release I’ve focused on error messages, performance, and <code>Span</code> support.</p>
-<h2 id="parser-combinators">Parser Combinators</h2>
-<p>I haven’t written about Pidgin before, so allow me to briefly introduce it. Pidgin is a <a href="https://en.wikipedia.org/wiki/Parser_combinator"><em>parser combinator</em></a> library, meaning that it consists of three main concepts:</p>
-<ul>
-<li>A type <code>Parser</code> which models a <em>parsing process</em></li>
-<li>A collection of <em>primitive</em> <code>Parser</code> objects which perform some simple individual parsing task</li>
-<li>A collection of <em>combinator</em> functions which can build complex <code>Parser</code>s out of simpler ones</li>
-</ul>
-<p>Taken together, we have an object model allowing you to write code resembling a high-level description of a parsing process. As a brief taste, here is a simple example parser which parses an identifier in a typical programming language.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb1-1" title="1">Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; Identifier =</a>
-<a class="sourceLine" id="cb1-2" title="2">    Letter.<span class="fu">Then</span>(</a>
-<a class="sourceLine" id="cb1-3" title="3">        LetterOrDigit.<span class="fu">ManyString</span>(),</a>
-<a class="sourceLine" id="cb1-4" title="4">        (first, rest) =&gt; first + rest</a>
-<a class="sourceLine" id="cb1-5" title="5">    );</a>
-<a class="sourceLine" id="cb1-6" title="6"></a>
-<a class="sourceLine" id="cb1-7" title="7">Assert.<span class="fu">Equal</span>(<span class="st">&quot;abc1&quot;</span>, Identifier.<span class="fu">ParseOrThrow</span>(<span class="st">&quot;abc1&quot;</span>));</a></code></pre></div>
-<ul>
-<li><code>Identifier</code> is a <code>Parser&lt;char, string&gt;</code>, meaning it’s a process which consumes a sequence of <code>char</code>s and produces a <code>string</code>.</li>
-<li><code>Letter</code> is a primitive parser which consumes and returns a single character from the input stream, moving it on to the next character. (If the character is not a letter, the parser fails and doesn’t change the state of the input stream.)</li>
-<li><code>LetterOrDigit</code> is like <code>Letter</code> but for alphanumeric characters.</li>
-<li><code>ManyString</code> is a combinator method which runs a parser in a loop until it fails. It takes all of the smaller parser’s results from the loop and packs them into a <code>string</code>. So <code>LetterOrDigit.ManyString()</code> is a parser which consumes and returns a sequence of alphanumeric characters.</li>
-<li><code>Then</code> is another combinator which runs two parsers in sequence and applies a function to the result. So, reading the parser as a whole, we can see that an <code>Identifier</code> consists of a single letter followed by a sequence of letters or digits.</li>
-</ul>
-<p>Parser combinators’ power comes from their composability. The library comprises a small number of building blocks, which you can put together in rich and varied ways to build a parser which does what you need. The library’s level of abstraction is a good fit for small-to-medium sized parsing tasks: it’s not as high-level as a full-blown parser generator like Antlr, but it’s much simpler to integrate. Rewriting our hand-written <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">JQL</a> parser in Pidgin took around four times less code.</p>
-<p>That’s the overview — I won’t dive into a full tutorial on parser combinators because there are already <a href="http://www.lihaoyi.com/post/EasyParsingwithParserCombinators.html">plenty</a> <a href="http://webdoc.sub.gwdg.de/ebook/serien/ah/UU-CS/2008-044.pdf">of</a> <a href="https://news.ycombinator.com/item?id=14600079">those</a> a mere Google away.</p>
-<h3 id="how-it-works">How it works</h3>
-<p>Pidgin’s <code>Parser&lt;TToken, T&gt;</code> type represents a process which pulls <code>TToken</code>s one at a time from a (stateful) input stream, and either successfully returns a <code>T</code> or fails with an error message.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">public</span> <span class="kw">abstract</span> <span class="kw">class</span> Parser&lt;TToken, T&gt;</a>
-<a class="sourceLine" id="cb2-2" title="2">{</a>
-<a class="sourceLine" id="cb2-3" title="3">    <span class="kw">internal</span> <span class="kw">abstract</span> Result&lt;T&gt; <span class="fu">Parse</span>(IParseState&lt;TToken&gt; input);</a>
-<a class="sourceLine" id="cb2-4" title="4">}</a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="kw">internal</span> <span class="kw">interface</span> IParseState&lt;TToken&gt;</a>
-<a class="sourceLine" id="cb2-6" title="6">{</a>
-<a class="sourceLine" id="cb2-7" title="7">    TToken? <span class="fu">Peek</span>();  <span class="co">// null if at end of file</span></a>
-<a class="sourceLine" id="cb2-8" title="8">    <span class="dt">void</span> <span class="fu">Advance</span>();</a>
-<a class="sourceLine" id="cb2-9" title="9"></a>
-<a class="sourceLine" id="cb2-10" title="10">    <span class="co">// ... plus a few methods to facilitate backtracking etc</span></a>
-<a class="sourceLine" id="cb2-11" title="11">}</a>
-<a class="sourceLine" id="cb2-12" title="12"><span class="kw">internal</span> <span class="kw">struct</span> Result&lt;T&gt;</a>
-<a class="sourceLine" id="cb2-13" title="13">{</a>
-<a class="sourceLine" id="cb2-14" title="14">    <span class="co">// if Success is true, Value contains the parsed value and Error is null</span></a>
-<a class="sourceLine" id="cb2-15" title="15">    <span class="co">// if Success is false, Value is null and Error contains error info</span></a>
-<a class="sourceLine" id="cb2-16" title="16">    <span class="kw">public</span> <span class="dt">bool</span> Success { <span class="kw">get</span>; }</a>
-<a class="sourceLine" id="cb2-17" title="17">    <span class="kw">public</span> T Value { <span class="kw">get</span>; }</a>
-<a class="sourceLine" id="cb2-18" title="18">    <span class="kw">public</span> ParseError Error { <span class="kw">get</span>; }</a>
-<a class="sourceLine" id="cb2-19" title="19">}</a></code></pre></div>
-<p><code>IParseState</code> represents an iterator over the parser’s input (a sequence of <code>TToken</code>s). <code>Peek</code> returns the token at the current location in the input (or <code>null</code> if the parser has reached the end of the input) and <code>Advance</code> moves the stream on to the next token.</p>
-<p>Primitive parsers typically manipulate the <code>IParseState</code> directly. This parser matches a specific string:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">class</span> StringParser : Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt;</a>
-<a class="sourceLine" id="cb3-2" title="2">{</a>
-<a class="sourceLine" id="cb3-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> <span class="dt">string</span> _expected;</a>
-<a class="sourceLine" id="cb3-4" title="4"></a>
-<a class="sourceLine" id="cb3-5" title="5">    <span class="kw">internal</span> <span class="kw">override</span> Result&lt;<span class="dt">string</span>&gt; <span class="fu">Parse</span>(IParseState&lt;<span class="dt">char</span>&gt; input)</a>
-<a class="sourceLine" id="cb3-6" title="6">    {</a>
-<a class="sourceLine" id="cb3-7" title="7">        <span class="kw">foreach</span> (<span class="dt">var</span> c <span class="kw">in</span> _expected)</a>
-<a class="sourceLine" id="cb3-8" title="8">        {</a>
-<a class="sourceLine" id="cb3-9" title="9">            <span class="dt">var</span> token = input.<span class="fu">Peek</span>();</a>
-<a class="sourceLine" id="cb3-10" title="10">            <span class="kw">if</span> (!token.<span class="fu">HasValue</span>)</a>
-<a class="sourceLine" id="cb3-11" title="11">            {</a>
-<a class="sourceLine" id="cb3-12" title="12">                <span class="kw">return</span> Result.<span class="fu">Error</span>(ParseError.<span class="fu">EndOfFile</span>);</a>
-<a class="sourceLine" id="cb3-13" title="13">            }</a>
-<a class="sourceLine" id="cb3-14" title="14">            <span class="kw">if</span> (token.<span class="fu">Value</span> != c)</a>
-<a class="sourceLine" id="cb3-15" title="15">            {</a>
-<a class="sourceLine" id="cb3-16" title="16">                <span class="kw">return</span> Result.<span class="fu">Error</span>(ParseError.<span class="fu">UnexpectedToken</span>);</a>
-<a class="sourceLine" id="cb3-17" title="17">            }</a>
-<a class="sourceLine" id="cb3-18" title="18">            input.<span class="fu">Advance</span>();</a>
-<a class="sourceLine" id="cb3-19" title="19">        }</a>
-<a class="sourceLine" id="cb3-20" title="20">        <span class="kw">return</span> Result.<span class="fu">Success</span>(_expected);</a>
-<a class="sourceLine" id="cb3-21" title="21">    }</a>
-<a class="sourceLine" id="cb3-22" title="22">}</a></code></pre></div>
-<p>Higher-order parsers typically compose one or more smaller parsers, delegating to their <code>Parse</code> methods in some useful way. <code>Then</code> returns a parser which sequences two parsers and applies a mapping function to their results:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">class</span> ThenParser&lt;TToken, T, U, R&gt; : Parser&lt;TToken, R&gt;</a>
-<a class="sourceLine" id="cb4-2" title="2">{</a>
-<a class="sourceLine" id="cb4-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> Parser&lt;TToken, T&gt; _first;</a>
-<a class="sourceLine" id="cb4-4" title="4">    <span class="kw">private</span> <span class="kw">readonly</span> Parser&lt;TToken, U&gt; _second;</a>
-<a class="sourceLine" id="cb4-5" title="5">    <span class="kw">private</span> <span class="kw">readonly</span> Func&lt;T, U, R&gt; _resultSelector;</a>
-<a class="sourceLine" id="cb4-6" title="6"></a>
-<a class="sourceLine" id="cb4-7" title="7">    <span class="kw">internal</span> <span class="kw">override</span> Result&lt;R&gt; <span class="fu">Parse</span>(IParseState&lt;TToken&gt; input)</a>
-<a class="sourceLine" id="cb4-8" title="8">    {</a>
-<a class="sourceLine" id="cb4-9" title="9">        <span class="dt">var</span> result1 = _first.<span class="fu">Parse</span>(input);</a>
-<a class="sourceLine" id="cb4-10" title="10">        <span class="kw">if</span> (!result1.<span class="fu">Success</span>)</a>
-<a class="sourceLine" id="cb4-11" title="11">        {</a>
-<a class="sourceLine" id="cb4-12" title="12">            <span class="kw">return</span> Result.<span class="fu">Error</span>(result1.<span class="fu">Error</span>);</a>
-<a class="sourceLine" id="cb4-13" title="13">        }</a>
-<a class="sourceLine" id="cb4-14" title="14">        <span class="dt">var</span> result2 = _second.<span class="fu">Parse</span>(input);</a>
-<a class="sourceLine" id="cb4-15" title="15">        <span class="kw">if</span> (!result2.<span class="fu">Success</span>)</a>
-<a class="sourceLine" id="cb4-16" title="16">        {</a>
-<a class="sourceLine" id="cb4-17" title="17">            <span class="kw">return</span> Result.<span class="fu">Error</span>(result2.<span class="fu">Error</span>);</a>
-<a class="sourceLine" id="cb4-18" title="18">        }</a>
-<a class="sourceLine" id="cb4-19" title="19">        <span class="kw">return</span> Result.<span class="fu">Success</span>(_<span class="fu">resultSelector</span>(result1.<span class="fu">Value</span>, result2.<span class="fu">Value</span>));</a>
-<a class="sourceLine" id="cb4-20" title="20">    }</a>
-<a class="sourceLine" id="cb4-21" title="21">}</a></code></pre></div>
-<h2 id="error-messages">Error messages</h2>
-<p>Part of Pidgin’s job is to report when you gave a parser bad input. For example, the top level of a C# file must contain <code>class</code>es and <code>namespace</code>s, so feeding a C# parser the text <code>Console.WriteLine(&quot;foo&quot;);</code> (without an enclosing <code>class</code>) should fail with some information about the problem:</p>
-<pre><code>Parse error.
-    unexpected &#39;C&#39;
-    expected &quot;class&quot; or &quot;namespace&quot;
-    at line 1, col 1</code></pre>
-<p>A mistake I made early on in Pidgin’s development nearly two years ago(!) was trying to pre-compute the content of these error messages. Under the assumption that parsers are typically built once and then run repeatedly, I wrote some code to examine your parser upon construction and try to predict the ways it could fail on unexpected input, in order to avoid constructing error messages at runtime. This code calculated a set of “expected” input strings, accounting for <code>Then</code>s and <code>Or</code>s by concatenating the strings in the set and by unioning the sets respectively. (The idea was that a parser like <code>Keyword(&quot;public&quot;).Optional().Then(Keyword(&quot;class&quot;))</code> would report that it expected <code>&quot;class&quot; or &quot;public class&quot;</code>.)</p>
-<p>This went catastrophically wrong for complex parsers. Here’s a sketch of some code which parses left-associative mathematical operators with precedence, so <code>3^2 + 4 * 3^5 * 5</code> is parsed as <code>(3^2) + ((4 * (3^5)) * 5)</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb6-1" title="1"><span class="dt">var</span> topPrecedence = Number.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;^&#39;</span>).<span class="fu">Then</span>(Number).<span class="fu">Many</span>());</a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="dt">var</span> midPrecedence = topPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;*&#39;</span>).<span class="fu">Then</span>(topPrecedence).<span class="fu">Many</span>());</a>
-<a class="sourceLine" id="cb6-3" title="3"><span class="dt">var</span> lowPrecedence = midPrecedence.<span class="fu">SeparatedBy</span>(<span class="fu">Char</span>(<span class="ch">&#39;+&#39;</span>).<span class="fu">Then</span>(midPrecedence).<span class="fu">Many</span>());</a></code></pre></div>
-<p><code>topPrecedence</code> expects a number, or a number followed by a sequence of exponents — two possibilities. <code>midPrecedence</code> therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications — four possibilities. <code>lowPrecedence</code> has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.</p>
-<p>I made some attempts to optimise this by using more efficient data structures, but I realised this was a losing proposition and decided to throw it out altogether in v2.0. Error messages are now computed at runtime, when the error actually occurs. This means I can be more precise about what the parser was expecting at that particular point in the input: once a parsing process has committed to a branch I can report expected inputs <em>from that branch</em>, rather than reporting all possible expected inputs.</p>
-<p>Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the <em>prioritised choice</em> operator <code>Or</code> works — <code>String(&quot;foo&quot;).Or(String(&quot;bar&quot;))</code> only tries <code>bar</code> if an attempt to parse <code>foo</code> failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using <code>ArrayPool</code>), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children’s error messages adds some interesting complications here, which I’ve described in a <a href="https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74">long comment</a>.)</p>
-<h2 id="span"><code>Span</code></h2>
-<blockquote>
-<p><strong>Note</strong>: You can watch <a href="https://twitter.com/g3rv4">my esteemed colleague Gervasio</a> and me carrying out the work I describe here in <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">a live-stream on YouTube</a>. It was pretty fun!</p>
-</blockquote>
-<p>I wanted to add support for parsing input stored in a <code>Span</code>. (<code>Span</code> is a new part of the BCL representing a reference to a contiguous block of memory such as a chunk of an array.) I already had functions which applied a <code>Parser</code> to a <code>string</code>, a <code>T[]</code>, a <code>Stream</code>, etc; I’d abstracted over these various input types using the aforementioned <code>IParseState</code> interface.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">internal</span> <span class="kw">interface</span> IParseState&lt;TToken&gt;</a>
-<a class="sourceLine" id="cb7-2" title="2">{</a>
-<a class="sourceLine" id="cb7-3" title="3">    TToken? <span class="fu">Peek</span>();</a>
-<a class="sourceLine" id="cb7-4" title="4">    <span class="dt">void</span> <span class="fu">Advance</span>();</a>
-<a class="sourceLine" id="cb7-5" title="5">}</a></code></pre></div>
-<p>So adding <code>Span</code> support basically means implementing <code>IParseState</code> on top of a <code>Span</code>. In theory this should be quite straightforward — a class which has a <code>Span</code> and keeps track of its current position:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">class</span> SpanTokenStream&lt;TToken&gt; : ITokenStream&lt;TToken&gt;</a>
-<a class="sourceLine" id="cb8-2" title="2">{</a>
-<a class="sourceLine" id="cb8-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> Span&lt;TToken&gt; _span;</a>
-<a class="sourceLine" id="cb8-4" title="4">    <span class="kw">private</span> <span class="dt">int</span> _current;</a>
-<a class="sourceLine" id="cb8-5" title="5"></a>
-<a class="sourceLine" id="cb8-6" title="6">    TToken? <span class="fu">Peek</span>() =&gt; _current &gt;= _span.<span class="fu">Length</span> ? <span class="kw">null</span> : _span[_current];</a>
-<a class="sourceLine" id="cb8-7" title="7">    </a>
-<a class="sourceLine" id="cb8-8" title="8">    <span class="dt">void</span> <span class="fu">Advance</span>()</a>
-<a class="sourceLine" id="cb8-9" title="9">    {</a>
-<a class="sourceLine" id="cb8-10" title="10">        _current++;</a>
-<a class="sourceLine" id="cb8-11" title="11">    }</a>
-<a class="sourceLine" id="cb8-12" title="12">}</a></code></pre></div>
-<p>But if you try and write this class, you’ll find that the compiler turns you away. <code>Span</code> is a <code>ref struct</code>, which means that it can only be stored on the stack. You can’t use a <code>Span</code> as a field of a <code>class</code>, or put it in an array, or box it (by upcasting it to an <code>interface</code> or <code>object</code>), or use it as a local variable in an <code>async</code> or <code>yield</code> method (because behind the scenes such methods copy their stack frame to the heap). (There are good reasons for this restriction, pertaining to memory safety.)</p>
-<p>How to implement <code>IParseState</code> without storing a <code>Span</code> on the heap? Because <code>IParseState</code> is an internal interface, I can make certain guarantees about its usage. Instances of <code>IParseState</code> have a limited life-span — each <code>IParseState</code> instance becomes garbage before the call to <code>Parse</code> returns, and <code>IParseState</code> instances are never accessed from multiple threads. So I can store the <code>Span</code> in <code>Parse</code>’s stack frame and put a pointer to that stack frame in the <code>IParseState</code>.</p>
-<p>This idea is complicated by the fact that <code>Span</code> is a <a href="https://stackoverflow.com/questions/42154908">managed type</a>, so you’re not allowed to declare a <code>Span&lt;T&gt;*</code>. (This restriction ensures that a managed object can’t accidentally become garbage while it’s still being referred to by an unmanaged pointer; this needn’t trouble us here as the <code>Span</code> is guaranteed to be reachable because it’s on the stack.)</p>
-<p>Fortunately, <a href="https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/">the <code>System.Runtime.CompilerServices.Unsafe</code> package</a> contains some dangerous tools to get around this memory safety restriction: <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe.aspointer"><code>Unsafe.AsPointer</code></a> coerces a <code>ref</code> to an untyped <code>void*</code> and <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe.asref"><code>Unsafe.AsRef</code></a> coerces it back. So my plan was to store a <code>ref Span&lt;T&gt;</code> as a <code>void*</code> on the heap, and coerce it back to a <code>ref Span&lt;T&gt;</code> using when I need to address it as a <code>Span</code>. (This is a similar hack to one that I used in <a href="/posts/2018-03-16-eighty.html">my HTML generation library</a>.)</p>
-<p>Unfortunately this doesn’t work either, because <code>Unsafe.AsPointer</code> is generic and you can’t use a <code>ref struct</code> as a type parameter! The compiler can’t be sure that <code>Unsafe.AsPointer</code> doesn’t box its argument, which of course is forbidden when the argument is a <code>Span</code>.</p>
-<p>I wound up implementing a type-specialised copy of those two <code>Unsafe</code> methods:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">static</span> <span class="kw">class</span> Unsafe</a>
-<a class="sourceLine" id="cb9-2" title="2">{</a>
-<a class="sourceLine" id="cb9-3" title="3">    <span class="kw">public</span> <span class="kw">static</span> <span class="dt">void</span>* AsPointer&lt;T&gt;(<span class="kw">ref</span> Span&lt;T&gt; span);</a>
-<a class="sourceLine" id="cb9-4" title="4">    <span class="kw">public</span> <span class="kw">static</span> <span class="kw">ref</span> Span&lt;T&gt; <span class="fu">AsRef</span>(<span class="dt">void</span>* ptr);</a>
-<a class="sourceLine" id="cb9-5" title="5">}</a></code></pre></div>
-<p><code>AsPointer</code> and <code>AsRef</code> are not expressible in C# (even <code>unsafe</code> C#); <code>System.Runtime.CompilerServices.Unsafe</code> is implemented in raw IL. My copies of those methods have stubs in C# which are filled in by rewriting the DLL’s IL in a post-compile step.</p>
-<h2 id="assorted-performance-improvements">Assorted Performance Improvements</h2>
-<p>Performance has always been one of Pidgin’s priorities — I’m proud that Pidgin is C#’s fastest parser combinator library (that I know of!) — but there’s always room for improvement. In my tests Pidgin still runs somewhat slower than F#’s FParsec library, for example. In this release I made some architectural changes to <code>IParseState</code> to help close that gap.</p>
-<h3 id="buffering-uniformly">Buffering Uniformly</h3>
-<p>As I mentioned earlier, Pidgin has several internal implementations of <code>IParseState</code>, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to <em>backtrack</em> on failure (using the <code>Try</code> combinator), so you can’t always discard a token as soon as you’ve seen it. Some <code>IParseState</code> implementations — specifically the ones that are built on top of streaming storage (like <code>Stream</code>) — therefore <em>buffer</em> their input into an array. The ones that are backed by in-memory storage like <code>string</code> don’t need to buffer because their data is already in memory.</p>
-<p>I decided to move the buffering logic to a shared part of the code. Now <em>all</em> <code>IParseState</code> implementations buffer their input, even the in-memory ones. On its own this should make the code slower (it’s more expensive to copy a <code>string</code> into an array than not to!), but it enables all of the optimisations I’m about to describe.</p>
-<h3 id="de-virtualisation-inlining">De-Virtualisation &amp; Inlining</h3>
-<p>Virtual method calls are comparatively expensive in .NET, and they happen frequently in Pidgin’s implementation because of <code>IParseState</code>’s design: a parser which consumes <em>n</em> tokens makes a minimum of <em>n</em> virtual calls to <code>Advance</code>.</p>
-<p>With the buffering code extracted into a single place, there was no longer any need to keep it behind an interface. I moved all the buffering and error handling code into a mutable struct which is stored on the stack and passed to the <code>Parser</code>s by reference. Now <code>Advance</code> and <code>Peek</code> are non-virtual.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">struct</span> ParseState&lt;TToken&gt;</a>
-<a class="sourceLine" id="cb10-2" title="2">{</a>
-<a class="sourceLine" id="cb10-3" title="3">    <span class="kw">private</span> TToken[] _buffer;</a>
-<a class="sourceLine" id="cb10-4" title="4">    <span class="kw">private</span> <span class="dt">int</span> _currentPosition;</a>
-<a class="sourceLine" id="cb10-5" title="5">    <span class="kw">private</span> ITokenStream&lt;TToken&gt; _stream;</a>
-<a class="sourceLine" id="cb10-6" title="6"></a>
-<a class="sourceLine" id="cb10-7" title="7">    <span class="kw">public</span> TToken? <span class="fu">Peek</span>() =&gt;</a>
-<a class="sourceLine" id="cb10-8" title="8">        _currentPosition &lt; <span class="dv">0</span> || _currentPosition &gt;= _buffer.<span class="fu">Length</span></a>
-<a class="sourceLine" id="cb10-9" title="9">            ? <span class="kw">null</span></a>
-<a class="sourceLine" id="cb10-10" title="10">            : _buffer[_currentPosition];</a>
-<a class="sourceLine" id="cb10-11" title="11">    </a>
-<a class="sourceLine" id="cb10-12" title="12">    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Advance</span>()</a>
-<a class="sourceLine" id="cb10-13" title="13">    {</a>
-<a class="sourceLine" id="cb10-14" title="14">        _currentPosition++;</a>
-<a class="sourceLine" id="cb10-15" title="15"></a>
-<a class="sourceLine" id="cb10-16" title="16">        <span class="kw">if</span> (_currentPosition &gt;= _buffer.<span class="fu">Length</span>)</a>
-<a class="sourceLine" id="cb10-17" title="17">        {</a>
-<a class="sourceLine" id="cb10-18" title="18">            <span class="fu">ReadStreamIntoBuffer</span>();</a>
-<a class="sourceLine" id="cb10-19" title="19">        }</a>
-<a class="sourceLine" id="cb10-20" title="20">    }</a>
-<a class="sourceLine" id="cb10-21" title="21">}</a>
-<a class="sourceLine" id="cb10-22" title="22"></a>
-<a class="sourceLine" id="cb10-23" title="23"><span class="kw">public</span> <span class="kw">abstract</span> <span class="kw">class</span> Parser&lt;TToken, T&gt;</a>
-<a class="sourceLine" id="cb10-24" title="24">{</a>
-<a class="sourceLine" id="cb10-25" title="25">    <span class="kw">internal</span> <span class="kw">abstract</span> Result&lt;T&gt; <span class="fu">Parse</span>(<span class="kw">ref</span> ParseState&lt;TToken&gt; state);</a>
-<a class="sourceLine" id="cb10-26" title="26">}</a></code></pre></div>
-<p>That’s a fairly general C# performance trick: put shared state in a mutable struct, store it on the stack, and pass it around as a <code>ref</code> parameter. This both reduces GC pressure and improves the CPU cache’s hit rate, because the execution stack is likely to be in cache.</p>
-<p>I also noticed that <code>Peek</code> was not <em>inlining</em> well. Inlining is an important optimisation carried out by the JIT compiler: if you call a method that’s short and simple enough, the compiler will just copy the method’s body into the current method instead of emitting code to call it. This can often enable further optimisations such as erasing array bounds checks.</p>
-<p>I split <code>Peek</code> up into a pair of properties:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">struct</span> ParseState&lt;TToken&gt;</a>
-<a class="sourceLine" id="cb11-2" title="2">{</a>
-<a class="sourceLine" id="cb11-3" title="3">    <span class="kw">private</span> TToken[] _buffer;</a>
-<a class="sourceLine" id="cb11-4" title="4">    <span class="kw">private</span> <span class="dt">int</span> _currentPosition;</a>
-<a class="sourceLine" id="cb11-5" title="5"></a>
-<a class="sourceLine" id="cb11-6" title="6">    <span class="kw">public</span> <span class="dt">bool</span> HasCurrent =&gt; _currentPos &gt;= <span class="dv">0</span> &amp;&amp; _currentPos &lt; _buffer.<span class="fu">Length</span>;</a>
-<a class="sourceLine" id="cb11-7" title="7">    <span class="kw">public</span> TToken Current =&gt; _buffer[_currentPosition];</a>
-<a class="sourceLine" id="cb11-8" title="8">}</a></code></pre></div>
-<p>These properties are short and non-virtual, so they are good inlining candidates. After inlining them, the JIT sees simple array-manipulating code, which it can easily optimise in the context of the containing method. This simple change resulted in a 15-20% performance improvement across the board.</p>
-<h3 id="chunking">Chunking</h3>
-<p>The <code>Stream</code> version of <code>Advance</code> called <code>stream.Read()</code>, which reads and returns a single byte from the stream. This is not as efficient as <code>stream.Read(byte[])</code>, which reads a chunk of bytes from the stream and copies them into an array. (The former requires <em>n</em> virtual method calls to read <em>n</em> bytes, whereas the latter requires only <em>n / <code>array.Length</code></em>.)</p>
-<p>I replaced <code>ITokenStream</code>’s <code>Advance</code> and <code>Peek</code> methods with a method which reads a chunk of tokens into the <code>ParseState</code>’s buffer.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">interface</span> ITokenStream&lt;TToken&gt;</a>
-<a class="sourceLine" id="cb12-2" title="2">{</a>
-<a class="sourceLine" id="cb12-3" title="3">    <span class="dt">void</span> <span class="fu">ReadInto</span>(TToken[] buffer, <span class="dt">int</span> start, <span class="dt">int</span> count);</a>
-<a class="sourceLine" id="cb12-4" title="4">}</a></code></pre></div>
-<p>Why not design this signature as <code>void ReadInto(Span&lt;TToken&gt; span)</code>? I’d love to! Sadly that would preclude some implementations of <code>ITokenStream</code>. Methods like <code>stream.Read(Span&lt;byte&gt; span)</code> are available only on .NET Core, and as far as I’m aware Microsoft has no plans to backport them, so for compatibility with the desktop framework I’m stuck using arrays. This is irksome, as <a href="/posts/2018-12-06-zooming-in-on-field-accessors.html">I’ve said before</a> — what’s the point of designing a feature for library authors if you’re not going to support it properly?</p>
-<p><code>ReadInto</code> allows the <code>ParseState</code> to fill its buffer in chunks. But <code>ParseState</code>’s interface can also be chunk-ified — some <code>Parser</code>s (like <code>String</code>) can predict how many characters they’ll pull from the input. I added a <code>Peek</code> method to <code>ParseState</code> which returns a view into the <code>ParseState</code>’s buffer. (This makes <code>Peek</code> a little tricky to use correctly — you have to be careful not to continue using the <code>Span</code> after a call to <code>Advance</code>, which may mutate the buffer.)</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">public</span> ReadOnlySpan&lt;TToken&gt; <span class="fu">Peek</span>(<span class="dt">int</span> count);</a></code></pre></div>
-<p>Using <code>Peek</code>, a parser like <code>String(&quot;foo&quot;)</code> can now look at three characters from the input to see if they match <code>foo</code>, rather than one at a time.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">class</span> StringParser : Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt;</a>
-<a class="sourceLine" id="cb14-2" title="2">{</a>
-<a class="sourceLine" id="cb14-3" title="3">    <span class="kw">private</span> <span class="kw">readonly</span> <span class="dt">string</span> _expected;</a>
-<a class="sourceLine" id="cb14-4" title="4">    <span class="kw">internal</span> <span class="kw">override</span> Result&lt;<span class="dt">string</span>&gt; <span class="fu">Parse</span>(<span class="kw">ref</span> ParseState&lt;<span class="dt">char</span>&gt; state)</a>
-<a class="sourceLine" id="cb14-5" title="5">    {</a>
-<a class="sourceLine" id="cb14-6" title="6">        <span class="dt">var</span> span = state.<span class="fu">Peek</span>(_expected.<span class="fu">Length</span>);</a>
-<a class="sourceLine" id="cb14-7" title="7">        <span class="kw">if</span> (!_expected.<span class="fu">AsSpan</span>().<span class="fu">SequenceEqual</span>(span))</a>
-<a class="sourceLine" id="cb14-8" title="8">        {</a>
-<a class="sourceLine" id="cb14-9" title="9">            <span class="kw">return</span> Result.<span class="fu">Failure</span>();</a>
-<a class="sourceLine" id="cb14-10" title="10">        }</a>
-<a class="sourceLine" id="cb14-11" title="11">        <span class="kw">return</span> Result.<span class="fu">Success</span>(_expected);</a>
-<a class="sourceLine" id="cb14-12" title="12">    }</a>
-<a class="sourceLine" id="cb14-13" title="13">}</a></code></pre></div>
-<p>This runs about 20% faster for long strings.</p>
-<h2 id="make-your-own-opportunities">Make Your Own Opportunities</h2>
-<p>Indulge me for a moment while I dispense some unsolicited career advice. For a long time, performance engineering was something that <a href="https://twitter.com/marcgravell/">other</a>, <a href="https://twitter.com/davidfowl">cleverer</a> <a href="https://mattwarren.org/">people</a> did while I observed from a distance with awe. Why is ASP.NET fast? Because the guys that wrote it are Actual Wizards.</p>
-<p>I’ve been lucky enough to work with some of those clever people for a few years now, and actually they’re not Actual Wizards. They just have more experience than me — they know how to use and interpret profiles and benchmarks, they’ve seen enough to know what does and doesn’t work, and they’ve had practice coming up with ideas to improve performance.</p>
-<p>The good news is that performance optimisation usually doesn’t involve fiddly low-level programming like this — simply being aware of when your code performs IO makes a big difference — and it’s never too early or late to start building your experience level, no matter where you are in your career. For me, that meant setting myself the goal of making my open source libraries as fast as I could. For you, it could mean picking a slow part of your codebase at work and trying to make it faster, or pair-programming with a colleague, or thoroughly reading through some unfamiliar code. Making your own opportunities to learn new things is the best way to get better.</p>
-
-<section class="comments">
-    <h1>Comments</h1>
-
-    <ol class="comments-list">
-        
-            <li class="comment">
-    
-        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on January 26, 2018</h2>
-    
-    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2018-01-26-announcing-pidgin-v2.0/example.md">send me a pull request</a>.</p></div>
 </li>
         
     </ol>
