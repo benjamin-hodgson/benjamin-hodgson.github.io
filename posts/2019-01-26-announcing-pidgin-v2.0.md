@@ -138,7 +138,7 @@ This went catastrophically wrong for complex parsers. Here's a sketch of some co
 ```csharp
 var topPrecedence = Number.Then(Char('^').Then(Number).Many());
 var midPrecedence = topPrecedence.Then(Char('*').Then(topPrecedence).Many());
-var lowPrecedence = midPrecedence.SeparatedBy(Char('+').Then(midPrecedence).Many());
+var lowPrecedence = midPrecedence.Then(Char('+').Then(midPrecedence).Many());
 ```
 
 `topPrecedence` expects a number, or a number followed by a sequence of exponents --- two possibilities. `midPrecedence` therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications --- four possibilities. `lowPrecedence` has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.
