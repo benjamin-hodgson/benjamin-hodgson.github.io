@@ -195,7 +195,7 @@ The lambda which is passed to `RewriteChildren` contains a recursive call to `Re
 
 Since steps 1-3 are repeated before step 5 happens, you can end up renting many arrays (a number equal to the height of the tree) before returning any of them to the pool. So the array pool could run out of arrays!
 
-To fix this problem, we want to rent a small number of big arrays from the array pool, rather than a large number of small ones. We can lean on the fact that each array only lives as long as a single stack frame --- the array is `Rent`ed at the start of `RewriteChildren` and then `Return`ed at the end. So the memory usage is stack-shaped.
+To fix this problem, we want to rent a small number of big arrays from the array pool, rather than a big number of small ones. We can lean on the fact that each array only lives as long as a single stack frame --- the array is `Rent`ed at the start of `RewriteChildren` and then `Return`ed at the end. So the memory usage is stack-shaped.
 
 So here's the plan. We're going to rent a large array from the pool at `Rewrite`'s beginning, and `RewriteChildren` will take a chunk from that array each time it's called. Each chunk will be freed up before any previously-allocated chunks are freed.
 
