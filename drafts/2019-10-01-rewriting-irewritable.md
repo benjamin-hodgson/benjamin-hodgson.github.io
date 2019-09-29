@@ -384,7 +384,7 @@ private static class SpanFactory<T>
 }
 ```
 
-Obviously relying on BCL's internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. I think the likelihood of the internal constructor changing is quite low in this case.
+Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.
 
 There are also risks associated with mixing pointers and references like this. You have to be very careful that the `Four` being pointed to by the `Span` doesn't move or get replaced by a different variable. On the CLR, stack memory is never moved around by the garbage collector (unlike heap memory which can be moved during the compaction phase of GC), and I've written my code to ensure that the `Four` will be stored in a "real" local variable (rather than as temporary storage on the evaluation stack) by mentioning the variable (as a parameter to a non-inlined "keep-alive" method) at the end of the method.
 
