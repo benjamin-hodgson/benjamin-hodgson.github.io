@@ -445,4 +445,4 @@ private static void KeepAlive<T>(ref Four<T> four)
 }
 ```
 
-I confess to being less than 100% confident in this implementation. But it does appear to work, in both .NET Core and the Framework. If you see a bug in my code please do raise an issue [on GitHub](https://github.com/benjamin-hodgson/Sawmill)!
+This weird code does appear to work, in both .NET Core and the Framework. If you see a bug in my code please do raise an issue [on GitHub](https://github.com/benjamin-hodgson/Sawmill)!
