@@ -39,7 +39,7 @@ enum NumberOfChildren
 
 I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So `GetChildren` returns a `Children<T>`, passing up to two children on the stack and the rest in an `ImmutableList`. The `NumberOfChildren` property tells the library how many of the struct's fields are filled in.
 
-This custom collection type is an extra hurdle to understanding `IRewritable`'s API. It also makes certain parts of Sawmill's implementation more complex --- many internal methods have to `switch` on the `NumberOfChildren` they're working with and do the same work in four different ways. It's also relatively large for a `struct` (at least 16 bytes on a 32-bit architecture) so there is a marginal performance cost associated with copying it around.
+This custom collection type is an extra hurdle to understanding `IRewritable`'s API. It also makes certain parts of Sawmill's implementation more complex --- many internal methods have to `switch` on the `NumberOfChildren` they're working with and do the same work in four different ways. It's also relatively large for a `struct` (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.
 
 ### Wart 2: Collections
 
