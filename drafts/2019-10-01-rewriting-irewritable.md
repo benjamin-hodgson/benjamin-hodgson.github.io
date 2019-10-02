@@ -336,9 +336,15 @@ struct Four<T>
 }
 ```
 
-A variable of type `Four<T>` has enough room for four `T`s --- so when the variable is a local variable (in an ordinary method) it's functionally equivalent to a `stackalloc T[4]`. The plan is to take the address of a `Four<T>` variable (using `ref`) and use that as the pointer inside a `Span`.
+A variable of type `Four<T>` has enough room for four `T`s --- so when the variable is a local variable (in an ordinary method) it's functionally equivalent to a `stackalloc T[4]`. We won't be using the `First`, `Second`, `Third` and `Fourth` properties directly --- we'll be (unsafely) addressing them relative to the start of the struct. In this example I'm using [`System.Runtime.CompilerServices.Unsafe`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.0) to address `Third` by looking 2 elements beyond `First`:
 
-My first idea was to use `System.Runtime.CompilerServices.Unsafe` to coerce a `ref Four<T>` to an unmanaged pointer, and then put that in a `Span`:
+```csharp
+var four = new Four<T>();
+ref T third = ref Unsafe.Add(ref four.First, 2);
+Assert.True(Unsafe.AreSame(ref four.Third, ref third));
+```
+
+The plan is to create a `Span` whose pointer refers to the start of a `Four<T>` on the stack. `span[0]` will address `four.First`, `span[1]` will address `Second`, and so on. My first idea to implement this was to use `System.Runtime.CompilerServices.Unsafe` to coerce a `ref Four<T>` to an unmanaged pointer, and then put that in a `Span`:
 
 ```csharp
 unsafe
@@ -349,11 +355,7 @@ unsafe
 }
 ```
 
-This doesn't work either --- the `Span` constructor throws an exception when `T` is a reference type.
-
-At this point I went for a poke around in the .NET source code. I wanted to know how `array.AsSpan()` works when the array contains references. I found [an internal constructor](https://github.com/dotnet/corefx/blob/7e9a177824cbefaee8985a9b517ebb0ea2e17a81/src/Common/src/CoreLib/System/Span.Fast.cs#L123) which takes a `ref T`. We can illictly call that constructor using reflection, although of course we want to avoid the performance costs of reflection. So the actual plan is to use runtime code generation to call the internal `Span` constructor.
-
-Ordinarily I'd use `Expression` to do this runtime code generation, but `Expression` doesn't support `ref` parameters, so we have to write the IL by hand.
+Sadly the `Span` constructor throws an exception when `T` is a reference type. At this point I went for a poke around in the .NET source code. I wanted to know how `array.AsSpan()` works. I found [an internal constructor](https://github.com/dotnet/corefx/blob/7e9a177824cbefaee8985a9b517ebb0ea2e17a81/src/Common/src/CoreLib/System/Span.Fast.cs#L123) which takes a `ref T`. We can illictly call that constructor using reflection, although of course we want to avoid the performance costs of reflection. So the actual plan is to use runtime code generation to call the internal `Span` constructor. Ordinarily I'd use `Expression` to do this runtime code generation, but `Expression` doesn't support `ref` parameters, so we have to write the IL by hand.
 
 ```csharp
 private static class SpanFactory<T>
