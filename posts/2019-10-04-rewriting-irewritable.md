@@ -467,3 +467,5 @@ private static void KeepAlive<T>(ref Four<T> four)
 ```
 
 As far as I know, the designers of `Span` were thinking primarily about applications such as serialisation and parsing --- the sort of low-level code you'd find in a [high performance web server](https://github.com/aspnet/AspNetCore). But `Span` also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my `IRewritable` abstraction, but I'm also leaning on its flexibility to implement that abstraction as efficiently as possible.
+
+Sawmill version 3.0 is now available [on Nuget](https://www.nuget.org/packages/Sawmill), and you can read all of this code in [the GitHub repo](https://github.com/benjamin-hodgson/Sawmill).
