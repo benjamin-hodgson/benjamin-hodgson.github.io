@@ -388,7 +388,7 @@ Obviously relying on BCL internals like this is risky. The internal constructor 
 
 There are also risks associated with mixing pointers and references like this. You have to be very careful that the `Span` doesn't live longer than the `Four` it points to. That means the `Four` has to be discarded at the end of the method along with the `Span`, and it has to be stored in a "real" local variable, not in temporary storage on the evaluation stack. I'll address that by mentioning the variable (as a parameter to a non-inlined "keep-alive" method) at the end of the method.
 
-You also need to be certain that the `Span` never points to a location on the heap. On the CLR, stack memory is never moved around by the garbage collector (unlike heap memory which can be moved during the compaction phase of GC), but that would go out the window if `RewriteChildrenInternal` were not an ordinary method. Methods containing `await`s, `yield`s, and lambdas generally store their local variables on the heap, so the `Four` would be liable to move around. 
+You also need to be certain that the `Span` never points to a location on the heap. On the CLR, data stored on the heap is liable to get moved by the garbage collector, which would invalidate the pointer inside the `Span`. Beware that local variables are not always safe from being moved! Methods containing `await`s, `yield`s, and lambdas are liable to store their local variables on the heap, so if `RewriteChildrenInternal` were not an ordinary method this hack would not be safe.
 
 Here's the final implementation of `RewriteChildrenInternal`.
 
