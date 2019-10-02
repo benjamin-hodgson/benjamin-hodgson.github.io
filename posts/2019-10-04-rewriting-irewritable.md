@@ -102,7 +102,8 @@ This is not a "pit of success" API --- `SetChildren` looks sensible but could go
 `RewriteChildren`, which applies a transformation function to the object's immediate children (in other words, a one-level `Rewrite`), has a sensible implementation in terms of the other two methods: get the children, transform them, and put them back.
 
 ```csharp
-public static T DefaultRewriteChildren<T>(this T value, Func<T, T> transformer) where T : IRewritable<T>
+public static T DefaultRewriteChildren<T>(this T value, Func<T, T> transformer)
+    where T : IRewritable<T>
 {
     var children = value.GetChildren();
     var newChildren = children.Select(transformer);
@@ -152,7 +153,8 @@ So `Span` thoroughly solves the safety issue with the array-oriented API. I don'
 So Sawmill's methods like `RewriteChildren` can be implemented without allocating memory. In this example I'm using [`ArrayPool`](https://docs.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1?view=netcore-3.0) to avoid creating a new array for every `RewriteChildren` call.
 
 ```csharp
-public static T RewriteChildren<T>(this T value, Func<T, T> transformer) where T : IRewritable<T>
+public static T RewriteChildren<T>(this T value, Func<T, T> transformer)
+    where T : IRewritable<T>
 {
     var count = value.CountChildren();
     var array = ArrayPool<T>.Shared.Rent(count);
@@ -200,13 +202,23 @@ To fix this problem, we want to rent a small number of large arrays from the arr
 So here's the plan. We're going to rent a large array from the pool at `Rewrite`'s beginning, and `RewriteChildren` will take a chunk from that array each time it's called. Each chunk will be freed up before any previously-allocated chunks are freed.
 
 ```csharp
-public static T Rewrite<T>(this T value, Func<T, T> transformer) where T : IRewritable<T>
+public static T Rewrite<T>(this T value, Func<T, T> transformer)
+    where T : IRewritable<T>
 {
     using (var chunks = new ChunkStack<T>())
     {
         T Go(T x)
             => transformer(t.RewriteChildrenInternal(Go, chunks));
         return Go(value);
+    }
+}
+
+public static T RewriteChildren<T>(this T value, Func<T, T> transformer)
+    where T : IRewritable<T>
+{
+    using (var chunks = new ChunkStack<T>())
+    {
+        return RewriteChildrenInternal(t, transformer, chunks);
     }
 }
 
@@ -367,9 +379,16 @@ private static class SpanFactory<T>
     {
         var ctor = typeof(Span<T>)
             .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-            .Single(c => c.GetParameters().Length == 2 && c.GetParameters()[0].ParameterType.IsByRef);
+            .Single(c =>
+                c.GetParameters().Length == 2
+                && c.GetParameters()[0].ParameterType.IsByRef
+            );
 
-        var method = new DynamicMethod("", typeof(Span<T>), new[] { typeof(T).MakeByRefType(), typeof(int) });
+        var method = new DynamicMethod(
+            "",
+            typeof(Span<T>),
+            new[] { typeof(T).MakeByRefType(), typeof(int) }
+        );
 
         var il = method.GetILGenerator();
         il.Emit(OpCodes.Ldarg_0);
