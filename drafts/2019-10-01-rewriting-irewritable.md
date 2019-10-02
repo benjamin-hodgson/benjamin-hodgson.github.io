@@ -17,7 +17,7 @@ interface IRewritable<T> where T : IRewritable<T>
 }
 ```
 
-It's a simple interface with two straightforward operations --- `GetChildren` returns the current object's immediate children and `SetChildren` replaces them. But there are also some warts.
+It's a pleasingly simple interface with two core operations --- `GetChildren` returns the current object's immediate children and `SetChildren` replaces them. But there are also some warts.
 
 ### Wart 1: `Children<T>`
 
