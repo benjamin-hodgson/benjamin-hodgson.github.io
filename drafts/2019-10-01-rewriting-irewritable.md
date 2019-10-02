@@ -62,7 +62,7 @@ class ThreeChildren : IRewritable<ThreeChildren>
             newChildren.Many[0],
             newChildren.Many[1],
             newChildren.Many[2]
-        )
+        );
 }
 ```
 
