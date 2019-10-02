@@ -388,9 +388,9 @@ Obviously relying on BCL internals like this is risky. The internal constructor 
 
 There are also risks associated with mixing pointers and references like this. You have to be very careful that the `Span` doesn't live longer than the `Four` it points to. That means the `Four` has to be discarded at the end of the method along with the `Span`, and it has to be stored in a "real" local variable, not in temporary storage on the evaluation stack. I'll address that by mentioning the variable (as a parameter to a non-inlined "keep-alive" method) at the end of the method.
 
-You also need to be certain that the `Span` never points to a location on the heap. On the CLR, data stored on the heap is liable to get moved by the garbage collector, which would invalidate the pointer inside the `Span`. Beware that local variables are not always safe from being moved! Methods containing `await`s, `yield`s, and lambdas are liable to store their local variables on the heap, so if `RewriteChildrenInternal` were not an ordinary method this hack would not be safe.
+You also need to be certain that the `Four` is stored on the stack and not the heap. Data stored on the heap is liable to get moved by the garbage collector, which would invalidate the pointer inside the `Span`. Beware that local variables are not always safe from being moved! Methods containing `await`s, `yield`s, and lambdas are liable to store their local variables on the heap, so if `RewriteChildrenInternal` were not an ordinary method this hack would not be safe.
 
-Here's the final implementation of `RewriteChildrenInternal`.
+Here's the final implementation of `RewriteChildrenInternal`. `var four = new Four<T>();` allocates space for four `T`s in `RewriteChildrenInternal`'s stack frame. Then, when I call `GetSpan`, I'm passing in the address of the start of that `Four` using the `ref` keyword. `GetSpan` returns a `Span` which either points at the start of `four` or at a chunk taken from the `ChunkStack`, depending on how many children we need to store. `ReleaseSpan` returns the `Span` to the `ChunkStack` if it came from there, and the `KeepAlive` call ensures the `four` isn't deallocated too early.
 
 ```csharp
 private static T RewriteChildrenInternal<T>(
@@ -425,7 +425,7 @@ private static Span<T> GetSpan<T>(int count, ChunkStack<T> chunks, ref Four<T> f
     }
     else if (count <= 4)
     {
-        return SpanFactory<T>.Create(ref four.First, count);
+        return SpanFactory<T>.Create(ref four.First, count).Slice(count);
     }
     else
     {
