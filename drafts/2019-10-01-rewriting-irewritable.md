@@ -39,7 +39,7 @@ enum NumberOfChildren
 
 I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So `GetChildren` returns a `Children<T>`, passing up to two children on the stack and the rest in an `ImmutableList`. The `NumberOfChildren` property tells the library how many of the struct's fields are filled in.
 
-This custom collection type is an extra hurdle to understanding `IRewritable`'s API. It also makes certain parts of Sawmill's implementation more complex --- many internal methods have to `switch` on the `NumberOfChildren` they're working with and do the same work in four three different ways. It's also relatively large for a `struct` (around four words) so there is a marginal performance cost associated with copying it around.
+This custom collection type is an extra hurdle to understanding `IRewritable`'s API. It also makes certain parts of Sawmill's implementation more complex --- many internal methods have to `switch` on the `NumberOfChildren` they're working with and do the same work in four different ways. It's also relatively large for a `struct` (at least 16 bytes on a 32-bit architecture) so there is a marginal performance cost associated with copying it around.
 
 ### Wart 2: Collections
 
@@ -79,7 +79,7 @@ interface IRewritable<T> where T : IRewritable<T>
 }
 ```
 
-With this design, Sawmill passes an array into `GetChildren` (after calling `CountChildren` to find out how big the array needs to be) and asks the object to copy its children into the array. So implementations of `IRewritable` now no longer have to allocate memory for their return value. But this API is less safe --- if an `IRewritable` implementation stores a reference to the buffer then it could get unexpectedly mutated.
+With this design, Sawmill passes an array into `GetChildren` (after calling `CountChildren` to find out how big the array needs to be) and asks the object to copy its children into the array. Implementations of `IRewritable` no longer have to allocate memory for their return value. The memory is allocated (and hopefully reused) by the library. But this API is less safe --- if an `IRewritable` implementation stores a reference to the buffer then it could get unexpectedly mutated.
 
 ```csharp
 class Bad : IRewritable<Bad>
@@ -145,7 +145,7 @@ This design is almost identical to the one I outlined earlier --- it uses [`Span
 * `GetChildren` copies the current object's immediate children into `buffer`.
 * `SetChildren` creates a copy of the current object with its immediate children replaced.
 
-Here's the important difference. Unlike an array, a `Span` _can't be stored on the heap_. The compiler checks that `Span`s are always confined to the stack. If you pass a `Span` into a method as an argument, you can be confident that the `Span` won't leave the scope of that method's stack frame (just like `ref`).
+Here's the important difference. Unlike an array, a `Span` _can't be stored on the heap_. `Span` is defined using [the `ref` keyword](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref?view=netcore-3.0#ref-struct-types), which tells the compiler to check that `Span`s are confined to the stack. If you pass a `Span` into a method as an argument, you can be confident that the `Span` won't leave the scope of that method's stack frame (just like `ref`).
 
 So `Span` thoroughly solves the safety issue with the array-oriented API. I don't have to worry about mutating a `Span` which got stored inside a client object, because the `Span` can't be stored! This allows Sawmill to safely reuse `Span`s, rather than allocating a new array for each `GetChildren`/`SetChildren` call.
 
@@ -386,9 +386,9 @@ private static class SpanFactory<T>
 
 Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.
 
-There are also risks associated with mixing pointers and references like this. You have to be very careful that the `Four` being pointed to by the `Span` doesn't move or get replaced by a different variable. On the CLR, stack memory is never moved around by the garbage collector (unlike heap memory which can be moved during the compaction phase of GC), and I've written my code to ensure that the `Four` will be stored in a "real" local variable (rather than as temporary storage on the evaluation stack) by mentioning the variable (as a parameter to a non-inlined "keep-alive" method) at the end of the method.
+There are also risks associated with mixing pointers and references like this. You have to be very careful that the `Span` doesn't live longer than the `Four` it points to. That means the `Four` has to be discarded at the end of the method along with the `Span`, and it has to be stored in a "real" local variable, not in temporary storage on the evaluation stack. I'll address that by mentioning the variable (as a parameter to a non-inlined "keep-alive" method) at the end of the method.
 
-All of that would go out the window if `RewriteChildrenInternal` were not an ordinary method. Methods containing `await`s, `yield`s, and lambdas generally store their local variables on the heap, so the `Four` would be liable to move around.
+You also need to be certain that the `Span` never points to a location on the heap. On the CLR, stack memory is never moved around by the garbage collector (unlike heap memory which can be moved during the compaction phase of GC), but that would go out the window if `RewriteChildrenInternal` were not an ordinary method. Methods containing `await`s, `yield`s, and lambdas generally store their local variables on the heap, so the `Four` would be liable to move around. 
 
 Here's the final implementation of `RewriteChildrenInternal`.
 
@@ -445,4 +445,4 @@ private static void KeepAlive<T>(ref Four<T> four)
 }
 ```
 
-This weird code does appear to work, in both .NET Core and the Framework. If you see a bug in my code please do raise an issue [on GitHub](https://github.com/benjamin-hodgson/Sawmill)!
+As far as I know, the designers of `Span` were thinking primarily about applications such as serialisation and parsing --- the sort of low-level code you'd find in a [high performance web server](https://github.com/aspnet/AspNetCore). But `Span` also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my `IRewritable` abstraction, but I'm also leaning on its flexibility to implement that abstraction as efficiently as possible.
