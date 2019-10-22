@@ -346,6 +346,9 @@
 <a class="sourceLine" id="cb18-32" title="32">        =&gt; <span class="fu">_spanCtor</span>(<span class="kw">ref</span> value, length);</a>
 <a class="sourceLine" id="cb18-33" title="33">}</a></code></pre></div>
 <p>Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.</p>
+<blockquote>
+<p><strong>Update</strong>: On .NET Core, there is an officially-supported API to do this: <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=netcore-3.0"><code>MemoryMarshal.CreateSpan</code></a>. I didn’t know it existed at the time that I wrote this.</p>
+</blockquote>
 <p>There are also risks associated with mixing pointers and references like this. You have to be very careful that the <code>Span</code> doesn’t live longer than the <code>Four</code> it points to. That means the <code>Four</code> has to be discarded at the end of the method along with the <code>Span</code>, and it has to be stored in a “real” local variable, not in temporary storage on the evaluation stack. I’ll address that by mentioning the variable (as a parameter to a non-inlined “keep-alive” method) at the end of the method.</p>
 <p>You also need to be certain that the <code>Four</code> is stored on the stack and not the heap. Data stored on the heap is liable to get moved by the garbage collector, which would invalidate the pointer inside the <code>Span</code>. Beware that local variables are not always safe from being moved! Methods containing <code>await</code>s, <code>yield</code>s, and lambdas are liable to store their local variables on the heap, so if <code>RewriteChildrenInternal</code> were not an ordinary method this hack would not be safe.</p>
 <p>Here’s the final implementation of <code>RewriteChildrenInternal</code>. <code>var four = new Four&lt;T&gt;();</code> allocates space for four <code>T</code>s in <code>RewriteChildrenInternal</code>’s stack frame. Then, when I call <code>GetSpan</code>, I’m passing in the address of the start of that <code>Four</code> using the <code>ref</code> keyword. <code>GetSpan</code> returns a <code>Span</code> which either points at the start of <code>four</code> or at a chunk taken from the <code>ChunkStack</code>, depending on how many children we need to store. <code>ReleaseSpan</code> returns the <code>Span</code> to the <code>ChunkStack</code> if it came from there, and the <code>KeepAlive</code> call ensures the <code>four</code> isn’t deallocated too early.</p>
@@ -381,7 +384,7 @@
 <a class="sourceLine" id="cb19-30" title="30">    }</a>
 <a class="sourceLine" id="cb19-31" title="31">    <span class="kw">else</span> <span class="kw">if</span> (count &lt;= <span class="dv">4</span>)</a>
 <a class="sourceLine" id="cb19-32" title="32">    {</a>
-<a class="sourceLine" id="cb19-33" title="33">        <span class="kw">return</span> SpanFactory&lt;T&gt;.<span class="fu">Create</span>(<span class="kw">ref</span> four.<span class="fu">First</span>, count).<span class="fu">Slice</span>(count);</a>
+<a class="sourceLine" id="cb19-33" title="33">        <span class="kw">return</span> SpanFactory&lt;T&gt;.<span class="fu">Create</span>(<span class="kw">ref</span> four.<span class="fu">First</span>, count);</a>
 <a class="sourceLine" id="cb19-34" title="34">    }</a>
 <a class="sourceLine" id="cb19-35" title="35">    <span class="kw">else</span></a>
 <a class="sourceLine" id="cb19-36" title="36">    {</a>
