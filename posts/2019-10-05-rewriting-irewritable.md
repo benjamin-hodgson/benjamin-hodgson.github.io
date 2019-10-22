@@ -407,6 +407,8 @@ private static class SpanFactory<T>
 
 Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.
 
+> **Update**: On .NET Core, there is an officially-supported API to do this: [`MemoryMarshal.CreateSpan`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=netcore-3.0). I didn't know it existed at the time that I wrote this.
+
 There are also risks associated with mixing pointers and references like this. You have to be very careful that the `Span` doesn't live longer than the `Four` it points to. That means the `Four` has to be discarded at the end of the method along with the `Span`, and it has to be stored in a "real" local variable, not in temporary storage on the evaluation stack. I'll address that by mentioning the variable (as a parameter to a non-inlined "keep-alive" method) at the end of the method.
 
 You also need to be certain that the `Four` is stored on the stack and not the heap. Data stored on the heap is liable to get moved by the garbage collector, which would invalidate the pointer inside the `Span`. Beware that local variables are not always safe from being moved! Methods containing `await`s, `yield`s, and lambdas are liable to store their local variables on the heap, so if `RewriteChildrenInternal` were not an ordinary method this hack would not be safe.
@@ -446,7 +448,7 @@ private static Span<T> GetSpan<T>(int count, ChunkStack<T> chunks, ref Four<T> f
     }
     else if (count <= 4)
     {
-        return SpanFactory<T>.Create(ref four.First, count).Slice(count);
+        return SpanFactory<T>.Create(ref four.First, count);
     }
     else
     {
