@@ -244,6 +244,6 @@ public static string Write(this Term term)
     });
 ```
 
-As an exercise, you could try extending this abstract syntax (and `Write`) to support _numbers_.
+As an exercise, you could try extending this abstract syntax (and `Write`) to support numbers.
 
 Next time we'll write a parser!
