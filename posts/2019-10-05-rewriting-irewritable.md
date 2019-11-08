@@ -2,7 +2,7 @@
 title: Rewriting IRewritable
 ---
 
-> _I got married yesterday! This post is about my C# generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill). Have a read of [my earlier post](https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html) for an introduction._
+> _I got married yesterday! This post is about my C# generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill). Have a read of [my earlier post](/posts/2017-11-13-recursion-without-recursion.html) for an introduction._
 
 ## How things were
 
