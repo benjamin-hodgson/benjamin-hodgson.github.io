@@ -228,8 +228,7 @@ Here's a method which writes out a term as a string.
 
 ```csharp
 public static string Write(this Term term)
-{
-    string Go(ReadOnlySpan<string> childStrings, Term x)
+    => term.Fold<Term, string>((childStrings, x) =>
     {
         switch (x)
         {
@@ -242,9 +241,7 @@ public static string Write(this Term term)
             default:
                 throw new Exception("unknown term");
         }
-    }
-    return term.Fold<Term, string>(Go);
-}
+    });
 ```
 
 
