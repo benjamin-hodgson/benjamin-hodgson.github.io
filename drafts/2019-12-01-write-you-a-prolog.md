@@ -224,5 +224,28 @@ public static IEnumerable<string> Variables(this Term term)
         .Distinct();
 ```
 
+Here's a method which writes out a term as a string.
+
+```csharp
+public static string Write(this Term term)
+{
+    string Go(ReadOnlySpan<string> childStrings, Term x)
+    {
+        switch (x)
+        {
+            case Predicate p:
+                return p.Name + "(" + string.Join(", ", childStrings.ToArray()) + ")";
+            case Variable v:
+                return v.Name;
+            case Atom a:
+                return a.Value;
+            default:
+                throw new Exception("unknown term");
+        }
+    }
+    return term.Fold<Term, string>(Go);
+}
+```
+
 
 Next time we'll write a parser!
