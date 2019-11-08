@@ -52,7 +52,7 @@ Finally, we can issue a _query_ to the interactive Prolog interpreter to find ou
 false
 ```
 
-No soup for you. What _can_ we eat for dinner? If we replace the _atom_ `soup` (a specific food) with a _variable_ `Food` --- note the capital letter --- Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. Prolog's proof search system is **bi-directional** --- parameters can serve as both inputs and outputs.
+No soup for you. What _can_ we eat for dinner? If we replace the atom `soup` --- a specific food --- with a variable `Food` (note the capital letter) --- standing in for any food --- Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. Prolog's proof search system is **bi-directional** --- parameters can serve as both inputs and outputs.
 
 ```prolog
 ?- dinner(benjamin, clio, Food).
@@ -73,9 +73,13 @@ last(cons(X, nil), X).
 last(cons(X, Xs), Y) :- last(Xs, Y).
 ```
 
-(I'm using [the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) from Lisp.) Rules in Prolog are attempted from top to bottom. The first clause is the base case, which states the fact that the last item of the singleton list `cons(X, nil)` is `X`. The second clause (which is only entered when `Xs` is not `nil`) recursively calls `last` --- it says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
+Rules in Prolog are attempted from top to bottom, so let's review this code line by line.
 
-This is another example of Prolog's bi-directional proof search system. You can test whether a certain known item is the last element of a list,
+The first rule has no right hand side, which means it succeeds as long as the predicate's arguments match the pattern on the left. (Rules with no right-hand side are called _facts_.) The first argument on the left hand side is the pattern `cons(X, nil)`. `cons` is a predicate whose two arguments are the head and tail of a list ([the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) comes from Lisp); in this instance its second argument is the atom `nil` (representing an empty list) and its first argument is left undefined --- `X` can stand in for any element. The second argument of `last` is `X`. This is the _same_ `X` as appeared in `cons(X, nil)`. So, taken all together, this first line succeeds when its first argument is a single-element list and its second argument is that element.
+
+The second line of this code is only entered when the first line fails --- that is, when `Xs` is not `nil`. In the pattern on the left, we've replaced the concrete empty list `nil` with a variable `Xs` which can stand in for any list. The right-hand side of the rule recursively calls `last`. So this line says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
+
+Here's another example of Prolog's bi-directional proof search system. You can test whether a certain known item is the last element of a list,
 
 ```prolog
 ?- last(cons(apples, cons(pears, cons(oranges, nil))), oranges).
