@@ -73,7 +73,7 @@ last(cons(X, nil), X).
 last(cons(X, Xs), Y) :- last(Xs, Y).
 ```
 
-Rules in Prolog are attempted from top to bottom. The first clause is the base case, which states the fact that the last item of the singleton list `cons(X, nil)` is `X`. The second clause (which is only entered when `Xs` is not `nil`) says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
+(I'm using [the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) from Lisp.) Rules in Prolog are attempted from top to bottom. The first clause is the base case, which states the fact that the last item of the singleton list `cons(X, nil)` is `X`. The second clause (which is only entered when `Xs` is not `nil`) recursively calls `last` --- it says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
 
 This is another example of Prolog's bi-directional proof search system. You can test whether a certain known item is the last element of a list,
 
@@ -130,7 +130,7 @@ class Rule
 }
 ```
 
-What should the types of these properties be? A rule's head is always a name, followed by a comma-separated list of expressions inside parentheses. We'll call this a `Predicate`. (You're allowed to omit the parentheses when the list is empty.) A rule's body is also list of predicates.
+(I'm omitting constructors for brevity.) What should the types of these properties be? A rule's head is always a name, followed by a comma-separated list of expressions inside parentheses. We'll call this a `Predicate`. A rule's body is also list of predicates.
 
 ```csharp
 class Rule
@@ -146,9 +146,9 @@ class Predicate
 }
 ```
 
-(I'm omitting the constructors for brevity.) Now to fill in the type of `Args`. Looking at the example `last(cons(X, nil), X)`, each argument to a predicate can
+Now to fill in the type of `Args`. Looking at the example `last(cons(X, nil), X)`, each argument to a predicate can be one of:
 
-1. Another predicate applied to some arguments (`cons`).
+1. Another predicate applied to some arguments (`cons` in this example).
 2. A variable (`X`).
 3. An atom (`nil`).
 
@@ -171,7 +171,28 @@ class Atom : Term
 }
 ```
 
-That's our whole abstract syntax! Prolog's proof search system is based entirely on manipulating terms, so these three classes will turn out to be quite important in our little interpreter.
+That's our whole abstract syntax! Here's how our `last(cons(X, Xs), Y) :- last(Xs, Y)` example would be represented:
+
+```csharp
+new Rule(
+    head: new Predicate(
+        name: "last",
+        args: new[]
+        {
+            new Predicate("cons", new[] { new Variable("X"), new Variable("Xs") }),
+            new Variable("Y")
+        }
+    ),
+    body: new[]
+    {
+        new Predicate("last", new[] { new Variable("Xs"), new Variable("Y") })
+    }
+)
+```
+
+<img src="/images/2019-12-01-write-you-a-prolog/anatomy.png" alt="Anatomy of a Rule" width="900" />
+
+Prolog's proof search system is based entirely on manipulating terms, so these three classes will turn out to be quite important in our little interpreter.
 
 
 Implementing `IRewritable`
