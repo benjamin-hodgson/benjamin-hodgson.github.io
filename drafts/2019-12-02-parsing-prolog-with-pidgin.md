@@ -220,7 +220,7 @@ public static Predicate ParseQuery(string input) = _query.ParseOrThrow(input);
 
 Since by convention each of our component parsers has been consuming whitespaces _after_ the text they match, we need to remember to `SkipWhitespaces` at the start of the file.
 
-That's our whole parser! Here are a couple of exercises you might try:
+That's our whole parser! Less than 80 lines of code is not bad, I think. Here are a couple of exercises you might try:
 
 1. Extend this code to support numbers.
 2. Extend this code to support lists.
