@@ -236,3 +236,6 @@ That's our whole parser! Less than 80 lines of code is not bad, I think. Here ar
   * Prolog's lists are linked lists; `[]` is an empty list and cons cells look like `[head | tail]`. (`head` and `tail` are both arbitrary terms; though at runtime `term` should be a list.)
   * At first you can try pretending that lists are syntactic sugar --- desugar `[]` to a `nil` atom and `[head | tail]` to a `cons(head, tail)` predicate.
   * How can you avoid name clashing with a user-defined `cons`?
+
+
+Next time we'll talk about _unification_, the core of Prolog's programming model. We'll be using Sawmill to implement unification _generically_, without making any assumptions about Prolog's syntax.
