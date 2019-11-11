@@ -240,4 +240,4 @@ That's our whole parser! Less than 80 lines of code is not bad, I think. Here ar
     * You could try making `cons` an illegal name (adjust the parser to reject predicates named `cons`)
     * You could try adding list support to the `Term` AST.
 
-Next time we'll talk about _unification_, the core of Prolog's programming model. We'll be using Sawmill to implement unification _generically_, without making any assumptions about Prolog's syntax.
+Next time we'll talk about _unification_, the core of Prolog's bi-directional programming model. We'll be using Sawmill to implement unification _generically_, without making any assumptions about Prolog's syntax.
