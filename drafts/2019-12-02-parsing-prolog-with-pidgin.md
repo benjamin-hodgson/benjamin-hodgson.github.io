@@ -52,27 +52,36 @@ static Parser<char, string> Tok(string value)
 
 Why am I using the _backtracking_ function `Try` here? Remember, a parser consumes its input one character at a time, and makes decisions based only on the current character. If the first character of the input looks like it matches `value`, Pidgin will commit to running the `String(value)` parser; if matching the string fails after the first character then the parser needs to return to where it was so that it can try any alternative ways to parse from that location.
 
-For an example of why we need `Try`, consider the parser `String("prolog").Or(String("parsing"))`. `Or` is Pidgin's _choice_ function --- it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here's our parser represented pictorally:
+For an example of why we need `Try`, consider the parser `String("prolog").Or(String("programming"))`. `Or` is Pidgin's _choice_ function --- it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here's our parser represented pictorally:
 
 ```
              +--Or--+
              |      |
-String("prolog")  String("parsing")
+String("prolog")  String("programming")
 ```
 
-Let's think about how this parser behaves when you feed it the string `"parsing"`. At the start of the parsing process, the current character is the first letter, namely `p`.
+Let's think about how this parser behaves when you feed it the string `"programming"`. Naïvely we might expect this to succeed, because `String("programming")` is one of `Or`'s options. But in fact this parser will fail to parse the string `"programming"`. Looking at it step by step reveals why:
+
+At the start of the parsing process, the current character is the first letter, namely `p`.
 
 <pre>
-<b>p</b> a r s i n g
+<b>p</b> r o g r a m m i n g
 </pre>
 
 Our `Or` parser will try to apply the `prolog` parser first. The `prolog` parser looks at the current character and says "This looks like the start of `prolog` to me. I'll consume it."
 
 <pre>
-p <b>a</b> r s i n g
+p <b>r</b> o g r a m m i n g
 </pre>
 
-Now that we're looking at the second character, it's clear that the input does not in fact match the string `prolog`. The `prolog` parser fails and yields control back to `Or`. Because the `prolog` parser consumed input and did not backtrack, `Or` will not attempt to apply the `parsing` parser. (If it did try, it would fail anyway because we're no longer looking at a `p`.) It's common to use `Try` for each word and symbol in your language's grammar; I'm going to use `Tok` for each of my low level component parsers.
+This continues for a couple more characters.
+
+<pre>
+p r <b>o</b> g r a m m i n g
+p r o <b>g</b> r a m m i n g
+</pre>
+
+Now that we're looking at the second character, it's clear that the input does not in fact match the string `prolog`. The `prolog` parser fails and yields control back to `Or`. Because the `prolog` parser consumed input and did not backtrack, `Or` will not attempt to apply the `programming` parser. (If it did try, it would fail anyway because we're no longer looking at a `p`.) If the `prolog` parser were wrapped in a `Try`, it would have backtracked to the `p` when it failed. It's common to use `Try` for each word and symbol in your language's grammar; I'm going to use `Tok` for each of my low level component parsers.
 
 Finally, we can generalise these `Tok` methods to run an arbitrary `Parser` with backtracking and whitespace.
 
