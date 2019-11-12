@@ -192,8 +192,8 @@ static Parser<char, ImmutableArray<T>> CommaSeparated<T>(Parser<char, T> p)
 I'm using `Try` again in the `_predicate` parser. This is to disambiguate predicates from atoms. Both start in the same way (a lowercase letter) and you can't be sure you're parsing a predicate until you see a parenthesis. So our `_term` parser first attempts to read a predicate, but if it doesn't see a parenthesis then it backtracks and reads the name as an atom instead. The order of `OneOf`'s arguments matters!
 
 
-Rules and Whole Programs
-------------------------
+Rules, Queries and Whole Programs
+---------------------------------
 
 We're on the home straight. A Prolog program consists of a collection of top-level _rules_ and _facts_. A rule consists of a predicate followed by the symbol `:-` and a comma-separated list of predicates, and ends with a `.` symbol. A fact is just a rule with no right-hand side.
 
