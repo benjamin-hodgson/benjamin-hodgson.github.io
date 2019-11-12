@@ -235,7 +235,7 @@ That's our whole parser! Less than 80 lines of code is not bad, I think. Here ar
 
 1. Extend this code to support numbers, building on the exercise from the end of the [last post](**TODO**).
 2. Extend this code to support lists.
-    * Prolog's lists are linked lists; `[]` is an empty list and cons cells look like `[head | tail]`. (`head` and `tail` are both arbitrary terms; though at runtime `term` should be a list.)
+    * Prolog's lists are linked lists; `[]` is an empty list and cons cells look like `[head | tail]`. (`head` and `tail` are both arbitrary terms; though at runtime `tail` should be a list.)
     * At first you can try pretending that lists are syntactic sugar --- desugar `[]` to a `nil` atom and `[head | tail]` to a `cons(head, tail)` predicate.
     * How can you avoid clashing with a user-defined `cons`?
       * You could try mangling the `cons` name to something which can't be typed by a user.
