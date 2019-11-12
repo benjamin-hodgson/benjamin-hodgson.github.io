@@ -81,7 +81,7 @@ p r <b>o</b> g r a m m i n g
 p r o <b>g</b> r a m m i n g
 </pre>
 
-Now that we're looking at the second character, it's clear that the input does not in fact match the string `prolog`. The `prolog` parser fails and yields control back to `Or`. Because the `prolog` parser consumed input and did not backtrack, `Or` will not attempt to apply the `programming` parser. (If it did try, it would fail anyway because we're no longer looking at a `p`.) If the `prolog` parser were wrapped in a `Try`, it would have backtracked to the `p` when it failed. It's common to use `Try` for each word and symbol in your language's grammar; I'm going to use `Tok` for each of my low level component parsers.
+Now that we're looking at a `g`, it's clear that the input does not in fact match the string `prolog`. The `prolog` parser fails and yields control back to `Or`. Because the `prolog` parser consumed input and did not backtrack, `Or` will not attempt to apply the `programming` parser. (If it did try, it would fail anyway because we're no longer looking at a `p`.) If the `prolog` parser were wrapped in a `Try`, it would have backtracked to the `p` when it failed. It's common to use `Try` for each word and symbol in your language's grammar; I'm going to use `Tok` for each of my low level component parsers.
 
 Finally, we can generalise these `Tok` methods to run an arbitrary `Parser` with backtracking and whitespace.
 
