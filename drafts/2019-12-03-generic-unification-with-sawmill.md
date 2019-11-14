@@ -48,6 +48,7 @@ Let's work through some examples to get a feel for it.
     * Does `f(g(X), a)` unify with `f(g(b), X)`?
     * Does `f(X, Y)` unify with `f(g(Y), Z)`?
     * Does `f(X, Y)` unify with `f(Y, g(X))`?
+    * Try coming up with some interesting examples of terms which don't unify.
 
 Let's sketch out an algorithm for unification.
 
