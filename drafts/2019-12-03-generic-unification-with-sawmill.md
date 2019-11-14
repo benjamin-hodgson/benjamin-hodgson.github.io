@@ -137,7 +137,7 @@ Substitutions
 I mentioned that the output of unification is a _substitution_ --- a mapping from variable names to terms. We'll model that using an ordinary dictionary of strings and `T`s. Our signature for `Unify` is going to look like this:
 
 ```csharp
-public static ImmutableDictionary<string, T> Unify(this T left, T right) where T : IUnifiable<T>
+public static ImmutableDictionary<string, T> Unify<T>(this T left, T right) where T : IUnifiable<T>
 ```
 
 The main thing you can do with a substitution is _apply_ it to a term. That means replacing all the variables in the term with the sub-terms they're mapped to by the substitution. This should eliminate any variables in the term which are bound by the substitution.
