@@ -226,12 +226,14 @@ class Predicate : Term
 }
 class Variable : Term
 {
+    // ...
     public override int CountChildren() => 0;
     public override void GetChildren(Span<Term> childrenReceiver) { }
     public override Term SetChildren(ReadOnlySpan<Term> newChildren) => this;
 }
 class Atom : Term
 {
+    // ...
     public override int CountChildren() => 0;
     public override void GetChildren(Span<Term> childrenReceiver) { }
     public override Term SetChildren(ReadOnlySpan<Term> newChildren) => this;
@@ -249,26 +251,65 @@ public static IEnumerable<string> Variables(this Term term)
         .Distinct();
 ```
 
-Here's a method which writes out a term as a string.
+Here's a method which writes out a term as a string (and a corresponding one for `Rule`s).
 
 ```csharp
-public static string Write(this Term term)
-    => term.Fold<Term, string>((childStrings, x) =>
-    {
-        switch (x)
+abstract class Term
+{
+    // ...
+    public override string ToString()
+        => this.Fold<Term, string>((childStrings, x) =>
         {
-            case Predicate p:
-                return p.Name + "(" + string.Join(", ", childStrings.ToArray()) + ")";
-            case Variable v:
-                return v.Name;
-            case Atom a:
-                return a.Value;
-            default:
-                throw new Exception("unknown term");
-        }
-    });
+            switch (x)
+            {
+                case Predicate p:
+                    return p.Name + "(" + string.Join(", ", childStrings.ToArray()) + ")";
+                case Variable v:
+                    return v.Name;
+                case Atom a:
+                    return a.Value;
+                default:
+                    throw new Exception("unknown term");
+            }
+        });
+}
+class Rule
+{
+    // ...
+    public override string ToString()
+        => Head + (
+            Body.Length == 0
+                ? ""
+                : " :- " + string.Join(", ", Body.Select(x => x.ToString()))
+        ) + ".";
+}
 ```
 
-As an exercise, you could try extending this abstract syntax (and `Write`) to support numbers.
+As an exercise, you could try extending this abstract syntax (and `ToString`) to support numbers.
+
+And a quick test of our `last` example:
+
+```csharp
+static void Main(string[] args)
+{
+    var rule = new Rule(
+        head: new Predicate(
+            name: "last",
+            args: new[]
+            {
+                new Predicate("cons", new[] { new Variable("X"), new Variable("Xs") }),
+                new Variable("Y")
+            }
+        ),
+        body: new[]
+        {
+            new Predicate("last", new[] { new Variable("Xs"), new Variable("Y") })
+        }
+    );
+
+    Console.WriteLine(rule.ToString());
+    // prints out last(cons(X, Xs), Y) :- last(Xs, Y).
+}
+```
 
 Next time we'll write a parser!

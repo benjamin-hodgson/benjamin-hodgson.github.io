@@ -231,7 +231,24 @@ public static Predicate ParseQuery(string input) = _query.ParseOrThrow(input);
 
 Since by convention each of our component parsers has been consuming whitespaces _after_ the text they match, we need to remember to `SkipWhitespaces` at the start of the file.
 
-That's our whole parser! Less than 80 lines of code is not bad, I think. Here are a couple of exercises you might try:
+That's our whole parser! Less than 80 lines of code is not bad, I think. A quick test of our `last` example from the previous post:
+
+```csharp
+static void Main(string[] args)
+{
+    var program = PrologParser.ParseProgram(@"
+last(cons(X, nil), X).
+last(cons(X, Xs), Y) :- last(Xs, Y).
+");
+
+    Console.WriteLine(string.Join("\n", program));
+    // prints out:
+    // last(cons(X, nil), X).
+    // last(cons(X, Xs), Y) :- last(Xs, Y).
+}
+```
+
+Here are a couple of exercises you might try:
 
 1. Extend this code to support numbers, building on the exercise from the end of the [last post](**TODO**).
 2. Extend this code to support lists.
