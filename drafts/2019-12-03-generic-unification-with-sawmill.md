@@ -371,7 +371,7 @@ Some exercises you could try:
     * Hint 1: you need to relax the invariant that substitutions can't contain bound variables.
     * Hint 2: you'll need to tweak `Bind` to avoid [a common bug](https://norvig.com/unify-bug.pdf).
     * Hint 3: `Apply`ing a substitution to a term will no longer eliminate all the bound variables inside the term. Try using [`RewriteIter`](https://www.benjamin.pizza/Sawmill/v3.1.0/api/Sawmill.Rewritable.html#Sawmill_Rewritable_RewriteIter__1___0_System_Func___0___0__) to reestablish that invariant.
-* We've assumed in our `IUnifiable` design that variables can always be represented by strings. Many practical programming language implementations use richer data structures than strings (such as de Bruijn indexes) to represent variables. Can you change this design to break the dependency on strings? What API usability issues do you encounter?
+* `IUnifiable` assumes that variables can always be represented by strings. Many practical programming language implementations use richer data structures than strings (such as variables tagged with their scope) to represent variables. Can you change this design to break the dependency on strings? What API usability issues do you encounter?
 
 In the final part of this series, we'll apply unification to build Prolog's rules engine.
 
