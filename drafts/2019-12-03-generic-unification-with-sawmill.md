@@ -34,7 +34,7 @@ Let's work through some examples to get a feel for it.
     * The first argument gives us `X ~ m(b)`.
     * Looking at the second argument, you see `g` applied to one argument in both cases. This is a match, so we can once more continue to compare the arguments.
     * Comparing the arguments gives us `X ~ m(b)`. This is the same constraint as the one we got from the first argument.
-    * The resulting subsitution is **`X := m(b)`**.
+    * The resulting substitution is **`X := m(b)`**.
     * **TODO: PICTURE**
 
 * Unify `f(g(X), X)` with `f(g(Y), a)`. In this example we see variables appearing on both sides. We have to come up with a value for all of the variables in both terms.
