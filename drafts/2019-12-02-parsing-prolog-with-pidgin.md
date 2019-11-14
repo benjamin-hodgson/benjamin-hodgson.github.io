@@ -250,13 +250,14 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 
 Here are a couple of exercises you might try:
 
-1. Extend this code to support numbers, building on the exercise from the end of the [last post](**TODO**).
-2. Extend this code to support lists.
+* Extend this code to support numbers, building on the exercise from the end of the [last post](**TODO**).
+* Extend this code to support lists.
     * Prolog's lists are linked lists; `[]` is an empty list and cons cells look like `[head | tail]`. (`head` and `tail` are both arbitrary terms; though at runtime `tail` should be a list.)
     * At first you can try pretending that lists are syntactic sugar --- desugar `[]` to a `nil` atom and `[head | tail]` to a `cons(head, tail)` predicate.
     * How can you avoid clashing with a user-defined `cons`?
       * You could try mangling the `cons` name to something which can't be typed by a user.
       * You could try making `cons` an illegal name (adjust the parser to reject predicates named `cons`).
       * You could try adding lists directly to the `Term` AST.
+* Try using [Pidgin's `CommentParser` class](https://www.benjamin.pizza/Pidgin/v2.2.0/api/Pidgin.Comment.CommentParser.html) to handle Prolog code with comments in.
 
 Next time we'll talk about _unification_, the core of Prolog's bi-directional programming model. We'll be using Sawmill to implement unification _generically_, without making any assumptions about Prolog's syntax.
