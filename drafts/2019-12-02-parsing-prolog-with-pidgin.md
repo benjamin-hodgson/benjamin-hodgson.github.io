@@ -254,9 +254,9 @@ Here are a couple of exercises you might try:
 * Extend this code to support lists.
     * Prolog's lists are linked lists; `[]` is an empty list and cons cells look like `[head | tail]`. (`head` and `tail` are both arbitrary terms; though at runtime `tail` should be a list.)
     * At first you can try pretending that lists are syntactic sugar --- desugar `[]` to a `nil` atom and `[head | tail]` to a `cons(head, tail)` predicate.
-    * How can you avoid clashing with a user-defined `cons`?
-      * You could try mangling the `cons` name to something which can't be typed by a user.
-      * You could try making `cons` an illegal name (adjust the parser to reject predicates named `cons`).
+    * How can you avoid clashing with mentions of those names in user code?
+      * You could try mangling the names to something which can't be typed by a user.
+      * You could try making them reserved words (adjust the parser to reject user-defined mentions of `cons` and `nil`).
       * You could try adding lists directly to the `Term` AST.
 * Try using [Pidgin's `CommentParser` class](https://www.benjamin.pizza/Pidgin/v2.2.0/api/Pidgin.Comment.CommentParser.html) to handle Prolog code with comments in.
 
