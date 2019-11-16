@@ -2,7 +2,7 @@
 title: Write You a Prolog
 ---
 
-I figured it'd be useful to have some examples of my language tooling libraries [Sawmill](https://github.com/benjamin-hodgson/Sawmill) and [Pidgin](https://github.com/benjamin-hodgson/Pidgin) in action. I thought it could be fun to use them to write a miniature Prolog interpreter!
+I figured it'd be useful to have some examples of my language tooling libraries [Sawmill](https://github.com/benjamin-hodgson/Sawmill) and [Pidgin](https://github.com/benjamin-hodgson/Pidgin) in action. I thought it could be fun to use them to write a miniature [Prolog](https://en.wikipedia.org/wiki/Prolog) interpreter!
 
 1. **Introduction & Syntax**
 2. Parsing
@@ -202,7 +202,7 @@ Prolog's proof search system is based entirely on manipulating terms, so these t
 Implementing `IRewritable`
 --------------------------
 
-`Term` is an immutable type with a recursive tree-shaped structure --- a predicate's arguments can be any `Term`, including more predicates. My generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) is filled with tools for working with immutable trees! As a Sawmill user, you implement its core `IRewritable` interface on your tree structure, and Sawmill takes care of much of the boilerplate of traversing the tree for you. (See [my earlier post](/posts/2017-11-13-recursion-without-recursion.html) for an introduction to Sawmill.)
+`Term` is an immutable type with a recursive tree-shaped structure --- a predicate's arguments can be any `Term`, including more predicates. My generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) is filled with tools for working with immutable trees! As a Sawmill user, you implement its core `IRewritable` interface on your tree structure, and Sawmill takes care of much of the boilerplate of traversing the tree for you. (See [my earlier post](https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html) for an introduction to Sawmill.)
 
 `IRewritable` is all about addressing the immediate children of the current node in a tree. It has three methods, `CountChildren`, `GetChildren`, and `SetChildren`, which we have to implement for each subclass of our `Term` tree. Variables and atoms don't have child terms --- only predicates.
 
