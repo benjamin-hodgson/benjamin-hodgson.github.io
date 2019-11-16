@@ -127,7 +127,7 @@ static readonly Parser<char, string> _variableName = Tok(
 );
 ```
 
-One of the fun things about C#'s `from...select` syntax is that it's _duck-typed_. The C# compiler allows you to use `from...select` with any object which has eligible `Select` and `SelectMany` methods, not just `IEnumerable`. Pidgin allows you to (ab)use this notation to sequence parsers --- `from x in p1 from y in p2 select f(x, y)` is equivalent to `p1.Then(p2, (x,y) => f(x,y))`. So when you see a parser defined using `from...select` you should read it from top to bottom as a script.
+One of the fun things about C#'s `from...select` syntax is that it's [_duck-typed_](https://en.wikipedia.org/wiki/Duck_typing). The C# compiler allows you to use `from...select` with any object which has eligible `Select` and `SelectMany` methods, not just `IEnumerable`. Pidgin allows you to (ab)use this notation to sequence parsers --- `from x in p1 from y in p2 select f(x, y)` is equivalent to `p1.Then(p2, (x,y) => f(x,y))`. So when you see a parser defined using `from...select` you should read it from top to bottom as a script.
 
 `ManyString` takes a parser and greedily runs it in a loop, then packs all of that parser's results into a string. `Uppercase`, `Lowercase`, `Letter` and `Digit` all consume and return a single character of their respective types.
 
@@ -260,4 +260,4 @@ Here are a couple of exercises you might try:
       * You could try adding lists directly to the `Term` AST.
 * Try using [Pidgin's `CommentParser` class](https://www.benjamin.pizza/Pidgin/v2.2.0/api/Pidgin.Comment.CommentParser.html) to handle Prolog code with comments in.
 
-Next time we'll talk about _unification_, the core of Prolog's bi-directional programming model. We'll be using Sawmill to implement unification _generically_, without making any assumptions about Prolog's syntax.
+Next time we'll talk about _unification_, the core of Prolog's bi-directional programming model. We'll be using [Sawmill](https://github.com/benjamin-hodgson/Sawmill) to implement unification _generically_, without making any assumptions about Prolog's syntax.
