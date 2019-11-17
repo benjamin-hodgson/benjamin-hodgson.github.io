@@ -7,7 +7,7 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 1. Introduction & Syntax
 2. **Parsing**
 3. Unification
-4. Proof search
+4. The rules engine
 
 
 In this post we'll use my parsing library [Pidgin](https://github.com/benjamin-hodgson/Pidgin) to convert Prolog source code into the abstract syntax classes I outlined in the previous post.

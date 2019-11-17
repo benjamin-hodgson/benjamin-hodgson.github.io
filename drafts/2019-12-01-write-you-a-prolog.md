@@ -7,7 +7,7 @@ I figured it'd be useful to have some examples of my language tooling libraries 
 1. **Introduction & Syntax**
 2. Parsing
 3. Unification
-4. Proof search
+4. The rules engine
 
 
 Whistle-Stop Introduction to Prolog
@@ -52,7 +52,7 @@ Finally, we can issue a _query_ to the interactive Prolog interpreter to find ou
 false
 ```
 
-No soup for you. What _can_ we eat for dinner? If we replace the atom `soup` --- a specific food --- with a variable `Food` (note the capital letter) --- standing in for any food --- Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. Prolog's proof search system is **bi-directional** --- parameters can serve as both inputs and outputs.
+No soup for you. What _can_ we eat for dinner? If we replace the atom `soup` --- a specific food --- with a variable `Food` (note the capital letter) --- standing in for any food --- Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. Prolog's constraint solving system is **bi-directional** --- parameters can serve as both inputs and outputs.
 
 ```prolog
 ?- dinner(benjamin, clio, Food).
@@ -79,7 +79,7 @@ The first rule has no right hand side, which means it succeeds as long as the pr
 
 The second line of this code is only entered when the first line fails --- that is, when `Xs` is not `nil`. In the pattern on the left, we've replaced the concrete empty list `nil` with a variable `Xs` which can stand in for any list. The right-hand side of the rule recursively calls `last`. So this line says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
 
-Here's another example of Prolog's bi-directional proof search system. You can test whether a certain known item is the last element of a list,
+Here's another example of Prolog's bi-directional constraint solving system. You can test whether a certain known item is the last element of a list,
 
 ```prolog
 ?- last(cons(apples, cons(pears, cons(oranges, nil))), oranges).
@@ -196,7 +196,7 @@ new Rule(
 
 <img src="/images/2019-12-01-write-you-a-prolog/anatomy.png" alt="Anatomy of a Rule" width="900" />
 
-Prolog's proof search system is based entirely on manipulating terms, so these three classes will turn out to be quite important in our little interpreter.
+Prolog's rules engine is based entirely on manipulating terms, so these three classes will turn out to be quite important in our little interpreter.
 
 
 Implementing `IRewritable`

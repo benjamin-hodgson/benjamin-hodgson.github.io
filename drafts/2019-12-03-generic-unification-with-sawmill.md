@@ -7,7 +7,7 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 1. Introduction & Syntax
 2. Parsing
 3. **Unification**
-4. Proof search
+4. The rules engine
 
 We're getting on to the fun part of writing an interpreter: actually _interpreting_ the input code. In this post we're going to implement a _unification_ algorithm using my generic programming library Sawmill.
 
