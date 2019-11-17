@@ -64,13 +64,17 @@ Hopefully you can see how I've applied these steps in the examples above. I've g
 `IUnifiable`
 ------------
 
-Reading back over the algorithm, we can highlight a few concepts:
+Unification is a central part of Prolog's programming model, but it has applications outside of Prolog as well (type inference, for example). Any time you have a syntactic structure with placeholder variables, the question "what can I plug in for these variables?" makes sense.
+
+Let's quantify that. Reading back over the description of the algorithm, it seems to build on a few core concepts:
 
 * Terms
 * Terms which are variables
 * Composite terms with children
 * Leaf nodes with no children
 * Matching a pair of terms
+
+Abstracting over these concepts should allow us to implement unification once and for all, without depending on the specifics of Prolog's terms.
 
 Sawmill's core `IRewritable` interface is a generic way of looking at tree-shaped terms with children. The only concepts we need to add on top of `IRewritable` are _variables_ and _matching_.
 
