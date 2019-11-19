@@ -318,4 +318,5 @@ Here are some exercises you could try:
 
 * Because we implemented `_database` as an array, finding a matching rule is linear in the size of the program. Try optimising the `_database` data structure.
 * Try optimising `Freshen` so that it doesn't rename more variables than it needs to.
+    * It's actually possible to avoid freshening altogether by changing the way variables are represented.
 * Backtracking is enabled by default in Prolog (unlike in Pidgin where it's disabled by default). The full Prolog language includes the `!` operator (pronounced _cut_) to disable backtracking when necessary. When Prolog encounters `!` in the right-hand side of a rule, it commits to all of the choices it's made since (and including) selecting that rule from the database. Try implementing cut as an exercise. (You'll need to change the parser, the AST, and the rules engine.)
