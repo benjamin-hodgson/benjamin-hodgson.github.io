@@ -104,19 +104,6 @@ main = do
 postsPatternForCommand "watch" = "posts/*" .&&. hasNoVersion .||. "drafts/*"
 postsPatternForCommand _ = "posts/*" .&&. hasNoVersion
 
-
--- https://www.jdreaver.com/posts/2014-06-22-math-programming-blog-hakyll.html
-pandocMathCompiler =
-    let mathExtensions = [Ext_tex_math_dollars, Ext_tex_math_double_backslash, Ext_latex_macros]
-        defaultExtensions = writerExtensions defaultHakyllWriterOptions
-        newExtensions = foldr enableExtension defaultExtensions mathExtensions
-        writerOptions = defaultHakyllWriterOptions {
-                          writerExtensions = newExtensions,
-                          writerHTMLMathMethod = MathJax ""
-                        }
-    in pandocCompilerWith defaultHakyllReaderOptions writerOptions
-
-
 postCtx :: [Item String] -> Context String
 postCtx comments =
     listField "comments" commentCtx (return comments) `mappend`
