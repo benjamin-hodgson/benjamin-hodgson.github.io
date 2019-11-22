@@ -9,13 +9,13 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 3. Unification
 4. **The rules engine**
 
-Today's the day! We're going to turn our unification algorithm into an actual programming language. This involves building Prolog's _rules engine_, the system which processes the rules and facts in your program to answer queries.
+Today's the day! We're going to turn our unification algorithm into an actual programming language. Prolog's _rules engine_ is the system which processes the predicates and facts in your program to answer queries.
 
 
 The Database
 ------------
 
-When you load a program into your Prolog interpreter, it reads the collection of rules and facts into an internal data structure. This data structure is known as Prolog's _database_. For simplicity we can represent the database as a collection of rules (ie, the same structure which comes out of the parser), but a real Prolog interpreter would use a more specialised data structure to make querying more efficient.
+When you load a program into your Prolog interpreter, it reads the collection of rules into an internal data structure. This data structure is known as Prolog's _database_. For simplicity we can represent the database as an array of rules (ie, the same structure which comes out of the parser), but a real Prolog interpreter would use a more specialised data structure to make querying more efficient.
 
 ```csharp
 class Engine
@@ -74,7 +74,7 @@ private ImmutableDictionary<string, Term> Query(Rule rule, Term goal)
 }
 ```
 
-If the rule's head does match the goal, Prolog needs to check the conditions on the right hand side of the rule. That means recursively calling `Query` for each of the predicates in the rule's body. Each of these `Query` calls will return a substitution, and the information from those substitutions needs to be propagated bi-directionally. It's just like when we were solving a system of equations in the last post: we'll propagate information forwards by `Apply`ing the current substitution to each predicate in the body, and propagate it backwards by `Compose`-ing the current substitution with the substitution from each recursive `Query` call.
+If the rule's head does match the goal, Prolog needs to check the conditions on the right hand side of the rule. Each predicate on the right-hand side becomes a sub-goal; we'll recursively call `Query` for each of these sub-goals. These recursive `Query` calls will return a substitution, and the information from those substitutions needs to be propagated bi-directionally. It's just like when we were solving a system of equations in the last post: we'll propagate information forwards by `Apply`ing the current substitution to later sub-goals, and propagate it backwards by `Compose`-ing the substitutions from each recursive `Query` call into the current substitution.
 
 ```csharp
 public ImmutableDictionary<string, Term> Query(Rule rule, Term goal)
@@ -93,9 +93,9 @@ public ImmutableDictionary<string, Term> Query(Rule rule, Term goal)
 }
 ```
 
-If any of the recursive `Query` calls failed, that means one of the conditions on the right hand side was not satisfiable, so the whole rule fails and we have to try the next one. Eventually we hope to find a rule whose head matches the goal _and_ whose conditions are satisfied.
+If any of the recursive `Query` calls failed, that means one of the conditions on the right hand side was not satisfiable, so the whole rule fails (this function returns `null`) and we have to try the next one. Eventually we hope to find a rule whose head matches the goal _and_ whose conditions are satisfied. This means the query was successful, so we return the `subst` corresponding to the rule.
 
-That's a decent first stab at it. Now we have to fix the bugs.
+That's a decent first stab at the code for `Query`. Now we have to fix the bugs.
 
 
 Backtracking

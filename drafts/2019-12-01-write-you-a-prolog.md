@@ -75,40 +75,24 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 
 Rules in Prolog are attempted from top to bottom, so let's review this code line by line.
 
-The first rule has no right hand side, which means it succeeds as long as the predicate's arguments match the pattern on the left. (Rules with no right-hand side are called _facts_.) The first argument on the left hand side is the pattern `cons(X, nil)`. `cons` is a predicate whose two arguments are the head and tail of a list ([the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) comes from Lisp); in this instance its second argument is the atom `nil` (representing an empty list) and its first argument is left undefined --- `X` can stand in for any element. The second argument of `last` is `X`. This is the _same_ `X` as appeared in `cons(X, nil)`. So, taken all together, this first line succeeds when its first argument is a single-element list and its second argument is that element.
+The first rule has no right hand side, which means it succeeds as long as the predicate's arguments match the pattern on the left. (Rules with no right-hand side are called _facts_.) The first argument on the left hand side is the pattern `cons(X, nil)`. `cons` is a predicate whose two arguments are the head and tail of a list ([the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) comes from Lisp); in this instance its second argument is the atom `nil` (representing an empty list) and its first argument is left indeterminate --- `X` can stand in for any element. The second argument of `last` is `X`. This is the _same_ `X` as appeared in `cons(X, nil)`. So, taken all together, this first line succeeds when its first argument is a single-element list and its second argument is that element.
 
 The second line of this code is only entered when the first line fails --- that is, when `Xs` is not `nil`. In the pattern on the left, we've replaced the concrete empty list `nil` with a variable `Xs` which can stand in for any list. The right-hand side of the rule recursively calls `last`. So this line says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
 
-Here's another example of Prolog's bi-directional constraint solving system. You can test whether a certain known item is the last element of a list,
+Prolog's bi-directional pattern matching system works by _unification_. Unification is a process of making two terms equal by filling in their variables. When matching a goal like `last(cons(oranges, nil), Y)` to a rule head like `last(cons(X, nil), X)`, Prolog tries to find values to plug in for all the variables in scope so that the goal matches the rule. In this case, it'd determine that `X` and `Y` should both be `oranges`. I'll talk about unification in much more detail in a later post.
 
-```prolog
-?- last(cons(apples, cons(pears, cons(oranges, nil))), oranges).
-true
-?- last(cons(apples, cons(pears, cons(oranges, nil))), bananas).
-false
-```
+It's instructive to work through an example query: `last(cons(apples, cons(oranges, nil)), oranges)`.
 
-or you can leave the second parameter unspecified to use it as an output.
+1. Prolog first tries the top clause. It tries to unify the goal with `last(cons(X, nil), X)`. This fails because there's no value for `X` which makes this match the goal. In other words, there's one too many elements in the list --- namely `oranges` --- for this clause to match.
+2. Now it tries the second rule. Prolog tries to unify the goal with `last(cons(X, Xs), Y)`. This succeeds --- the terms match when `X = apples`, `Xs = cons(oranges, nil)`, and `Y = oranges`. So now Prolog creates a sub-goal for each clause on the right, of which there's only one (`last(Xs, Y)`). Since `Xs = cons(oranges, nil)` and `Y = oranges`, the goal is `last(cons(oranges, nil), oranges)`. So now the code has to recursively call `last`.
+3. With this new goal we try the first clause again. Prolog tries to unify `last(cons(oranges, nil), oranges)` with `last(cons(X, nil), X)`. This succeeds when `X = oranges`. Since there are no conditions on the right hand side (this clause is the base case of the recursive function), we're done! The query succeeded.
 
-```prolog
-?- last(cons(apples, cons(pears, cons(oranges, nil))), X).
-X = oranges
-```
-
-You can even ask Prolog to search the other way and come up with an example of a list with a given last element.
-
-```prolog
-?- last(Xs, oranges).
-Xs = cons(oranges, nil)
-```
-
-Prolog's bi-directional pattern matching system works by _unification_. When matching a term like `last(Xs, oranges)` to a rule like `last(cons(X, nil), X).`, it tries to find values for all the variables in scope so that the term matches the rule. In this case, it determines that `Xs = cons(X, nil)` and `X = oranges`. I'll talk about unification in much more detail in a later post.
 
 
 Representing Prolog Syntax
 --------------------------
 
-Hopefully blasting through Prolog's core in only a few paragraphs was enough to get you excited about implementing it! The first step in writing an interpreter for a language is to write down some types representing the language's _abstract syntax tree_. I said a Prolog program was a collection of _rules_, so let's start there.
+Hopefully blasting through Prolog's core in only a few paragraphs was enough to get you excited about implementing it! The first step in interpreting a programming lanugage is to come up with a way to represent programs in that language. That means writing down some types representing the language's _abstract syntax tree_. I said a Prolog program was a collection of _rules_, so let's start there.
 
 ```csharp
 class Rule
