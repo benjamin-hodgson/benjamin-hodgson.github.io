@@ -9,7 +9,9 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 3. **Unification**
 4. The rules engine
 
-We're getting on to the fun part of writing an interpreter: actually _interpreting_ the input code. In this post we're going to implement a _unification_ algorithm using my generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill).
+We're getting on to the fun part of writing an interpreter: actually _interpreting_ the input code. In this post we're going to implement a _unification_ algorithm using my generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill). Unification slots somewhere in the middle or bottom-right of this diagram:
+
+<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
 
 
 Unification

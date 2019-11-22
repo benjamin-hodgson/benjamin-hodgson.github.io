@@ -92,7 +92,11 @@ It's instructive to work through an example query: `last(cons(apples, cons(orang
 Representing Prolog Syntax
 --------------------------
 
-Hopefully blasting through Prolog's core in only a few paragraphs was enough to get you excited about implementing it! The first step in interpreting a programming lanugage is to come up with a way to represent programs in that language. That means writing down some types representing the language's _abstract syntax tree_. I said a Prolog program was a collection of _rules_, so let's start there.
+Hopefully blasting through Prolog's core in only a few paragraphs was enough to get you excited about implementing it! The first step in interpreting a programming lanugage is to come up with a way to represent programs in that language. That means writing down some types representing the language's _abstract syntax tree_. The middle part of the diagram I drew for [my post announcing Sawmill](https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html):
+
+<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
+
+I said a Prolog program was a collection of _rules_, so let's start there.
 
 ```csharp
 class Rule

@@ -9,8 +9,9 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 3. Unification
 4. The rules engine
 
+<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
 
-In this post we'll use my parsing library [Pidgin](https://github.com/benjamin-hodgson/Pidgin) to convert Prolog source code into the abstract syntax classes I outlined in the previous post.
+In this post I'm going to focus on the first part of that diagram. We'll use my parsing library [Pidgin](https://github.com/benjamin-hodgson/Pidgin) to convert Prolog source code into the abstract syntax classes I outlined in the previous post.
 
 
 About Pidgin

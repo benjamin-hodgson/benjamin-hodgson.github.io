@@ -9,7 +9,9 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 3. Unification
 4. **The rules engine**
 
-Today's the day! We're going to turn our unification algorithm into an actual programming language. Prolog's _rules engine_ is the system which processes the predicates and facts in your program to answer queries.
+<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
+
+Today's the day! We're going to turn our unification algorithm into an actual programming language by filling in the bottom-right part of the above diagram. Prolog's _rules engine_ is the system which processes the predicates and facts in your program to answer queries.
 
 
 The Database
