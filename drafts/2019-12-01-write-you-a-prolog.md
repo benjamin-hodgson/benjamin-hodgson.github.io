@@ -85,7 +85,7 @@ It's instructive to work through an example query: `last(cons(apples, cons(orang
 
 1. Prolog first tries the top clause. It tries to unify the goal with `last(cons(X, nil), X)`. This fails because there's no value for `X` which makes this match the goal. In other words, there's one too many elements in the list --- namely `oranges` --- for this clause to match.
 2. Now it tries the second rule. Prolog tries to unify the goal with `last(cons(X, Xs), Y)`. This succeeds --- the terms match when `X = apples`, `Xs = cons(oranges, nil)`, and `Y = oranges`. So now Prolog creates a sub-goal for each clause on the right, of which there's only one (`last(Xs, Y)`). Since `Xs = cons(oranges, nil)` and `Y = oranges`, the goal is `last(cons(oranges, nil), oranges)`. So now the code has to recursively call `last`.
-3. With this new goal we try the first clause again. Prolog tries to unify `last(cons(oranges, nil), oranges)` with `last(cons(X, nil), X)`. This succeeds when `X = oranges`. Since there are no conditions on the right hand side (this clause is the base case of the recursive function), we're done! The query succeeded.
+3. With this new goal we try the first clause again. Prolog tries to unify `last(cons(oranges, nil), oranges)` with `last(cons(X, nil), X)`. This succeeds when `X = oranges`. Since there are no conditions on the right hand side (this clause is the base case of the recursive function), we're done! The query succeeded; `oranges` is indeed the last element of the list.
 
 
 
