@@ -98,10 +98,12 @@ code {
 }
 pre code {
     padding: 0;
+    counter-reset: lineNumber;
 }
 
-.sourceLine::before {
-    content: attr(title);
+pre code>span::before {
+    counter-increment: lineNumber;
+    content: counter(lineNumber);
     width: 1.5em;
     display: inline-block;
     border-right: 1px solid gray;
