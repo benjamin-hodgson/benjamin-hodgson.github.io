@@ -8,12 +8,11 @@ branches:
 # don't rebuild the cache just because stack updated the index.
 # I only care about updates to the dependencies themselves
 before_cache:
-  - rm $HOME/.stack/indices/Hackage/00-index.tar
-  - rm $HOME/.stack/indices/Hackage/00-index.tar.gz
-  - rm $HOME/.stack/indices/Hackage/00-index.tar.idx
-  - rm $HOME/.stack/indices/Hackage/01-index.tar
-  - rm $HOME/.stack/indices/Hackage/snapshot.json
-  - rm $HOME/.stack/indices/Hackage/timestamp.json
+  - rm $HOME/.stack/pantry/hackage/00-index.tar.gz
+  - rm $HOME/.stack/pantry/hackage/00-index.tar.idx
+  - rm $HOME/.stack/pantry/hackage/snapshot.json
+  - rm $HOME/.stack/pantry/hackage/timestamp.json
+  - rm $HOME/.stack/pantry/pantry.sqlite3\n
 cache:
   directories:
     - $HOME/.stack
