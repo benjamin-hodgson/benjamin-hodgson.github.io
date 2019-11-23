@@ -12,7 +12,7 @@ before_cache:
   - rm $HOME/.stack/pantry/hackage/00-index.tar.idx
   - rm $HOME/.stack/pantry/hackage/snapshot.json
   - rm $HOME/.stack/pantry/hackage/timestamp.json
-  - rm $HOME/.stack/pantry/pantry.sqlite3\n
+  - rm $HOME/.stack/pantry/pantry.sqlite3
 cache:
   directories:
     - $HOME/.stack
