@@ -99,6 +99,8 @@ Hopefully blasting through Prolog's core in only a few paragraphs was enough to 
 
 <img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
 
+As the name suggests, the exercise is to come up with an abstract representation of Prolog's syntax. Think beyond the specifics of how the language is presented as text (such as where parentheses go and so on); we want to talk about the high-level grammatical constructs and how they relate to one another. This mode of thinking is akin to thinking about English at the level of sentence structure --- subordinate clauses and so on --- rather than spelling and punctuation.
+
 I said a Prolog program was a collection of _rules_, so let's start there.
 
 ```csharp
@@ -147,7 +149,7 @@ Now to fill in the type of `Args`. Looking at the example `last(cons(X, nil), X)
 2. A variable (`X`).
 3. An atom (`nil`).
 
-We'll refer to all three of these syntactic forms as _terms_. We can use subtyping to represent the fact that each argument could be any one of the three.
+We'll refer to all three of these syntactic forms as _terms_. We'll use subtyping to represent the fact that each argument could be any one of the three. `Predicate`, `Variable` and `Atom` are all subclasses of the `Term` base class; a `Predicate`'s arguments are a collection of `Term`s (but you don't know statically what kind of `Term` to expect).
 
 ```csharp
 abstract class Term {}
