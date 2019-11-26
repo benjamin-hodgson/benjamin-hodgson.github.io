@@ -2,16 +2,16 @@
 title: Parsing Prolog with Pidgin
 ---
 
-This is part of a series of posts about implementing a miniature Prolog interpreter in C#.
+Happy birthday to my sister! This is part of a series of posts about implementing a miniature Prolog interpreter in C#.
 
-1. Introduction & Syntax
+1. [Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)
 2. **Parsing**
 3. Unification
 4. The rules engine
 
 <img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
 
-In this post I'm going to focus on the first part of that diagram. We'll use my parsing library [Pidgin](https://github.com/benjamin-hodgson/Pidgin) to convert Prolog source code into the abstract syntax classes I outlined in the previous post.
+In this post I'm going to focus on the left-hand part of that diagram. We'll use my parsing library [Pidgin](https://github.com/benjamin-hodgson/Pidgin) to convert Prolog source code into the abstract syntax classes I outlined in the previous post.
 
 
 About Pidgin
@@ -30,8 +30,8 @@ It's worth elaborating a bit on what I mean by "consume a sequence". A parser wa
 When a parser makes a decision about what to do next, that decision is based only on the current character and not on what comes next. If the parser moves further along the string and then realises that decision was wrong, it has to _backtrack_ to the position where it made the decision before it can proceed with a different choice. Backtracking can be catastrophically costly (as described in [a short talk by my esteemed ex-colleague Balpha](https://vimeo.com/112065252)), so you want to code your parser to minimise the amount of backtracking it might have to do. With Pidgin, backtracking is disabled by default; it's enabled by the `Try` function.
 
 
-Handling Whitespace
--------------------
+Handling Tokens and Whitespace
+------------------------------
 
 Let's start with the basics and build upwards. Prolog is a _whitespace-insensitive_ language, so we need a way to skip over the whitespace in the source code. We'll use a convention where each component `Parser` will consume any whitespace _after_ parsing any relevant non-whitespace characters.
 
@@ -82,7 +82,7 @@ p r <b>o</b> g r a m m i n g
 p r o <b>g</b> r a m m i n g
 </pre>
 
-Now that we're looking at a `g`, it's clear that the input doesn't match the string `prolog`. The `prolog` parser fails and yields control back to `Or`. Because the `prolog` parser consumed input and did not backtrack, `Or` will not attempt to apply the `programming` parser. (If it did try, it would fail anyway because we're no longer looking at a `p`.) If the `prolog` parser were wrapped in a `Try`, it would have backtracked to the `p` when it failed, allowing `Or` to fall back on the `programming` parser.
+Now that we're looking at a `g`, it's clear that the input doesn't match the string `prolog`. The `prolog` parser fails and yields control back to `Or`. Because the `prolog` parser consumed input and did not backtrack, `Or` will not attempt to apply the `programming` parser. (If it did try, it would fail anyway because we're no longer looking at a `p`.) If the `prolog` parser were wrapped in a `Try`, it would have backtracked to the `p` upon failing, allowing `Or` to fall back on the `programming` parser.
 
 It's common to use `Try` for each word and symbol in your language's grammar; I'm going to use `Tok` for each of my low level component parsers.
 
@@ -154,7 +154,7 @@ static Parser<char, string> Name(Parser<char, char> firstLetter)
 Terms
 -----
 
-Terms in Prolog have a recursive structure, as [discussed previously](**TODO**). A predicate's arguments can be any term, including another predicate. This circularity poses a problem for our parser code --- the `_predicate` parser needs to call `_term`, but `_term` needs to call `_predicate`, so what order can you put the declarations in?
+Terms in Prolog have a recursive structure, as [discussed previously](/posts/2019-12-01-write-you-a-prolog.html). A predicate's arguments can be any term, including another predicate. This circularity poses a problem for our parser code --- the `_predicate` parser needs to call `_term`, but `_term` needs to call `_predicate`, so what order can you put the declarations in?
 
 Pidgin's built-in `Rec` function enables forward references like this. The idea is to use a lambda to delay the access to the field until after it's been initialised.
 
@@ -251,7 +251,7 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 
 Here are a couple of exercises you might try:
 
-* Extend this code to support numbers, building on the exercise from the end of the [last post](**TODO**).
+* Extend this code to support numbers, building on the exercise from the end of the [last post](/posts/2019-12-01-write-you-a-prolog.html).
 * Extend this code to support lists.
     * Prolog's lists are linked lists; `[]` is an empty list and cons cells look like `[head | tail]`. (`head` and `tail` are both arbitrary terms; though at runtime `tail` should be a list.)
     * At first you can try pretending that lists are syntactic sugar --- desugar `[]` to a `nil` atom and `[head | tail]` to a `cons(head, tail)` predicate.

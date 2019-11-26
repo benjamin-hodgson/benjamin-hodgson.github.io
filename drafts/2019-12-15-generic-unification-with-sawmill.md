@@ -4,8 +4,8 @@ title: Generic Unification with Sawmill
 
 This is part of a series of posts about implementing a miniature Prolog interpreter in C#.
 
-1. Introduction & Syntax
-2. Parsing
+1. [Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)
+2. [Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)
 3. **Unification**
 4. The rules engine
 
