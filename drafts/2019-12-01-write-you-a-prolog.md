@@ -9,6 +9,8 @@ I figured it'd be useful to have some examples of my language tooling libraries 
 3. Unification
 4. The rules engine
 
+You'll find all the code for this series [on GitHub](https://github.com/benjamin-hodgson/Amateurlog).
+
 
 Whistle-Stop Introduction to Prolog
 -----------------------------------
@@ -52,28 +54,30 @@ Finally, we can issue a _query_ to the interactive Prolog interpreter to find ou
 false
 ```
 
-No soup for you. What _can_ we eat for dinner? If we replace the atom `soup` --- a specific food --- with a variable `Food` (note the capital letter) --- standing in for any food --- Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. Prolog's constraint solving system is **bi-directional** --- parameters can serve as both inputs and outputs.
+No soup for you. What _can_ we eat for dinner? If we replace the atom `soup` --- a specific food --- with a variable `Food` (note the capital letter) --- standing in for any food --- Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. (You can use as many variables as you like in a query. Prolog will try to find a value for all of them.)
 
 ```prolog
 ?- dinner(benjamin, clio, Food).
 Food = pizza
 ```
 
-You can use as many variables as you like in a query. Prolog will try and solve all of them.
+Even though predicates don't return anything per se --- they either succeed or fail --- you can use variables in this way to get information out of a predicate. Prolog's constraint solving system is **bi-directional** --- a predicate's parameters can serve as both inputs and outputs.
 
 
 ### Pattern Matching and Recursion
 
 As well as putting _conditions_ on the right-hand side of a rule, you can put _patterns_ on the left. This is somewhat like pattern matching in functional languages --- the right-hand side of a rule is only entered if its arguments match the pattern on the left.
 
-Here's a predicate `last(List, Item)` which succeeds when `Item` is the last element of `List`.
+Here's a recursive predicate `last(List, Item)` which succeeds when `Item` is the last element of `List`.
 
 ```prolog
 last(cons(X, nil), X).
 last(cons(X, Xs), Y) :- last(Xs, Y).
 ```
 
-Rules in Prolog are attempted from top to bottom, so let's review this code line by line.
+`last` is another example of bi-directionality. You can use the second parameter as an input by passing in a value (in which case `last` will test whether `Item` is the last element of `List`), or you can use it as an output by passing in a variable (in which case Prolog will find the last element of `List` and set `Item` equal to it).
+
+When running a predicate, Prolog tries each of its clauses from top to bottom to see if any of them succeed. So let's review this code line by line.
 
 The first rule has no right hand side, which means it succeeds as long as the predicate's arguments match the pattern on the left. (Rules with no right-hand side are called _facts_.) The first argument on the left hand side is the pattern `cons(X, nil)`. `cons` is a predicate whose two arguments are the head and tail of a list ([the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) comes from Lisp); in this instance its second argument is the atom `nil` (representing an empty list) and its first argument is left indeterminate --- `X` can stand in for any element. The second argument of `last` is `X`. This is the _same_ `X` as appeared in `cons(X, nil)`. So, taken all together, this first line succeeds when its first argument is a single-element list and its second argument is that element.
 
@@ -83,10 +87,9 @@ Prolog's bi-directional pattern matching system works by _unification_. Unificat
 
 It's instructive to work through an example query: `last(cons(apples, cons(oranges, nil)), oranges)`.
 
-1. Prolog first tries the top clause. It tries to unify the goal with `last(cons(X, nil), X)`. This fails because there's no value for `X` which makes this match the goal. In other words, there's one too many elements in the list --- namely `oranges` --- for this clause to match.
+1. Prolog first tries the top clause. It tries to unify the goal with `last(cons(X, nil), X)`. This fails because there's no value for `X` which makes this match the goal. In other words, there's one too many elements in the list for this clause to match.
 2. Now it tries the second rule. Prolog tries to unify the goal with `last(cons(X, Xs), Y)`. This succeeds --- the terms match when `X = apples`, `Xs = cons(oranges, nil)`, and `Y = oranges`. So now Prolog creates a sub-goal for each clause on the right, of which there's only one (`last(Xs, Y)`). Since `Xs = cons(oranges, nil)` and `Y = oranges`, the goal is `last(cons(oranges, nil), oranges)`. So now the code has to recursively call `last`.
 3. With this new goal we try the first clause again. Prolog tries to unify `last(cons(oranges, nil), oranges)` with `last(cons(X, nil), X)`. This succeeds when `X = oranges`. Since there are no conditions on the right hand side (this clause is the base case of the recursive function), we're done! The query succeeded; `oranges` is indeed the last element of the list.
-
 
 
 Representing Prolog Syntax
@@ -111,7 +114,7 @@ What constitutes a rule? Looking at our example from earlier,
 wants(Person, Food) :- hungry(Person), likes(Person, Food).
 ```
 
-you can see that a rule has two main parts, separated by the `:-` symbol. On the left is the _conclusion_ of the logical statement, in the form of a pattern which the rule can match. On the right are the _premises_ of the logical statement, in the form of a comma-separated list of calls to other predicates. We'll call these the `Head` and the `Body` of the rule. (A _fact_ is just a rule with no right-hand side.)
+you can see that a rule has two main parts, separated by the `:-` symbol. On the left is the _conclusion_ of the logical statement, in the form of a pattern which the rule can match. On the right are the _premises_ of the logical statement, in the form of a comma-separated list of calls to other predicates. We'll call these the `Head` and the `Body` of the rule. (A fact is just a rule with no predicates in the body.)
 
 
 ```csharp
@@ -300,4 +303,4 @@ static void Main(string[] args)
 }
 ```
 
-Next time we'll write a parser!
+You can find these AST classes in [the example repo](https://github.com/benjamin-hodgson/Amateurlog), in the file [`Syntax.cs`](https://github.com/benjamin-hodgson/Prolog/blob/master/Syntax.cs). Next time we'll write a parser!
