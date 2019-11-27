@@ -1,5 +1,6 @@
 ---
 title: The Fourth Type of Variance
+date: 2019-01-11
 ---
 
 Given a polymorphic type, like `List`, what can we say about the relationship between different usages of that type? If `A` and `B` are related, is `List[A]` related to `List[B]`? _Variance_ is the word for this type of relationship, and it turns out there are a few different answers to that question, depending on the type you're asking about.

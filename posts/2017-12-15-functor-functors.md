@@ -1,5 +1,6 @@
 ---
 title: Functor Functors
+date: 2017-12-15
 ---
 
 You can teach a new dog old tricks.

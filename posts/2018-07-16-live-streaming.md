@@ -1,5 +1,6 @@
 ---
 title: Live-streaming
+date: 2018-07-16
 ---
 
 My esteemed colleague [Gervasio](https://twitter.com/g3rv4?lang=en) and I have arranged to live-stream some programming ~~this Friday, the 20th of July~~ **Update**: we've decided to move it to next **Tuesday, the 24th**, at 2PM BST. We're going to be working on adding some basic `Span` support to [my parsing library](https://github.com/benjamin-hodgson/Pidgin), and it's going to involve `unsafe` and custom IL, which should be a bit of fun.

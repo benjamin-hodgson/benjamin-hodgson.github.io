@@ -1,6 +1,7 @@
 ---
 title: Announcing Pidgin v2.0
 subtitle: Errors, `Span`, and performance
+date: 2019-01-26
 ---
 
 Happy birthday to me! I'm pleased to announce that version 2.0 of my functional parsing library, [Pidgin](https://github.com/benjamin-hodgson/Pidgin), is now available [on Nuget](https://www.nuget.org/packages/Pidgin). In this release I've focused on error messages, performance, and `Span` support.

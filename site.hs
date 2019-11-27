@@ -1,12 +1,13 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 import Control.Monad ((>=>))
-import Data.Char (isDigit)
+import Data.Char (isSpace, isDigit, toLower)
 import Data.List (sortBy)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (fromJust, fromMaybe, listToMaybe)
 import Data.Monoid (mappend)
 import Data.Ord (comparing)
 import qualified Data.Set as S
+import qualified Data.Time as Time
 import Data.Traversable (for)
 import System.Environment (getArgs)
 import System.FilePath (takeBaseName)
@@ -18,8 +19,9 @@ import Hakyll
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-    args <- getArgs
-    let postsPattern = postsPatternForCommand (fromMaybe "" $ listToMaybe args)
+    command <- fromMaybe "" <$> listToMaybe <$> getArgs
+    let postsPattern = postsPatternForCommand command
+    metadataMatcher <- metadataMatcherForCommand command
     
     hakyll $ do
         match "favicon.ico" $ do
@@ -40,8 +42,8 @@ main = do
                 >>= loadAndApplyTemplate "templates/default.html" defaultContext
                 >>= relativizeUrls
 
-        match postsPattern $ do
-            route $ setExtension "html"
+        matchMetadata postsPattern metadataMatcher $ do
+            route $ metadataRoute postRoute
             compile $ do
                 comments <- compilePostComments
                 let ctx = postCtx comments
@@ -103,6 +105,22 @@ main = do
 
 postsPatternForCommand "watch" = "posts/*" .&&. hasNoVersion .||. "drafts/*"
 postsPatternForCommand _ = "posts/*" .&&. hasNoVersion
+
+metadataMatcherForCommand "watch" = return (const True)
+metadataMatcherForCommand _ = do
+    time <- Time.getCurrentTime
+    return $ \metadata ->
+        let Just date = parseDate <$> lookupString "date" metadata
+        in date < time
+
+parseDate = Time.parseTimeOrError True Time.defaultTimeLocale "%Y-%m-%d"
+
+
+postRoute metadata =
+    let Just date = lookupString "date" metadata
+        Just title = map (\x -> if isSpace x then '-' else x) <$> map toLower <$> lookupString "title" metadata
+        route = "posts/" ++ date ++ "-" ++ title
+    in constRoute route `composeRoutes` setExtension "html"
 
 postCtx :: [Item String] -> Context String
 postCtx comments =

@@ -1,5 +1,6 @@
 ---
 title: Generic Unification with Sawmill
+date: 2019-12-15
 ---
 
 This is part of a series of posts about implementing a miniature Prolog interpreter in C#.

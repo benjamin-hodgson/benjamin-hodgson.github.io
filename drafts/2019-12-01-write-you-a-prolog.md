@@ -1,5 +1,6 @@
 ---
 title: Write You a Prolog
+date: 2019-12-01
 ---
 
 I figured it'd be useful to have some examples of my language tooling libraries [Sawmill](https://github.com/benjamin-hodgson/Sawmill) and [Pidgin](https://github.com/benjamin-hodgson/Pidgin) in action. I thought it could be fun to use them to write a miniature [Prolog](https://en.wikipedia.org/wiki/Prolog) interpreter!

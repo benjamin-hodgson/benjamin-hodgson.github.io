@@ -1,6 +1,7 @@
 ---
 title: Recursion Without Recursion
 subtitle: Tearing Down Trees in One Line of Code
+date: 2017-11-13
 ---
 
 If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type [`[c#] and (not [javascript] or salary:50000gbp)`](https://stackoverflow.com/jobs?sort=i&q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)) into the search box. This advanced search syntax is called JQL, for _Jobs Query Language_.

@@ -21,4 +21,5 @@ executable benjamin-pizza
                        containers,
                        hakyll,
                        pandoc,
-                       filepath
+                       filepath,
+                       time
