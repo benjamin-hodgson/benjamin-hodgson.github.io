@@ -8,6 +8,7 @@ branches:
 # don't rebuild the cache just because stack updated the index.
 # I only care about updates to the dependencies themselves
 before_cache:
+  - rm $HOME/.stack/pantry/hackage/00-index.tar
   - rm $HOME/.stack/pantry/hackage/00-index.tar.gz
   - rm $HOME/.stack/pantry/hackage/00-index.tar.idx
   - rm $HOME/.stack/pantry/hackage/snapshot.json
