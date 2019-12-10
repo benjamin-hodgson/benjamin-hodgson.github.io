@@ -91,7 +91,7 @@ pre:not(.title), code {
 }
 pre {
     padding: 0.25em;
-    overflow-x: scroll;
+    overflow-x: auto;
 }
 code {
     padding: 1pt 2pt;
