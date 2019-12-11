@@ -196,7 +196,7 @@ p r o <b>g</b> r a m m i n g
 </ul></li>
 <li>Try using <a href="https://www.benjamin.pizza/Pidgin/v2.2.0/api/Pidgin.Comment.CommentParser.html">Pidgin’s <code>CommentParser</code> class</a> to handle Prolog code with comments in.</li>
 </ul>
-<p>Next time we’ll talk about <em>unification</em>, the core of Prolog’s bi-directional programming model. We’ll be using <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> to implement unification <em>generically</em>, without making any assumptions about Prolog’s syntax.</p>
+<p>You can find this code in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the file <a href="https://github.com/benjamin-hodgson/Prolog/blob/master/Parser.cs"><code>Parser.cs</code></a>. Next time we’ll talk about <em>unification</em>, the core of Prolog’s bi-directional programming model. We’ll be using <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> to implement unification <em>generically</em>, without making any assumptions about Prolog’s syntax.</p>
 
 <section class="comments">
     <h1>Comments</h1>
@@ -228,7 +228,7 @@ p r o <b>g</b> r a m m i n g
 <p>I figured it’d be useful to have some examples of my language tooling libraries <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> and <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> in action. I thought it could be fun to use them to write a miniature <a href="https://en.wikipedia.org/wiki/Prolog">Prolog</a> interpreter!</p>
 <ol type="1">
 <li><strong>Introduction &amp; Syntax</strong></li>
-<li>Parsing</li>
+<li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
 <li>Unification</li>
 <li>The rules engine</li>
 </ol>
@@ -438,7 +438,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb15-18"><a href="#cb15-18"></a>    Console.<span class="fu">WriteLine</span>(rule.<span class="fu">ToString</span>());</span>
 <span id="cb15-19"><a href="#cb15-19"></a>    <span class="co">// prints out last(cons(X, Xs), Y) :- last(Xs, Y).</span></span>
 <span id="cb15-20"><a href="#cb15-20"></a>}</span></code></pre></div>
-<p>You can find these AST classes in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the file <a href="https://github.com/benjamin-hodgson/Prolog/blob/master/Syntax.cs"><code>Syntax.cs</code></a>. Next time we’ll write a parser!</p>
+<p>You can find these AST classes in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the file <a href="https://github.com/benjamin-hodgson/Prolog/blob/master/Syntax.cs"><code>Syntax.cs</code></a>. <a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Next time</a> we’ll write a parser!</p>
 
 <section class="comments">
     <h1>Comments</h1>
