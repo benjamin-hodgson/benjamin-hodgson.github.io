@@ -6,7 +6,7 @@ date: 2019-12-01
 I figured it'd be useful to have some examples of my language tooling libraries [Sawmill](https://github.com/benjamin-hodgson/Sawmill) and [Pidgin](https://github.com/benjamin-hodgson/Pidgin) in action. I thought it could be fun to use them to write a miniature [Prolog](https://en.wikipedia.org/wiki/Prolog) interpreter!
 
 1. **Introduction & Syntax**
-2. Parsing
+2. [Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)
 3. Unification
 4. The rules engine
 
@@ -306,4 +306,4 @@ static void Main(string[] args)
 }
 ```
 
-You can find these AST classes in [the example repo](https://github.com/benjamin-hodgson/Amateurlog), in the file [`Syntax.cs`](https://github.com/benjamin-hodgson/Prolog/blob/master/Syntax.cs). Next time we'll write a parser!
+You can find these AST classes in [the example repo](https://github.com/benjamin-hodgson/Amateurlog), in the file [`Syntax.cs`](https://github.com/benjamin-hodgson/Prolog/blob/master/Syntax.cs). [Next time](/posts/2019-12-08-parsing-prolog-with-pidgin.html) we'll write a parser!

@@ -262,4 +262,4 @@ Here are a couple of exercises you might try:
       * You could try adding lists directly to the `Term` AST.
 * Try using [Pidgin's `CommentParser` class](https://www.benjamin.pizza/Pidgin/v2.2.0/api/Pidgin.Comment.CommentParser.html) to handle Prolog code with comments in.
 
-Next time we'll talk about _unification_, the core of Prolog's bi-directional programming model. We'll be using [Sawmill](https://github.com/benjamin-hodgson/Sawmill) to implement unification _generically_, without making any assumptions about Prolog's syntax.
+You can find this code in [the example repo](https://github.com/benjamin-hodgson/Amateurlog), in the file [`Parser.cs`](https://github.com/benjamin-hodgson/Prolog/blob/master/Parser.cs). Next time we'll talk about _unification_, the core of Prolog's bi-directional programming model. We'll be using [Sawmill](https://github.com/benjamin-hodgson/Sawmill) to implement unification _generically_, without making any assumptions about Prolog's syntax.
