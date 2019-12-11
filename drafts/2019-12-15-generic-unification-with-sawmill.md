@@ -20,7 +20,7 @@ Unification
 
 Unification is a process for solving equations, much like the equations you'd solve in algebra at school. It's all about plugging holes --- given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a _substitution_ --- a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.
 
-The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term's syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term.
+The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term's syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process --- you can't apply domain-specific rules such as "add a number to both sides" like you can in algebra.
 
 Let's work through some examples to get a feel for it.
 
@@ -30,7 +30,7 @@ Let's work through some examples to get a feel for it.
     * Unifying the second arguments gives us `X ~ b`. `X` is a variable, and we now know it must be equal to `b`, so that gets added to the output substitution.
     * Unifying the third arguments, we find `Y ~ g(x)`, so that also goes in the output. It's OK to match a variable to a composite term.
     * The resulting substitution is **`X := b; Y := g(x)`**. You can try plugging this substitution back in to the two terms to verify that it does indeed make them equal.
-    * **TODO: PICTURE**
+      <div style="display:flex; align-items:center"><img src="/images/2019-12-15-generic-unification-with-sawmill/example1-1.png" width="47%" style="margin-right:3%" /><img src="/images/2019-12-15-generic-unification-with-sawmill/example1-2.png" width="47%" style="margin-left:3%" /></div>
 
 * Unify `f(X, g(X))` with `f(m(b), g(m(b)))`. In this example, the `X` variable appears twice in the left hand argument; these are the **same** `X` and at the end of unification they have to agree.
     * The outermost `f`s match, so we descend to the arguments.
@@ -38,14 +38,14 @@ Let's work through some examples to get a feel for it.
     * Looking at the second argument, you see `g` applied to one argument in both cases. This is a match, so we can once more continue to compare the arguments.
     * Comparing the arguments gives us `X ~ m(b)`. This is the same constraint as the one we got from the first argument.
     * The resulting substitution is **`X := m(b)`**.
-    * **TODO: PICTURE**
+      <div style="display:flex; align-items:center"><img src="/images/2019-12-15-generic-unification-with-sawmill/example2-1.png" width="47%" style="margin-right:3%" /><img src="/images/2019-12-15-generic-unification-with-sawmill/example2-2.png" width="47%" style="margin-left:3%" /></div>
 
-* Unify `f(g(X), X)` with `f(g(Y), a)`. In this example we see variables appearing on both sides. We have to come up with a value for all of the variables in both terms.
+* Unify `f(g(X), a)` with `f(g(Y), X)`. In this example we see variables appearing on both sides. We have to come up with a value for all of the variables in both terms; once again the `X` appearing on both sides is the same `X`.
     * Once more, the outermost `f`s match.
-    * Matching up the first arguments gives us `X ~ a`.
-    * Matching up the second arguments, we get `g(X) ~ g(Y)`, so `X ~ Y`. It's OK to match variables to each other.
+    * Matching up the first arguments, we get `g(X) ~ g(Y)`, so `X ~ Y`. It's OK to match variables to each other.
+    * Matching up the first arguments gives us `a ~ X`.
     * The resulting substitution is **`X := a; Y := X`** (or, equivalently, **`X := a; Y := a`**).
-    * **TODO: PICTURE**
+      <div style="display:flex; align-items:center"><img src="/images/2019-12-15-generic-unification-with-sawmill/example3-1.png" width="47%" style="margin-right:3%" /><img src="/images/2019-12-15-generic-unification-with-sawmill/example3-2.png" width="47%" style="margin-left:3%" /></div>
 
 * A couple of exercises:
     * Does `f(g(X), a)` unify with `f(g(b), X)`?
