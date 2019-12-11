@@ -170,7 +170,7 @@ We're going to maintain the invariant that the terms in a substitution are never
 Binding Single Variables & the Occurs Check
 -------------------------------------------
 
-Let's start filling in `Unify`. Let's start with step 2 of the algorithm: what to do when either of the input terms is a variable.
+Time to fill in the body of `Unify`. Let's start with step 2 of the algorithm: what to do when either of the input terms is a variable.
 
 ```csharp
 public static ImmutableDictionary<string, T> Unify<T>(this T left, T right) where T : IUnifiable<T>
