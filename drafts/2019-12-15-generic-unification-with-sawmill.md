@@ -382,5 +382,5 @@ Some exercises you could try:
         * Hint 3: `Apply`ing a substitution to a term will no longer eliminate all the bound variables inside the term. Try using [`RewriteIter`](https://www.benjamin.pizza/Sawmill/v3.1.0/api/Sawmill.Rewritable.html#Sawmill_Rewritable_RewriteIter__1___0_System_Func___0___0__) to reestablish that invariant.
 * `IUnifiable` assumes that variables can always be represented by strings. Many practical programming language implementations use richer data structures than strings (such as variables tagged with their scope) to represent variables. Can you change this design to break the dependency on strings? What API usability issues do you encounter?
 
-In the final part of this series, we'll apply unification to build Prolog's rules engine.
+All of this code can be found in [the example repo](https://github.com/benjamin-hodgson/Amateurlog), in the [`Unification.cs`](https://github.com/benjamin-hodgson/Amateurlog/blob/master/Unification.cs) and [`Syntax.Unification.cs`](https://github.com/benjamin-hodgson/Amateurlog/blob/master/Syntax.Unification.cs) files. In the final part of this series, we'll apply unification to build Prolog's rules engine.
 
