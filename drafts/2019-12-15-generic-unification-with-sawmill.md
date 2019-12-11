@@ -89,7 +89,7 @@ interface IUnifiable<T> : IRewritable<T> where T : IUnifiable<T>
 }
 ```
 
-`Match` tells you whether the current node matches another node. In Prolog's case, it tests whether the two nodes have the same name and number of children. `AsVariable` checks whether the current node is a variable, returning its name as a string (or `null` if it's not). Here's what it looks like implemented on top of our `Term` syntax tree:
+`Match` tells you whether the current node matches another node. In Prolog's case, it tests whether the two nodes have the same name and number of children. `AsVariable` checks whether the current node is a variable, returning its name as a string (or `null` if it's not). Here's what it looks like implemented on [the `Term` syntax tree](/posts/2019-12-01-write-you-a-prolog.html):
 
 ```csharp
 abstract class Term : IUnifiable<Term>
