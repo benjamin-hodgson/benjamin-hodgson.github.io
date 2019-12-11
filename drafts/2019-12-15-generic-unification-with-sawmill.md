@@ -77,7 +77,7 @@ Let's quantify that. Reading back over the description of the algorithm, it seem
 * Leaf nodes with no children
 * Matching a pair of terms
 
-Abstracting over these concepts should allow us to implement unification once and for all, without depending on the specifics of Prolog's terms.
+Abstracting over these concepts should allow us to implement unification once and for all, without depending on the specifics of Prolog's terms. Don't solve one problem. Solve them all!
 
 Sawmill's core `IRewritable` interface is a generic way of looking at tree-shaped terms with children. The only concepts we need to add on top of `IRewritable` are _variables_ and _matching_.
 
@@ -125,7 +125,7 @@ class Atom : Term
 }
 ```
 
-Don't solve one problem. Solve them all! We're going to implement unification without reference to any specific term syntax (Prolog or otherwise), using only the methods on `IUnifiable`. For example, here's a LINQ query which finds all of the variables mentioned anywhere in a term. It uses `SelfAndDescendants` together with `AsVariable` to find the nodes which were in fact variables.
+For example, here's a LINQ query which finds all of the variables mentioned anywhere in a term. It uses `SelfAndDescendants` together with `AsVariable` to find the nodes which were in fact variables.
 
 ```csharp
 public static ImmutableHashSet<string> Variables<T>(this T value) where T : IUnifiable<T>
