@@ -353,8 +353,8 @@ A quick test of one of our examples:
 ```csharp
 static void Main(string[] args)
 {
-    var left = PrologParser.ParseQuery("f(g(X), X)");
-    var right = PrologParser.ParseQuery("f(g(Y), a)");
+    var left = PrologParser.ParseQuery("f(g(X), a)");
+    var right = PrologParser.ParseQuery("f(g(Y), X)");
 
     var subst = left.Unify(right);
 
