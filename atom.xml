@@ -8,8 +8,348 @@
         <name>Benjamin Hodgson</name>
         <email>bhodgson@stackoverflow.com</email>
     </author>
-    <updated>2019-12-08T00:00:00Z</updated>
+    <updated>2019-12-15T00:00:00Z</updated>
     <entry>
+    <title>Generic Unification with Sawmill</title>
+    <link href="http://www.benjamin.pizza/posts/2019-12-15-generic-unification-with-sawmill.html" />
+    <id>http://www.benjamin.pizza/posts/2019-12-15-generic-unification-with-sawmill.html</id>
+    <published>2019-12-15T00:00:00Z</published>
+    <updated>2019-12-15T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="info">
+    Posted on December 15, 2019
+    
+</div>
+
+<p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
+<ol type="1">
+<li><a href="/posts/2019-12-01-write-you-a-prolog.html">Introduction &amp; Syntax</a></li>
+<li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
+<li><strong>Unification</strong></li>
+<li>The rules engine</li>
+</ol>
+<p>We’re getting on to the fun part of writing an interpreter: actually <em>interpreting</em> the input code. In this post we’re going to implement a <em>unification</em> algorithm using my generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Unification slots somewhere in the middle or bottom-right of this diagram:</p>
+<p><img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" /></p>
+<h2 id="unification">Unification</h2>
+<p>Unification is a process for solving equations, much like the equations you’d solve in algebra at school. It’s all about plugging holes — given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a <em>substitution</em> — a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.</p>
+<p>The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term’s syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process — you can’t apply domain-specific rules such as “add a number to both sides” like you can in algebra.</p>
+<p>Let’s work through some examples to get a feel for it.</p>
+<ul>
+<li>Unify <code>f(a, X, Y)</code> with <code>f(a, b, g(x))</code>.
+<ul>
+<li>Starting at the outermost part of the two terms’ syntax, we see <code>f</code> applied to three arguments in each of them — a match. Now we can match up the arguments and try to unify each of them.</li>
+<li>The first argument in each is the atom <code>a</code> — so they match.</li>
+<li>Unifying the second arguments gives us <code>X ~ b</code>. <code>X</code> is a variable, and we now know it must be equal to <code>b</code>, so that gets added to the output substitution.</li>
+<li>Unifying the third arguments, we find <code>Y ~ g(x)</code>, so that also goes in the output. It’s OK to match a variable to a composite term.</li>
+<li>The resulting substitution is <strong><code>X := b; Y := g(x)</code></strong>. You can try plugging this substitution back in to the two terms to verify that it does indeed make them equal.
+<div style="display:flex; align-items:center">
+<img src="/images/2019-12-15-generic-unification-with-sawmill/example1-1.png" width="47%" style="margin-right:3%" /><img src="/images/2019-12-15-generic-unification-with-sawmill/example1-2.png" width="47%" style="margin-left:3%" />
+</div></li>
+</ul></li>
+<li>Unify <code>f(X, g(X))</code> with <code>f(m(b), g(m(b)))</code>. In this example, the <code>X</code> variable appears twice in the left hand argument; these are the <strong>same</strong> <code>X</code> and at the end of unification they have to agree.
+<ul>
+<li>The outermost <code>f</code>s match, so we descend to the arguments.</li>
+<li>The first argument gives us <code>X ~ m(b)</code>.</li>
+<li>Looking at the second argument, you see <code>g</code> applied to one argument in both cases. This is a match, so we can once more continue to compare the arguments.</li>
+<li>Comparing the arguments gives us <code>X ~ m(b)</code>. This is the same constraint as the one we got from the first argument.</li>
+<li>The resulting substitution is <strong><code>X := m(b)</code></strong>.
+<div style="display:flex; align-items:center">
+<img src="/images/2019-12-15-generic-unification-with-sawmill/example2-1.png" width="47%" style="margin-right:3%" /><img src="/images/2019-12-15-generic-unification-with-sawmill/example2-2.png" width="47%" style="margin-left:3%" />
+</div></li>
+</ul></li>
+<li>Unify <code>f(g(X), a)</code> with <code>f(g(Y), X)</code>. In this example we see variables appearing on both sides. We have to come up with a value for all of the variables in both terms; once again the <code>X</code> appearing on both sides is the same <code>X</code>.
+<ul>
+<li>Once more, the outermost <code>f</code>s match.</li>
+<li>Matching up the first arguments, we get <code>g(X) ~ g(Y)</code>, so <code>X ~ Y</code>. It’s OK to match variables to each other.</li>
+<li>Matching up the first arguments gives us <code>a ~ X</code>.</li>
+<li>The resulting substitution is <strong><code>X := a; Y := X</code></strong> (or, equivalently, <strong><code>X := a; Y := a</code></strong>).
+<div style="display:flex; align-items:center">
+<img src="/images/2019-12-15-generic-unification-with-sawmill/example3-1.png" width="47%" style="margin-right:3%" /><img src="/images/2019-12-15-generic-unification-with-sawmill/example3-2.png" width="47%" style="margin-left:3%" />
+</div></li>
+</ul></li>
+<li>A couple of exercises:
+<ul>
+<li>Does <code>f(g(X), a)</code> unify with <code>f(g(b), X)</code>?</li>
+<li>Does <code>f(X, Y)</code> unify with <code>f(g(Y), Z)</code>?</li>
+<li>Does <code>f(X, Y)</code> unify with <code>f(Y, g(X))</code>?</li>
+<li>Try coming up with some interesting examples of terms which don’t unify.</li>
+</ul></li>
+</ul>
+<p>Let’s sketch out an algorithm for unification.</p>
+<ol type="1">
+<li>Look at the outermost node in the two terms’ ASTs.</li>
+<li>If either one of them is a variable, bind the variable to the term in the output substitution. If it’s already bound in the output substitution, make sure that this binding doesn’t conflict.</li>
+<li>If both are leaf nodes, check that they match.</li>
+<li>If both are composite terms, check that they match and that they have the same number of children. If so, repeat steps 1-3 for each pair of children.</li>
+<li>Otherwise, the terms don’t match and we should abort unification.</li>
+</ol>
+<p>Hopefully you can see how I’ve applied these steps in the examples above. I’ve glossed over some important details here (particularly regarding what happens in step 1 when a variable is already in the substitution) but I’ll be sure to fill them in when we get to writing code. (In fact we’re going to design our code so that a variable will never already be in the substitution.)</p>
+<h2 id="iunifiable"><code>IUnifiable</code></h2>
+<p>Unification is a central part of Prolog’s programming model, but it has applications outside of Prolog as well (type inference, for example). Any time you have a syntactic structure with placeholder variables, the question “what can I plug in for these variables?” makes sense.</p>
+<p>Let’s quantify that. Reading back over the description of the algorithm, it seems to build on a few core concepts:</p>
+<ul>
+<li>Terms</li>
+<li>Terms which are variables</li>
+<li>Composite terms with children</li>
+<li>Leaf nodes with no children</li>
+<li>Matching a pair of terms</li>
+</ul>
+<p>Abstracting over these concepts should allow us to implement unification once and for all, without depending on the specifics of Prolog’s terms. Don’t solve one problem. Solve them all!</p>
+<p>Sawmill’s core <code>IRewritable</code> interface is a generic way of looking at tree-shaped terms with children. The only concepts we need to add on top of <code>IRewritable</code> are <em>variables</em> and <em>matching</em>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">interface</span> IUnifiable&lt;T&gt; : IRewritable&lt;T&gt; where T : IUnifiable&lt;T&gt;</span>
+<span id="cb1-2"><a href="#cb1-2"></a>{</span>
+<span id="cb1-3"><a href="#cb1-3"></a>    <span class="dt">bool</span> <span class="fu">Match</span>(T other);</span>
+<span id="cb1-4"><a href="#cb1-4"></a>    <span class="dt">string</span> <span class="fu">AsVariable</span>();</span>
+<span id="cb1-5"><a href="#cb1-5"></a>}</span></code></pre></div>
+<p><code>Match</code> tells you whether the current node matches another node. In Prolog’s case, it tests whether the two nodes have the same name and number of children. <code>AsVariable</code> checks whether the current node is a variable, returning its name as a string (or <code>null</code> if it’s not). Here’s what it looks like implemented on <a href="/posts/2019-12-01-write-you-a-prolog.html">the <code>Term</code> syntax tree</a>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term : IUnifiable&lt;Term&gt;</span>
+<span id="cb2-2"><a href="#cb2-2"></a>{</span>
+<span id="cb2-3"><a href="#cb2-3"></a>    <span class="co">// ...</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other);</span>
+<span id="cb2-5"><a href="#cb2-5"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">string</span> <span class="fu">AsVariable</span>();</span>
+<span id="cb2-6"><a href="#cb2-6"></a>}</span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">class</span> Predicate : Term</span>
+<span id="cb2-8"><a href="#cb2-8"></a>{</span>
+<span id="cb2-9"><a href="#cb2-9"></a>    <span class="co">// ...</span></span>
+<span id="cb2-10"><a href="#cb2-10"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other)</span>
+<span id="cb2-11"><a href="#cb2-11"></a>        =&gt; other <span class="kw">is</span> Predicate p</span>
+<span id="cb2-12"><a href="#cb2-12"></a>        &amp;&amp; p.<span class="fu">Name</span> == Name</span>
+<span id="cb2-13"><a href="#cb2-13"></a>        &amp;&amp; p.<span class="fu">Args</span>.<span class="fu">Length</span> == Args.<span class="fu">Length</span>;</span>
+<span id="cb2-14"><a href="#cb2-14"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span>() =&gt; <span class="kw">null</span>;</span>
+<span id="cb2-15"><a href="#cb2-15"></a>}</span>
+<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">class</span> Variable : Term</span>
+<span id="cb2-17"><a href="#cb2-17"></a>{</span>
+<span id="cb2-18"><a href="#cb2-18"></a>    <span class="co">// ...</span></span>
+<span id="cb2-19"><a href="#cb2-19"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other)</span>
+<span id="cb2-20"><a href="#cb2-20"></a>        =&gt; other <span class="kw">is</span> Variable v</span>
+<span id="cb2-21"><a href="#cb2-21"></a>        &amp;&amp; v.<span class="fu">Name</span> == Name;</span>
+<span id="cb2-22"><a href="#cb2-22"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span>() =&gt; Name;</span>
+<span id="cb2-23"><a href="#cb2-23"></a>}</span>
+<span id="cb2-24"><a href="#cb2-24"></a><span class="kw">class</span> Atom : Term</span>
+<span id="cb2-25"><a href="#cb2-25"></a>{</span>
+<span id="cb2-26"><a href="#cb2-26"></a>    <span class="co">// ...</span></span>
+<span id="cb2-27"><a href="#cb2-27"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other)</span>
+<span id="cb2-28"><a href="#cb2-28"></a>        =&gt; other <span class="kw">is</span> Atom a</span>
+<span id="cb2-29"><a href="#cb2-29"></a>        &amp;&amp; a.<span class="fu">Value</span> == Value;</span>
+<span id="cb2-30"><a href="#cb2-30"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span>() =&gt; <span class="kw">null</span>;</span>
+<span id="cb2-31"><a href="#cb2-31"></a>}</span></code></pre></div>
+<p>For example, here’s a LINQ query which finds all of the variables mentioned anywhere in a term. It uses <code>SelfAndDescendants</code> together with <code>AsVariable</code> to find the nodes which were in fact variables.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableHashSet&lt;<span class="dt">string</span>&gt; Variables&lt;T&gt;(<span class="kw">this</span> T value) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb3-2"><a href="#cb3-2"></a>    =&gt; value</span>
+<span id="cb3-3"><a href="#cb3-3"></a>        .<span class="fu">SelfAndDescendants</span>()</span>
+<span id="cb3-4"><a href="#cb3-4"></a>        .<span class="fu">Select</span>(x =&gt; x.<span class="fu">AsVariable</span>())</span>
+<span id="cb3-5"><a href="#cb3-5"></a>        .<span class="fu">Where</span>(name =&gt; name != <span class="kw">null</span>)</span>
+<span id="cb3-6"><a href="#cb3-6"></a>        .<span class="fu">Distinct</span>()</span>
+<span id="cb3-7"><a href="#cb3-7"></a>        .<span class="fu">ToImmutableHashSet</span>();</span></code></pre></div>
+<h2 id="substitutions">Substitutions</h2>
+<p>I mentioned that the output of unification is a <em>substitution</em> — a mapping from variable names to terms. We’ll model that using an ordinary dictionary of strings and <code>T</code>s. Our signature for <code>Unify</code> is going to look like this:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span></code></pre></div>
+<p>The main thing you can do with a substitution is <em>apply</em> it to a term. That means replacing all the variables in the term with the sub-terms they’re mapped to by the substitution. This should eliminate any variables in the term which are bound by the substitution.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">public</span> <span class="kw">static</span> T Apply&lt;T&gt;(<span class="kw">this</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; subst, T value) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb5-2"><a href="#cb5-2"></a>    =&gt; value.<span class="fu">Rewrite</span>(</span>
+<span id="cb5-3"><a href="#cb5-3"></a>        x =&gt;</span>
+<span id="cb5-4"><a href="#cb5-4"></a>        {</span>
+<span id="cb5-5"><a href="#cb5-5"></a>            <span class="dt">var</span> name = x.<span class="fu">AsVariable</span>();</span>
+<span id="cb5-6"><a href="#cb5-6"></a>            <span class="kw">if</span> (name != <span class="kw">null</span>)</span>
+<span id="cb5-7"><a href="#cb5-7"></a>            {</span>
+<span id="cb5-8"><a href="#cb5-8"></a>                <span class="kw">return</span> subst.<span class="fu">GetValueOrDefault</span>(name, x);</span>
+<span id="cb5-9"><a href="#cb5-9"></a>            }</span>
+<span id="cb5-10"><a href="#cb5-10"></a>            <span class="kw">return</span> x;</span>
+<span id="cb5-11"><a href="#cb5-11"></a>        }</span>
+<span id="cb5-12"><a href="#cb5-12"></a>    );</span></code></pre></div>
+<p>We’re going to maintain the invariant that the terms in a substitution are never going to contain any variables which are bound by the substitution. (It’s possible, and indeed desirable for efficiency, to relax this invariant, but today we’re going to focus on simplicity.)</p>
+<h2 id="binding-single-variables-the-occurs-check">Binding Single Variables &amp; the Occurs Check</h2>
+<p>Time to fill in the body of <code>Unify</code>. Let’s start with step 2 of the algorithm: what to do when either of the input terms is a variable.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb6-2"><a href="#cb6-2"></a>{</span>
+<span id="cb6-3"><a href="#cb6-3"></a>    <span class="dt">var</span> leftName = left.<span class="fu">AsVariable</span>();</span>
+<span id="cb6-4"><a href="#cb6-4"></a>    <span class="kw">if</span> (leftName != <span class="kw">null</span>)  <span class="co">// then the left term was a variable</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a>    {</span>
+<span id="cb6-6"><a href="#cb6-6"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(leftName, right);</span>
+<span id="cb6-7"><a href="#cb6-7"></a>    }</span>
+<span id="cb6-8"><a href="#cb6-8"></a>    <span class="dt">var</span> rightName = right.<span class="fu">AsVariable</span>();</span>
+<span id="cb6-9"><a href="#cb6-9"></a>    <span class="kw">if</span> (rightName != <span class="kw">null</span>)  <span class="co">// then the right term was a variable</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a>    {</span>
+<span id="cb6-11"><a href="#cb6-11"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(rightName, left);</span>
+<span id="cb6-12"><a href="#cb6-12"></a>    }</span>
+<span id="cb6-13"><a href="#cb6-13"></a>    <span class="co">// ...</span></span>
+<span id="cb6-14"><a href="#cb6-14"></a>}</span></code></pre></div>
+<p><code>Bind(name, value)</code> returns a substitution with the variable <code>name</code> bound to the term <code>value</code>. However! There are some important edge cases to watch out for which could result in breaking the invariant I mentioned above.</p>
+<ol type="1">
+<li>The term <code>value</code> could be the <em>same</em> variable as <code>name</code>. This would produce a substitution like <code>X := X</code> (that is, a do-nothing substitution), so we’ll just return an empty substitution in that case.</li>
+<li>The term <code>value</code> could mention the variable <code>name</code> somewhere inside it. This would produce as substitution like <code>X := foo(X)</code>. If you try and find a concrete value for <code>X</code> you’d end up with an infinitely long chain of <code>foo</code>s! Some systems allow infinite terms like this, but others disallow it by checking whether a variable occurs in the term it’s being bound to. This check is suitably called the <em>occurs check</em>.</li>
+</ol>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">private</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Bind&lt;T&gt;(<span class="dt">string</span> name, T value) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb7-2"><a href="#cb7-2"></a>{</span>
+<span id="cb7-3"><a href="#cb7-3"></a>    <span class="dt">var</span> valueName = value.<span class="fu">AsVariable</span>();</span>
+<span id="cb7-4"><a href="#cb7-4"></a>    <span class="kw">if</span> (valueName != <span class="kw">null</span> &amp;&amp; name == valueName)</span>
+<span id="cb7-5"><a href="#cb7-5"></a>    {</span>
+<span id="cb7-6"><a href="#cb7-6"></a>        <span class="kw">return</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
+<span id="cb7-7"><a href="#cb7-7"></a>    }</span>
+<span id="cb7-8"><a href="#cb7-8"></a>    <span class="kw">if</span> (value.<span class="fu">Variables</span>().<span class="fu">Contains</span>(name))</span>
+<span id="cb7-9"><a href="#cb7-9"></a>    {</span>
+<span id="cb7-10"><a href="#cb7-10"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;occurs check&quot;</span>);</span>
+<span id="cb7-11"><a href="#cb7-11"></a>    }</span>
+<span id="cb7-12"><a href="#cb7-12"></a>    <span class="kw">return</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>.<span class="fu">Add</span>(name, value);</span>
+<span id="cb7-13"><a href="#cb7-13"></a>}</span></code></pre></div>
+<h2 id="handling-non-variables">Handling Non-Variables</h2>
+<p>Let’s continue implementing <code>Unify</code>. At this point we know that neither <code>left</code> nor <code>right</code> are variables, so they must be either composite terms or leaf nodes. In either case, we need to check whether they match.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb8-2"><a href="#cb8-2"></a>{</span>
+<span id="cb8-3"><a href="#cb8-3"></a>    <span class="co">// ...</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
+<span id="cb8-5"><a href="#cb8-5"></a>    {</span>
+<span id="cb8-6"><a href="#cb8-6"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb8-7"><a href="#cb8-7"></a>    }</span>
+<span id="cb8-8"><a href="#cb8-8"></a>    <span class="co">// ...</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a>}</span></code></pre></div>
+<p>If they did match, it’s time to try matching up their children. (If the two nodes were leaf nodes, their list of children is empty, so the following code does nothing.)</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb9-2"><a href="#cb9-2"></a>{</span>
+<span id="cb9-3"><a href="#cb9-3"></a>    <span class="co">// ...</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a>    <span class="dt">var</span> leftChildren = left.<span class="fu">GetChildren</span>();</span>
+<span id="cb9-5"><a href="#cb9-5"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
+<span id="cb9-6"><a href="#cb9-6"></a>    <span class="kw">return</span> <span class="fu">Solve</span>(leftChildren, rightChildren);</span>
+<span id="cb9-7"><a href="#cb9-7"></a>}</span></code></pre></div>
+<h2 id="unifying-children-systems-of-equations">Unifying Children — Systems of Equations</h2>
+<p>Unifying the children means solving a <em>system</em> of equations. If more than one equation mentions the same variable, they have to agree on what that variable should be.</p>
+<p>The plain is to pair up the children in the two lists and try to unify each with their partner, building up a substitution as we go.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb10-2"><a href="#cb10-2"></a>{</span>
+<span id="cb10-3"><a href="#cb10-3"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
+<span id="cb10-4"><a href="#cb10-4"></a>    {</span>
+<span id="cb10-5"><a href="#cb10-5"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb10-6"><a href="#cb10-6"></a>    }</span>
+<span id="cb10-7"><a href="#cb10-7"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
+<span id="cb10-8"><a href="#cb10-8"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
+<span id="cb10-9"><a href="#cb10-9"></a>    {</span>
+<span id="cb10-10"><a href="#cb10-10"></a>        <span class="co">// ...</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a>    }</span>
+<span id="cb10-12"><a href="#cb10-12"></a>    <span class="kw">return</span> subst;</span>
+<span id="cb10-13"><a href="#cb10-13"></a>}</span></code></pre></div>
+<p>This loop requires some thinking. As you unify each pair of children, you learn something about the variables in the system of equations. These learnings need to be propagated to the other equations. So as we build our substitution we need to make sure to apply it to the remaining equations in the system. This propagates information from left to right, ensuring that you don’t encounter variables which have already been bound by earlier equations.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb11-2"><a href="#cb11-2"></a>{</span>
+<span id="cb11-3"><a href="#cb11-3"></a>    <span class="co">// ...</span></span>
+<span id="cb11-4"><a href="#cb11-4"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
+<span id="cb11-5"><a href="#cb11-5"></a>    {</span>
+<span id="cb11-6"><a href="#cb11-6"></a>        <span class="dt">var</span> newL = subst.<span class="fu">Apply</span>(l);</span>
+<span id="cb11-7"><a href="#cb11-7"></a>        <span class="dt">var</span> newR = subst.<span class="fu">Apply</span>(r);</span>
+<span id="cb11-8"><a href="#cb11-8"></a>        <span class="dt">var</span> newSubst = newL.<span class="fu">Unify</span>(newR);</span>
+<span id="cb11-9"><a href="#cb11-9"></a>        <span class="co">// ...</span></span>
+<span id="cb11-10"><a href="#cb11-10"></a>    }</span>
+<span id="cb11-11"><a href="#cb11-11"></a>    <span class="co">// ...</span></span>
+<span id="cb11-12"><a href="#cb11-12"></a>}</span></code></pre></div>
+<p>But we also need to propagate information from right to left. When you unify <code>f(X, Y)</code> with <code>f(Y, a)</code>, the first argument sets <code>X := Y</code>, but the second argument sets <code>Y := a</code>. Simply combining the two substitutions results in <code>X := Y; Y := a</code> which breaks our invariant that bound variables don’t appear inside a substitution. When you combine two substitutions, you need to <code>Apply</code> the second substitution to the terms inside the first one.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb12-2"><a href="#cb12-2"></a>{</span>
+<span id="cb12-3"><a href="#cb12-3"></a>    <span class="co">// ...</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
+<span id="cb12-5"><a href="#cb12-5"></a>    {</span>
+<span id="cb12-6"><a href="#cb12-6"></a>        <span class="co">// ...</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a>        subst = subst.<span class="fu">Compose</span>(newSubst);</span>
+<span id="cb12-8"><a href="#cb12-8"></a>    }</span>
+<span id="cb12-9"><a href="#cb12-9"></a>    <span class="co">// ...</span></span>
+<span id="cb12-10"><a href="#cb12-10"></a>}</span>
+<span id="cb12-11"><a href="#cb12-11"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Compose&lt;T&gt;(</span>
+<span id="cb12-12"><a href="#cb12-12"></a>    <span class="kw">this</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; left,</span>
+<span id="cb12-13"><a href="#cb12-13"></a>    ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; right</span>
+<span id="cb12-14"><a href="#cb12-14"></a>) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb12-15"><a href="#cb12-15"></a>    =&gt; left</span>
+<span id="cb12-16"><a href="#cb12-16"></a>        .<span class="fu">Select</span>(kvp =&gt; <span class="kw">new</span> KeyValuePair&lt;<span class="dt">string</span>, T&gt;(kvp.<span class="fu">Key</span>, right.<span class="fu">Apply</span>(kvp.<span class="fu">Value</span>)))</span>
+<span id="cb12-17"><a href="#cb12-17"></a>        .<span class="fu">Where</span>(kvp =&gt; !(kvp.<span class="fu">Value</span> <span class="kw">is</span> Variable v &amp;&amp; v.<span class="fu">Name</span> == kvp.<span class="fu">Key</span>))</span>
+<span id="cb12-18"><a href="#cb12-18"></a>        .<span class="fu">Concat</span>(right)</span>
+<span id="cb12-19"><a href="#cb12-19"></a>        .<span class="fu">ToImmutableDictionary</span>();</span></code></pre></div>
+<p>Note <code>right.Apply(kvp.Value)</code> inside the <code>Select</code>. This can sometimes result in substitution entries of the form <code>X := X</code> (for example when unifying <code>f(X, Y)</code> with <code>f(Y, X)</code>), so I’m just filtering them out with <code>Where</code>.</p>
+<p>That’s the whole algorithm! I’ll repeat <code>Unify</code> and <code>Solve</code> in full:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb13-2"><a href="#cb13-2"></a>{</span>
+<span id="cb13-3"><a href="#cb13-3"></a>    <span class="dt">var</span> leftName = left.<span class="fu">AsVariable</span>();</span>
+<span id="cb13-4"><a href="#cb13-4"></a>    <span class="kw">if</span> (leftName != <span class="kw">null</span>)</span>
+<span id="cb13-5"><a href="#cb13-5"></a>    {</span>
+<span id="cb13-6"><a href="#cb13-6"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(leftName, right);</span>
+<span id="cb13-7"><a href="#cb13-7"></a>    }</span>
+<span id="cb13-8"><a href="#cb13-8"></a>    <span class="dt">var</span> rightName = right.<span class="fu">AsVariable</span>();</span>
+<span id="cb13-9"><a href="#cb13-9"></a>    <span class="kw">if</span> (rightName != <span class="kw">null</span>)</span>
+<span id="cb13-10"><a href="#cb13-10"></a>    {</span>
+<span id="cb13-11"><a href="#cb13-11"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(rightName, left);</span>
+<span id="cb13-12"><a href="#cb13-12"></a>    }</span>
+<span id="cb13-13"><a href="#cb13-13"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
+<span id="cb13-14"><a href="#cb13-14"></a>    {</span>
+<span id="cb13-15"><a href="#cb13-15"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb13-16"><a href="#cb13-16"></a>    }</span>
+<span id="cb13-17"><a href="#cb13-17"></a>    <span class="dt">var</span> leftChildren = left.<span class="fu">GetChildren</span>();</span>
+<span id="cb13-18"><a href="#cb13-18"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
+<span id="cb13-19"><a href="#cb13-19"></a>    <span class="kw">return</span> <span class="fu">Solve</span>(leftChildren, rightChildren);</span>
+<span id="cb13-20"><a href="#cb13-20"></a>}</span>
+<span id="cb13-21"><a href="#cb13-21"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
+<span id="cb13-22"><a href="#cb13-22"></a>{</span>
+<span id="cb13-23"><a href="#cb13-23"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
+<span id="cb13-24"><a href="#cb13-24"></a>    {</span>
+<span id="cb13-25"><a href="#cb13-25"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb13-26"><a href="#cb13-26"></a>    }</span>
+<span id="cb13-27"><a href="#cb13-27"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
+<span id="cb13-28"><a href="#cb13-28"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
+<span id="cb13-29"><a href="#cb13-29"></a>    {</span>
+<span id="cb13-30"><a href="#cb13-30"></a>        <span class="dt">var</span> newL = subst.<span class="fu">Apply</span>(l);</span>
+<span id="cb13-31"><a href="#cb13-31"></a>        <span class="dt">var</span> newR = subst.<span class="fu">Apply</span>(r);</span>
+<span id="cb13-32"><a href="#cb13-32"></a>        <span class="dt">var</span> newSubst = newL.<span class="fu">Unify</span>(newR);</span>
+<span id="cb13-33"><a href="#cb13-33"></a>        subst = subst.<span class="fu">Compose</span>(newSubst);</span>
+<span id="cb13-34"><a href="#cb13-34"></a>    }</span>
+<span id="cb13-35"><a href="#cb13-35"></a>    <span class="kw">return</span> subst;</span>
+<span id="cb13-36"><a href="#cb13-36"></a>}</span></code></pre></div>
+<p>A quick test of one of our examples:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span>(<span class="dt">string</span>[] args)</span>
+<span id="cb14-2"><a href="#cb14-2"></a>{</span>
+<span id="cb14-3"><a href="#cb14-3"></a>    <span class="dt">var</span> left = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(X), a)&quot;</span>);</span>
+<span id="cb14-4"><a href="#cb14-4"></a>    <span class="dt">var</span> right = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(Y), X)&quot;</span>);</span>
+<span id="cb14-5"><a href="#cb14-5"></a></span>
+<span id="cb14-6"><a href="#cb14-6"></a>    <span class="dt">var</span> subst = left.<span class="fu">Unify</span>(right);</span>
+<span id="cb14-7"><a href="#cb14-7"></a></span>
+<span id="cb14-8"><a href="#cb14-8"></a>    Console.<span class="fu">WriteLine</span>(<span class="dt">string</span>.<span class="fu">Join</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>, subst.<span class="fu">Select</span>(kvp =&gt; kvp.<span class="fu">Key</span> + <span class="st">&quot; := &quot;</span> + kvp.<span class="fu">Value</span>)));</span>
+<span id="cb14-9"><a href="#cb14-9"></a>    <span class="co">// prints out:</span></span>
+<span id="cb14-10"><a href="#cb14-10"></a>    <span class="co">// X := a</span></span>
+<span id="cb14-11"><a href="#cb14-11"></a>    <span class="co">// Y := a</span></span>
+<span id="cb14-12"><a href="#cb14-12"></a></span>
+<span id="cb14-13"><a href="#cb14-13"></a>    <span class="dt">var</span> newLeft = subst.<span class="fu">Apply</span>(left);</span>
+<span id="cb14-14"><a href="#cb14-14"></a>    <span class="dt">var</span> newRight = subst.<span class="fu">Apply</span>(right);</span>
+<span id="cb14-15"><a href="#cb14-15"></a></span>
+<span id="cb14-16"><a href="#cb14-16"></a>    Console.<span class="fu">WriteLine</span>(newLeft);</span>
+<span id="cb14-17"><a href="#cb14-17"></a>    Console.<span class="fu">WriteLine</span>(newRight);</span>
+<span id="cb14-18"><a href="#cb14-18"></a>    <span class="co">// both print out f(g(a), a)</span></span>
+<span id="cb14-19"><a href="#cb14-19"></a>}</span></code></pre></div>
+<p>Some exercises you could try:</p>
+<ul>
+<li>This implementation does a lot of <code>Apply</code>ing substitutions to terms, specifically in <code>Solve</code> and <code>Compose</code>.
+<ul>
+<li>Since <code>Rewrite</code> is linear in the size of the tree (it visits every node), what’s the complexity of <code>Unify</code>?</li>
+<li>Can you make it more efficient?
+<ul>
+<li>Hint 1: you need to relax the invariant that substitutions can’t contain bound variables.</li>
+<li>Hint 2: you’ll need to tweak <code>Bind</code> to avoid <a href="https://norvig.com/unify-bug.pdf">a common bug</a>.</li>
+<li>Hint 3: <code>Apply</code>ing a substitution to a term will no longer eliminate all the bound variables inside the term. Try using <a href="https://www.benjamin.pizza/Sawmill/v3.1.0/api/Sawmill.Rewritable.html#Sawmill_Rewritable_RewriteIter__1___0_System_Func___0___0__"><code>RewriteIter</code></a> to reestablish that invariant.</li>
+</ul></li>
+</ul></li>
+<li><code>IUnifiable</code> assumes that variables can always be represented by strings. Many practical programming language implementations use richer data structures than strings (such as variables tagged with their scope) to represent variables. Can you change this design to break the dependency on strings? What API usability issues do you encounter?</li>
+</ul>
+<p>All of this code can be found in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the <a href="https://github.com/benjamin-hodgson/Amateurlog/blob/master/Unification.cs"><code>Unification.cs</code></a> and <a href="https://github.com/benjamin-hodgson/Amateurlog/blob/master/Syntax.Unification.cs"><code>Syntax.Unification.cs</code></a> files. In the final part of this series, we’ll apply unification to build Prolog’s rules engine.</p>
+
+<section class="comments">
+    <h1>Comments</h1>
+
+    <ol class="comments-list">
+        
+            <li class="comment">
+    
+        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on December 15, 2019</h2>
+    
+    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2019-12-15-generic-unification-with-sawmill/example.md">send me a pull request</a>.</p></div>
+</li>
+        
+    </ol>
+</section>
+]]></summary>
+</entry>
+<entry>
     <title>Parsing Prolog with Pidgin</title>
     <link href="http://www.benjamin.pizza/posts/2019-12-08-parsing-prolog-with-pidgin.html" />
     <id>http://www.benjamin.pizza/posts/2019-12-08-parsing-prolog-with-pidgin.html</id>
@@ -1993,369 +2333,6 @@ p r o <b>g</b> r a m m i n g
         <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on January 10, 2018</h2>
     
     <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2018-01-10-zip-folding/example.md">send me a pull request</a>.</p></div>
-</li>
-        
-    </ol>
-</section>
-]]></summary>
-</entry>
-<entry>
-    <title>Functor Functors</title>
-    <link href="http://www.benjamin.pizza/posts/2017-12-15-functor-functors.html" />
-    <id>http://www.benjamin.pizza/posts/2017-12-15-functor-functors.html</id>
-    <published>2017-12-15T00:00:00Z</published>
-    <updated>2017-12-15T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="info">
-    Posted on December 15, 2017
-    
-</div>
-
-<p>You can teach a new dog old tricks.</p>
-<p>One of the fun things about category theory is that once you’ve learned an idea in one context it’s easy to apply it to another one. Of the numerous categories available to Haskell programmers, <strong>Hask</strong>, the category of Haskell types and functions, gets the lion’s share of the attention. Working with standard abstractions in more overlooked categories is a great way to reuse ideas: it makes you look clever, like you’ve invented something new, but actually all you’ve done is put the building blocks together differently. I won’t tell if you don’t.</p>
-<h2 id="templates-reusable-records">Templates: Reusable Records</h2>
-<p>Every now and then I’ll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and “draft” checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">data</span> <span class="dt">CardType</span> <span class="ot">=</span> <span class="dt">Visa</span> <span class="op">|</span> <span class="dt">AmEx</span> <span class="op">|</span> <span class="dt">Mastercard</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">data</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">Form</span> {</span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="ot">    form_email ::</span> <span class="dt">Text</span>,</span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="ot">    form_cardType ::</span> <span class="dt">CardType</span>,</span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="ot">    form_cardNumber ::</span> <span class="dt">Text</span>,</span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="ot">    form_cardExpiry ::</span> <span class="dt">Day</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>}</span>
-<span id="cb1-9"><a href="#cb1-9"></a></span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="kw">data</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">DraftForm</span> {</span>
-<span id="cb1-11"><a href="#cb1-11"></a><span class="ot">    draftForm_email ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
-<span id="cb1-12"><a href="#cb1-12"></a><span class="ot">    draftForm_cardType ::</span> <span class="dt">Maybe</span> <span class="dt">CardType</span>,</span>
-<span id="cb1-13"><a href="#cb1-13"></a><span class="ot">    draftForm_cardNumber ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
-<span id="cb1-14"><a href="#cb1-14"></a><span class="ot">    draftForm_cardExpiry ::</span> <span class="dt">Maybe</span> <span class="dt">Day</span></span>
-<span id="cb1-15"><a href="#cb1-15"></a>}</span>
-<span id="cb1-16"><a href="#cb1-16"></a></span>
-<span id="cb1-17"><a href="#cb1-17"></a><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></span>
-<span id="cb1-18"><a href="#cb1-18"></a>toForm (<span class="dt">DraftForm</span></span>
-<span id="cb1-19"><a href="#cb1-19"></a>    (<span class="dt">Just</span> email)</span>
-<span id="cb1-20"><a href="#cb1-20"></a>    (<span class="dt">Just</span> cardType)</span>
-<span id="cb1-21"><a href="#cb1-21"></a>    (<span class="dt">Just</span> cardNumber)</span>
-<span id="cb1-22"><a href="#cb1-22"></a>    (<span class="dt">Just</span> cardExpiry)) <span class="ot">=</span> <span class="dt">Just</span> <span class="op">$</span></span>
-<span id="cb1-23"><a href="#cb1-23"></a>        <span class="dt">Form</span> email cardType cardNumber cardExpiry</span>
-<span id="cb1-24"><a href="#cb1-24"></a>toForm _ <span class="ot">=</span> <span class="dt">Nothing</span></span></code></pre></div>
-<p>Now, the standard trick to de-duplicate these two types is to derive both from what I’ll call a <em>template</em> type, wrapping each field of the template in some type constructor <code>f</code>. You recover <code>Form</code> by setting <code>f</code> to the boring <code>Identity</code> functor, and you get <code>DraftForm</code> by setting <code>f</code> to <code>Maybe</code>.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">data</span> <span class="dt">FormTemplate</span> f <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="ot">    _email ::</span> f <span class="dt">Text</span>,</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="ot">    _cardType ::</span> f <span class="dt">CardType</span>,</span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="ot">    _cardNumber ::</span> f <span class="dt">Text</span>,</span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="ot">    _cardExpiry ::</span> f <span class="dt">Day</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>}</span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">type</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="dt">Identity</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="dt">Maybe</span></span></code></pre></div>
-<p>So a template is a record type parameterised by a type constructor. It’ll generally have a kind of <code>(* -&gt; *) -&gt; *</code>. The fields of the record are the type constructor applied to a variety of different type arguments. Working with a template typically involves coming up with an interesting type constructor <code>(* -&gt; *)</code> and plugging it in to get interestingly-typed fields. You can think of a record as a container of <code>f</code>s.</p>
-<p>This trick has become Haskell folklore - I couldn’t tell you where I first saw it - but I’ve only seen a few people talk about what happens when you treat templates as first class citizens. To get used to this style, a simple example is giving names to specific instantiations of arbitrary templates:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">type</span> <span class="dt">Record</span> t <span class="ot">=</span> t <span class="dt">Identity</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">type</span> <span class="dt">Partial</span> t <span class="ot">=</span> t <span class="dt">Maybe</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">type</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">FormTemplate</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">Partial</span> <span class="dt">FormTemplate</span></span></code></pre></div>
-<p>The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I’ll be taking familiar tools for working with containers of <em>values</em> - <code>Functor</code>, <code>Traversable</code>, <code>Representable</code> - and applying them to the context of containers of <em>functors</em>.</p>
-<h2 id="functors-from-the-category-of-endofunctors">Functors from the Category of Endofunctors</h2>
-<p>In Haskell, categories are represented as a <em>kind</em> <code>k</code> of objects and a <em>type constructor</em> <code>c :: k -&gt; k -&gt; *</code> of morphisms between those objects. If the category <code>C</code> has objects in <code>k1</code> and morphisms in <code>c</code>, and <code>D</code> has objects in <code>k2</code> and morphisms in <code>d</code>, then a functor from <code>C</code> to <code>D</code> is a type constructor <code>f :: k1 -&gt; k2</code> mapping objects paired with an operation <code>fmap :: c a b -&gt; d (f a) (f b)</code> mapping the morphisms. The standard <code>Functor</code> class is for <em>endofunctors on <strong>Hask</strong></em> - the special case in which <code>k1 ~ k2 ~ *</code> and <code>c ~ d ~ (-&gt;)</code>.</p>
-<p><img src="/images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" width="900" /></p>
-<p>Given two categories <code>C</code> and <code>D</code>, you can construct the category of functors between <code>C</code> and <code>D</code>, written as <code>[C, D]</code>. Objects in this category are functors from <code>C</code> to <code>D</code>, and morphisms are natural transformations between those functors. Since <code>[C, D]</code> is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that’d be a type of kind <code>(k1 -&gt; k2) -&gt; k3</code>. I’ll call such types <em>functor functors</em>.</p>
-<p>We’re talking about record templates of kind <code>(* -&gt; *) -&gt; *</code>. This fits the pattern of a functor from the functor category, with <code>k1 ~ k2 ~ k3 ~ *</code>. So the functor category in question is the category of endofunctors on <strong>Hask</strong> (that is, members of the standard <code>Functor</code> class), and the destination category is <strong>Hask</strong>. So it’s reasonable to expect record templates to be functorial in their argument:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">-- natural transformations between functors f and g</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">type</span> f <span class="op">~&gt;</span> g <span class="ot">=</span> <span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x</span>
-<span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="co">-- &quot;functor functors&quot;, functors from the functor category</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="kw">class</span> <span class="dt">FFunctor</span> f <span class="kw">where</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="ot">    ffmap ::</span> (<span class="dt">Functor</span> g, <span class="dt">Functor</span> h) <span class="ot">=&gt;</span> (g <span class="op">~&gt;</span> h) <span class="ot">-&gt;</span> f g <span class="ot">-&gt;</span> f h</span>
-<span id="cb4-7"><a href="#cb4-7"></a></span>
-<span id="cb4-8"><a href="#cb4-8"></a><span class="kw">instance</span> <span class="dt">FFunctor</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>    ffmap eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</span>
-<span id="cb4-10"><a href="#cb4-10"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>            (eta email)</span>
-<span id="cb4-12"><a href="#cb4-12"></a>            (eta cardType)</span>
-<span id="cb4-13"><a href="#cb4-13"></a>            (eta cardNumber)</span>
-<span id="cb4-14"><a href="#cb4-14"></a>            (eta cardExpiry)</span></code></pre></div>
-<p><code>FFunctor</code> comes with the usual functor laws. The only difference is the types.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a><span class="co">-- identity</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>ffmap <span class="fu">id</span> <span class="ot">=</span> <span class="fu">id</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="co">-- composition</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>ffmap (eta <span class="op">.</span> phi) <span class="ot">=</span> ffmap eta <span class="op">.</span> ffmap phi</span></code></pre></div>
-<p><img src="/images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" width="900" /></p>
-<p><code>ffmap</code> encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor <code>f</code> into <code>g</code>, then you can map a record of <code>f</code>s to a record of <code>g</code>s by embedding each <code>f</code>. (This is also sometimes called “hoisting”.) For example, the boring <code>Identity</code> functor can be embedded into an arbitrary <code>Applicative</code> by injecting the contained value using <code>pure</code>. We can use this to turn a total record into a partial one:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="ot">generalise ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Identity</span> a <span class="ot">-&gt;</span> f a</span>
-<span id="cb6-2"><a href="#cb6-2"></a>generalise (<span class="dt">Identity</span> x) <span class="ot">=</span> <span class="fu">pure</span> x</span>
-<span id="cb6-3"><a href="#cb6-3"></a></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="ot">toPartial ::</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t</span>
-<span id="cb6-5"><a href="#cb6-5"></a>toPartial <span class="ot">=</span> ffmap generalise</span></code></pre></div>
-<h2 id="traversing-records">Traversing Records</h2>
-<p>Now that we have a new dog, it’s natural to ask which old tricks we can teach it. With the intuition that a template <code>t f</code> is like a container of <code>f</code>s, what does it mean to traverse such a container? <code>sequenceA :: Applicative f =&gt; t (f a) -&gt; f (t a)</code> takes a container of strategies to produce values and sequences them to get a strategy to produce a container of values. Replacing <em>value</em> with <em>functor</em> in the above sentence, it’s clear that we need to decide on a notion of “strategy to produce a functor”. <a href="https://stackoverflow.com/questions/44187945/what-should-a-higher-order-traversable-class-look-like">With thanks to Li-yao Xia</a>, the simplest of such notions is a regular applicative functor <code>a</code> returning a functorial value <code>g x</code> - that is, <code>Compose a g</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FTraversable</span> t <span class="kw">where</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="ot">    ftraverse ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">Applicative</span> a)</span>
-<span id="cb7-3"><a href="#cb7-3"></a>              <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> <span class="dt">Compose</span> a g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> a (t g)</span>
-<span id="cb7-4"><a href="#cb7-4"></a>    ftraverse eta <span class="ot">=</span> fsequence <span class="op">.</span> ffmap eta</span>
-<span id="cb7-5"><a href="#cb7-5"></a><span class="ot">    fsequence ::</span> (<span class="dt">Functor</span> f, <span class="dt">Applicative</span> a)</span>
-<span id="cb7-6"><a href="#cb7-6"></a>              <span class="ot">=&gt;</span> t (<span class="dt">Compose</span> a f) <span class="ot">-&gt;</span> a (t f)</span>
-<span id="cb7-7"><a href="#cb7-7"></a>    fsequence <span class="ot">=</span> ftraverse <span class="fu">id</span></span>
-<span id="cb7-8"><a href="#cb7-8"></a></span>
-<span id="cb7-9"><a href="#cb7-9"></a><span class="ot">ffmapDefault ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">FTraversable</span> t)</span>
-<span id="cb7-10"><a href="#cb7-10"></a>             <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
-<span id="cb7-11"><a href="#cb7-11"></a>ffmapDefault eta <span class="ot">=</span></span>
-<span id="cb7-12"><a href="#cb7-12"></a>    runIdentity <span class="op">.</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span> <span class="op">.</span> eta)</span>
-<span id="cb7-13"><a href="#cb7-13"></a></span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="ot">fsequence&#39; ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</span>
-<span id="cb7-15"><a href="#cb7-15"></a>fsequence&#39; <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span></code></pre></div>
-<p>The <code>FTraversable</code> laws come about by adjusting the <code>Traversable</code> laws to add some <code>Compose</code>-bookkeeping.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">-- naturality</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a>nu <span class="op">.</span> ftraverse eta <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> nu <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
-<span id="cb8-3"><a href="#cb8-3"></a><span class="co">-- for any applicative transformation nu</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a></span>
-<span id="cb8-5"><a href="#cb8-5"></a><span class="co">-- identity</span></span>
-<span id="cb8-6"><a href="#cb8-6"></a>ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span>) <span class="ot">=</span> <span class="dt">Identity</span></span>
-<span id="cb8-7"><a href="#cb8-7"></a></span>
-<span id="cb8-8"><a href="#cb8-8"></a><span class="co">-- composition</span></span>
-<span id="cb8-9"><a href="#cb8-9"></a>ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> (getCompose<span class="op">.</span>phi) <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
-<span id="cb8-10"><a href="#cb8-10"></a>    <span class="ot">=</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> (ftraverse phi) <span class="op">.</span> ftraverse eta</span></code></pre></div>
-<p>Implementations of <code>traverse</code> look like implementations of <code>fmap</code> but in an applicative context. Likewise, implementations of <code>ftraverse</code> look like implementations of <code>ffmap</code> in an applicative context, with a few <code>getCompose</code>s scattered around.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">instance</span> <span class="dt">FTraversable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>    ftraverse eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</span>
-<span id="cb9-3"><a href="#cb9-3"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="op">&lt;$&gt;</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a>            (getCompose <span class="op">$</span> eta email) <span class="op">&lt;*&gt;</span></span>
-<span id="cb9-5"><a href="#cb9-5"></a>            (getCompose <span class="op">$</span> eta cardType) <span class="op">&lt;*&gt;</span></span>
-<span id="cb9-6"><a href="#cb9-6"></a>            (getCompose <span class="op">$</span> eta cardNumber) <span class="op">&lt;*&gt;</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a>            (getCompose <span class="op">$</span> eta cardExpiry)</span></code></pre></div>
-<p>This is where things start to get interesting. The <code>toForm</code> function, which converts a draft form to a regular form if all of its fields have been filled in, can be defined tersely in terms of <code>ftraverse</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="ot">toRecord ::</span> <span class="dt">FTraversable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Record</span> t)</span>
-<span id="cb10-2"><a href="#cb10-2"></a>toRecord <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span>
-<span id="cb10-3"><a href="#cb10-3"></a></span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></span>
-<span id="cb10-5"><a href="#cb10-5"></a>toForm <span class="ot">=</span> toRecord</span></code></pre></div>
-<p>Here’s another example: a generic program, defined by analogy to <code>Foldable</code>’s <code>foldMap</code>, to collapse the fields of a record into a monoidal value. Note that <code>f () -&gt; m</code> is isomorphic to, but simpler than, <code>forall x. f x -&gt; m</code>. Annoyingly, we have to give a type signature to <code>mkConst</code> to resolve the ambiguity over <code>g</code> in the call to <code>ftraverse</code>. I’m picking <code>Empty</code> as a way of demonstrating that I have nothing up my sleeves.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">data</span> <span class="dt">Empty</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a></span>
-<span id="cb11-3"><a href="#cb11-3"></a><span class="ot">ffoldMap ::</span> <span class="kw">forall</span> f t m<span class="op">.</span> (<span class="dt">Monoid</span> m, <span class="dt">Functor</span> f, <span class="dt">FTraversable</span> t)</span>
-<span id="cb11-4"><a href="#cb11-4"></a>         <span class="ot">=&gt;</span> (f () <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> m</span>
-<span id="cb11-5"><a href="#cb11-5"></a>ffoldMap f <span class="ot">=</span> getConst <span class="op">.</span> ftraverse mkConst</span>
-<span id="cb11-6"><a href="#cb11-6"></a>    <span class="kw">where</span></span>
-<span id="cb11-7"><a href="#cb11-7"></a>        <span class="co">-- using ScopedTypeVariables to bind f</span></span>
-<span id="cb11-8"><a href="#cb11-8"></a><span class="ot">        mkConst ::</span> f x <span class="ot">-&gt;</span> <span class="dt">Compose</span> (<span class="dt">Const</span> m) <span class="dt">Empty</span> x</span>
-<span id="cb11-9"><a href="#cb11-9"></a>        mkConst <span class="ot">=</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Const</span> <span class="op">.</span> f <span class="op">.</span> (<span class="op">$&gt;</span> ())</span></code></pre></div>
-<h2 id="zipping-templates">Zipping templates</h2>
-<p>Given a pair of records of the same shape <code>t</code>, we should be able to combine them point-wise, matching up the fields of each: <code>fzip :: t f -&gt; t g -&gt; t (Product f g)</code>. In <strong>Hask</strong>, “combining point-wise” is exactly what the “reader” applicative <code>(-&gt;) r</code> does, so any functor which enjoys an isomorphism to <code>(-&gt;) r</code> for some <code>r</code> has at least a zippy <code>Applicative</code> instance. Such functors are called <em>representable functors</em> and they are members of the class <a href="https://hackage.haskell.org/package/adjunctions-4.3/docs/Data-Functor-Rep.html#t:Representable"><code>Representable</code></a>.</p>
-<p>Of course, we’re working with functors from the functor category, so the relevant notion of <code>Representable</code> will need a little adjustment. Instead of an isomorphism to a function <code>(-&gt;) r</code> we’ll use an isomorphism to a natural transformation <code>(~&gt;) r</code>.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FRepresentable</span> t <span class="kw">where</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a>    <span class="kw">type</span> <span class="dt">FRep</span><span class="ot"> t ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span></span>
-<span id="cb12-3"><a href="#cb12-3"></a><span class="ot">    ftabulate ::</span> (<span class="dt">FRep</span> t <span class="op">~&gt;</span> f) <span class="ot">-&gt;</span> t f</span>
-<span id="cb12-4"><a href="#cb12-4"></a><span class="ot">    findex ::</span> t f <span class="ot">-&gt;</span> <span class="dt">FRep</span> t a <span class="ot">-&gt;</span> f a</span>
-<span id="cb12-5"><a href="#cb12-5"></a></span>
-<span id="cb12-6"><a href="#cb12-6"></a><span class="ot">fzipWith ::</span> <span class="dt">FRepresentable</span> t</span>
-<span id="cb12-7"><a href="#cb12-7"></a>         <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x)</span>
-<span id="cb12-8"><a href="#cb12-8"></a>         <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h</span>
-<span id="cb12-9"><a href="#cb12-9"></a>fzipWith f t u <span class="ot">=</span> ftabulate <span class="op">$</span> \r <span class="ot">-&gt;</span> f (findex t r) (findex u r)</span>
-<span id="cb12-10"><a href="#cb12-10"></a></span>
-<span id="cb12-11"><a href="#cb12-11"></a><span class="ot">fzipWith3 ::</span> <span class="dt">FRepresentable</span> t</span>
-<span id="cb12-12"><a href="#cb12-12"></a>          <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x <span class="ot">-&gt;</span> k x)</span>
-<span id="cb12-13"><a href="#cb12-13"></a>          <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h <span class="ot">-&gt;</span> t k</span>
-<span id="cb12-14"><a href="#cb12-14"></a>fzipWith3 f t u v <span class="ot">=</span> ftabulate <span class="op">$</span></span>
-<span id="cb12-15"><a href="#cb12-15"></a>    \r <span class="ot">-&gt;</span> f (findex t r) (findex u r) (findex v r)</span>
-<span id="cb12-16"><a href="#cb12-16"></a></span>
-<span id="cb12-17"><a href="#cb12-17"></a><span class="ot">fzip ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t (<span class="dt">Product</span> f g)</span>
-<span id="cb12-18"><a href="#cb12-18"></a>fzip <span class="ot">=</span> fzipWith <span class="dt">Pair</span></span></code></pre></div>
-<p>The laws for <code>FRepresentable</code> simply state that <code>ftabulate</code> and <code>findex</code> must witness an isomorphism:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="co">-- isomorphism</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>ftabulate <span class="op">.</span> findex <span class="ot">=</span> findex <span class="op">.</span> ftabulate <span class="ot">=</span> <span class="fu">id</span></span></code></pre></div>
-<p><code>FRep</code> will typically be a GADT: it tells you what type of value one should expect to find at a given position in a record.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">data</span> <span class="dt">FormTemplateRep</span> a <span class="kw">where</span></span>
-<span id="cb14-2"><a href="#cb14-2"></a>    <span class="dt">Email</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></span>
-<span id="cb14-3"><a href="#cb14-3"></a>    <span class="dt">CardType</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">CardType</span></span>
-<span id="cb14-4"><a href="#cb14-4"></a>    <span class="dt">CardNumber</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></span>
-<span id="cb14-5"><a href="#cb14-5"></a>    <span class="dt">CardExpiry</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Day</span></span>
-<span id="cb14-6"><a href="#cb14-6"></a></span>
-<span id="cb14-7"><a href="#cb14-7"></a><span class="kw">instance</span> <span class="dt">FRepresentable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb14-8"><a href="#cb14-8"></a>    <span class="kw">type</span> <span class="dt">FRep</span> <span class="dt">FormTemplate</span> <span class="ot">=</span> <span class="dt">FormTemplateRep</span></span>
-<span id="cb14-9"><a href="#cb14-9"></a></span>
-<span id="cb14-10"><a href="#cb14-10"></a>    ftabulate eta <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
-<span id="cb14-11"><a href="#cb14-11"></a>        (eta <span class="dt">Email</span>)</span>
-<span id="cb14-12"><a href="#cb14-12"></a>        (eta <span class="dt">CardType</span>)</span>
-<span id="cb14-13"><a href="#cb14-13"></a>        (eta <span class="dt">CardNumber</span>)</span>
-<span id="cb14-14"><a href="#cb14-14"></a>        (eta <span class="dt">CardExpiry</span>)</span>
-<span id="cb14-15"><a href="#cb14-15"></a>    </span>
-<span id="cb14-16"><a href="#cb14-16"></a>    findex p <span class="dt">Email</span> <span class="ot">=</span> _email p</span>
-<span id="cb14-17"><a href="#cb14-17"></a>    findex p <span class="dt">CardType</span> <span class="ot">=</span> _cardType p</span>
-<span id="cb14-18"><a href="#cb14-18"></a>    findex p <span class="dt">CardNumber</span> <span class="ot">=</span> _cardNumber p</span>
-<span id="cb14-19"><a href="#cb14-19"></a>    findex p <span class="dt">CardExpiry</span> <span class="ot">=</span> _cardExpiry p</span></code></pre></div>
-<p>Something useful you can do with this infrastructure: filling in defaults for missing values of a partial record. Or, looking at it the other way, overriding certain parts of a record.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1"></a><span class="ot">with ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</span>
-<span id="cb15-2"><a href="#cb15-2"></a>with <span class="ot">=</span> fzipWith override</span>
-<span id="cb15-3"><a href="#cb15-3"></a>    <span class="kw">where</span> override x <span class="dt">Nothing</span> <span class="ot">=</span> x</span>
-<span id="cb15-4"><a href="#cb15-4"></a>          override _ (<span class="dt">Just</span> y) <span class="ot">=</span> <span class="dt">Identity</span> y</span>
-<span id="cb15-5"><a href="#cb15-5"></a></span>
-<span id="cb15-6"><a href="#cb15-6"></a><span class="ot">fillInDefaults ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</span>
-<span id="cb15-7"><a href="#cb15-7"></a>fillInDefaults t defaults <span class="ot">=</span> defaults <span class="ot">`with`</span> t</span></code></pre></div>
-<p>You can also make a record of <code>Monoid</code> values into a <code>Monoid</code>, once again by zipping.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">newtype</span> <span class="dt">Wrap</span> t f <span class="ot">=</span> <span class="dt">Wrap</span> {<span class="ot"> unWrap ::</span> t f }</span>
-<span id="cb16-2"><a href="#cb16-2"></a>makeWrapped &#39;<span class="dt">&#39;Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></span>
-<span id="cb16-3"><a href="#cb16-3"></a></span>
-<span id="cb16-4"><a href="#cb16-4"></a><span class="kw">instance</span> (<span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> c) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Wrap</span> t (<span class="dt">Const</span> c)) <span class="kw">where</span></span>
-<span id="cb16-5"><a href="#cb16-5"></a>    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> ftabulate (<span class="fu">const</span> (<span class="dt">Const</span> <span class="fu">mempty</span>))</span>
-<span id="cb16-6"><a href="#cb16-6"></a>    <span class="dt">Wrap</span> t <span class="ot">`mappend`</span> <span class="dt">Wrap</span> u <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> fzipWith <span class="fu">mappend</span> t u</span></code></pre></div>
-<h2 id="lenses">Lenses</h2>
-<p>Rather than come up with a new notion of <code>Lens</code> formulated in terms of <code>FFunctor</code>, we can reuse the standard <code>Lens</code> type as long as we’re careful about how polymorphic lenses should be. Specifically, a lens into a record template should express no opinion as to which functor the template should be instantiated with.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="ot">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="op">.</span> <span class="dt">Lens&#39;</span> (t f) (f a))</span></code></pre></div>
-<p>We can store a template’s lenses in an instance of the template itself!</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1"></a><span class="kw">type</span> <span class="dt">Lenses</span> t <span class="ot">=</span> t (<span class="dt">FLens</span> t)</span>
-<span id="cb18-2"><a href="#cb18-2"></a></span>
-<span id="cb18-3"><a href="#cb18-3"></a><span class="kw">class</span> <span class="dt">HasLenses</span> t <span class="kw">where</span></span>
-<span id="cb18-4"><a href="#cb18-4"></a><span class="ot">    lenses ::</span> <span class="dt">Lenses</span> t</span>
-<span id="cb18-5"><a href="#cb18-5"></a></span>
-<span id="cb18-6"><a href="#cb18-6"></a>makeLenses &#39;<span class="dt">&#39;FormTemplate</span></span>
-<span id="cb18-7"><a href="#cb18-7"></a><span class="kw">instance</span> <span class="dt">HasLenses</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb18-8"><a href="#cb18-8"></a>    lenses <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
-<span id="cb18-9"><a href="#cb18-9"></a>        _email <span class="ot">=</span> <span class="dt">FLens</span> email,</span>
-<span id="cb18-10"><a href="#cb18-10"></a>        _cardType <span class="ot">=</span> <span class="dt">FLens</span> cardType,</span>
-<span id="cb18-11"><a href="#cb18-11"></a>        _cardNumber <span class="ot">=</span> <span class="dt">FLens</span> cardNumber,</span>
-<span id="cb18-12"><a href="#cb18-12"></a>        _cardExpiry <span class="ot">=</span> <span class="dt">FLens</span> cardExpiry</span>
-<span id="cb18-13"><a href="#cb18-13"></a>    }</span></code></pre></div>
-<h2 id="compositional-validation">Compositional Validation</h2>
-<p>Now for an extended example: form validation. We’ll be making use of all of the tools from above - zipping, traversing, and mapping - to design a typed API for validating individual fields of a form.</p>
-<p><code>Either</code> isn’t a great choice for a validation monad, because <code>Either</code> aborts the computation at the first failure. You typically want to report all the errors in a form. Instead, we’ll be working with the following type, which is isomorphic to <code>Either</code> but with an <code>Applicative</code> instance which returns <em>all</em> of the failures in a given computation, combining the values using a <code>Monoid</code>. So it’s kind of a Frankensteinian mishmash of the <code>Either</code> and <code>Writer</code> applicatives.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1"></a><span class="kw">data</span> <span class="dt">Validation</span> e a <span class="ot">=</span> <span class="dt">Failure</span> e <span class="op">|</span> <span class="dt">Success</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></span>
-<span id="cb19-2"><a href="#cb19-2"></a></span>
-<span id="cb19-3"><a href="#cb19-3"></a><span class="kw">instance</span> <span class="dt">Bifunctor</span> <span class="dt">Validation</span> <span class="kw">where</span></span>
-<span id="cb19-4"><a href="#cb19-4"></a>    bimap f g (<span class="dt">Failure</span> e) <span class="ot">=</span> <span class="dt">Failure</span> (f e)</span>
-<span id="cb19-5"><a href="#cb19-5"></a>    bimap f g (<span class="dt">Success</span> x) <span class="ot">=</span> <span class="dt">Success</span> (g x)</span>
-<span id="cb19-6"><a href="#cb19-6"></a></span>
-<span id="cb19-7"><a href="#cb19-7"></a><span class="kw">instance</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="dt">Validation</span> e) <span class="kw">where</span></span>
-<span id="cb19-8"><a href="#cb19-8"></a>    <span class="fu">pure</span> <span class="ot">=</span> <span class="dt">Success</span></span>
-<span id="cb19-9"><a href="#cb19-9"></a>    <span class="dt">Success</span> f <span class="op">&lt;*&gt;</span> <span class="dt">Success</span> x <span class="ot">=</span> <span class="dt">Success</span> (f x)</span>
-<span id="cb19-10"><a href="#cb19-10"></a>    <span class="dt">Failure</span> e1 <span class="op">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="ot">=</span> <span class="dt">Failure</span> (e1 <span class="ot">`mappend`</span> e2)</span>
-<span id="cb19-11"><a href="#cb19-11"></a>    <span class="dt">Failure</span> e1 <span class="op">&lt;*&gt;</span> _ <span class="ot">=</span> <span class="dt">Failure</span> e1</span>
-<span id="cb19-12"><a href="#cb19-12"></a>    _ <span class="op">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="ot">=</span> <span class="dt">Failure</span> e2</span></code></pre></div>
-<p>This <code>Applicative</code> instance has no compatible <code>Monad</code> instance.</p>
-<p>We’ll build a library for validation processes which examine a single field of a record at a time. A validation rule for a field typed <code>a</code> is a function which takes an <code>a</code> and returns a <code>Validation e a</code>.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1"></a><span class="kw">newtype</span> <span class="dt">Validator</span> e a <span class="ot">=</span> <span class="dt">Validator</span> {<span class="ot"> runValidator ::</span> a <span class="ot">-&gt;</span> <span class="dt">Validation</span> e a }</span>
-<span id="cb20-2"><a href="#cb20-2"></a></span>
-<span id="cb20-3"><a href="#cb20-3"></a><span class="co">-- a validator which always succeeds</span></span>
-<span id="cb20-4"><a href="#cb20-4"></a><span class="ot">noop ::</span> <span class="dt">Validator</span> e a</span>
-<span id="cb20-5"><a href="#cb20-5"></a>noop <span class="ot">=</span> <span class="dt">Validator</span> <span class="dt">Success</span></span></code></pre></div>
-<p>If a given field has multiple validation rules, you can compose them under the assumption that each validator leaves its input unchanged.</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb21-1"><a href="#cb21-1"></a><span class="ot">(&amp;&gt;) ::</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a</span>
-<span id="cb21-2"><a href="#cb21-2"></a><span class="dt">Validator</span> f <span class="op">&amp;&gt;</span> <span class="dt">Validator</span> g <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \x <span class="ot">-&gt;</span> f x <span class="op">*&gt;</span> g x</span>
-<span id="cb21-3"><a href="#cb21-3"></a></span>
-<span id="cb21-4"><a href="#cb21-4"></a><span class="co">-- for example</span></span>
-<span id="cb21-5"><a href="#cb21-5"></a><span class="ot">emailValidator ::</span> <span class="dt">Validator</span> [<span class="dt">Text</span>] <span class="dt">Text</span></span>
-<span id="cb21-6"><a href="#cb21-6"></a>emailValidator <span class="ot">=</span> hasAtSymbol <span class="op">&amp;&gt;</span> hasTopLevelDomain</span>
-<span id="cb21-7"><a href="#cb21-7"></a>    <span class="kw">where</span></span>
-<span id="cb21-8"><a href="#cb21-8"></a>        hasAtSymbol <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \email <span class="ot">-&gt;</span> </span>
-<span id="cb21-9"><a href="#cb21-9"></a>            <span class="kw">if</span> <span class="st">&quot;@&quot;</span> <span class="ot">`isInfixOf`</span> email</span>
-<span id="cb21-10"><a href="#cb21-10"></a>            <span class="kw">then</span> <span class="dt">Success</span> email</span>
-<span id="cb21-11"><a href="#cb21-11"></a>            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;No @ in email&quot;</span>]</span>
-<span id="cb21-12"><a href="#cb21-12"></a>        hasTopLevelDomain <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \email <span class="ot">-&gt;</span></span>
-<span id="cb21-13"><a href="#cb21-13"></a>            <span class="kw">if</span> <span class="fu">any</span> (<span class="ot">`isSuffixOf`</span> email) topLevelDomains</span>
-<span id="cb21-14"><a href="#cb21-14"></a>            <span class="kw">then</span> <span class="dt">Success</span> email</span>
-<span id="cb21-15"><a href="#cb21-15"></a>            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;Invalid TLD&quot;</span>]</span>
-<span id="cb21-16"><a href="#cb21-16"></a>        topLevelDomains <span class="ot">=</span> [<span class="st">&quot;.com&quot;</span>, <span class="st">&quot;.org&quot;</span>, <span class="st">&quot;.co.uk&quot;</span>]  <span class="co">-- etc</span></span></code></pre></div>
-<p>The plan is to store these <code>Validator</code>s in a record template, zip them along an instance of the record itself, and then traverse the result to get either a validated record or a collection of errors. To make things interesting, we’ll store the validation results for a given field in the matching field of another record.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb22-1"><a href="#cb22-1"></a><span class="kw">type</span> <span class="dt">Validators</span> e t <span class="ot">=</span> t (<span class="dt">Validator</span> e)</span>
-<span id="cb22-2"><a href="#cb22-2"></a><span class="kw">type</span> <span class="dt">Errors</span> e t <span class="ot">=</span> t (<span class="dt">Const</span> e)</span>
-<span id="cb22-3"><a href="#cb22-3"></a></span>
-<span id="cb22-4"><a href="#cb22-4"></a><span class="co">-- turn a record of validators into a validator of records</span></span>
-<span id="cb22-5"><a href="#cb22-5"></a><span class="ot">validate ::</span> (<span class="dt">HasLenses</span> t, <span class="dt">FTraversable</span> t, <span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> e)</span>
-<span id="cb22-6"><a href="#cb22-6"></a>         <span class="ot">=&gt;</span> <span class="dt">Validators</span> e t</span>
-<span id="cb22-7"><a href="#cb22-7"></a>         <span class="ot">-&gt;</span> <span class="dt">Validator</span> (<span class="dt">Errors</span> e t) (<span class="dt">Record</span> t)</span>
-<span id="cb22-8"><a href="#cb22-8"></a>validate validators <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \record <span class="ot">-&gt;</span></span>
-<span id="cb22-9"><a href="#cb22-9"></a>    first unWrap <span class="op">$</span></span>
-<span id="cb22-10"><a href="#cb22-10"></a>    fsequence&#39; <span class="op">$</span></span>
-<span id="cb22-11"><a href="#cb22-11"></a>    fzipWith3 applyValidator lenses validators record</span>
-<span id="cb22-12"><a href="#cb22-12"></a>    <span class="kw">where</span></span>
-<span id="cb22-13"><a href="#cb22-13"></a>        applyValidator</span>
-<span id="cb22-14"><a href="#cb22-14"></a>            (<span class="dt">FLens</span> lens)</span>
-<span id="cb22-15"><a href="#cb22-15"></a>            (<span class="dt">Validator</span> validator)</span>
-<span id="cb22-16"><a href="#cb22-16"></a>            (<span class="dt">Identity</span> value) <span class="ot">=</span></span>
-<span id="cb22-17"><a href="#cb22-17"></a>                <span class="kw">let</span> setError e <span class="ot">=</span> <span class="fu">mempty</span> <span class="op">&amp;</span> _Wrapped&#39;<span class="op">.</span>lens<span class="op">.</span>_Wrapped&#39; <span class="op">.~</span> e</span>
-<span id="cb22-18"><a href="#cb22-18"></a>                <span class="kw">in</span> first setError <span class="op">$</span> validator value</span></code></pre></div>
-<p><code>applyValidator</code> takes a lens into a record field, a validator for that field and the value in that field. It applies the validator to the value; upon failure it stores the error message (<code>e</code>) in the correct field of the <code>Errors</code> record using the lens. <code>fzipWith3</code> handles the logic of running <code>applyValidator</code> for each field of the record, then <code>fsequence'</code> combines the resulting <code>Validation</code> applicative actions into a single one. So all of the errors from all of the fields are eventually collected into the matching fields of the <code>Errors</code> record and combined monoidally.</p>
-<p>A quick test, wherein I test validation on the email field:</p>
-<pre><code>ghci&gt; let formValidator = validate
-    $ FormTemplate emailValidator noop noop noop
-ghci&gt; let today = read &quot;2017-08-17&quot; :: Day
-
-ghci&gt; let form1 = FormTemplate
-    (Identity &quot;bhodgson@stackoverflow.com&quot;)
-    (Identity Visa)
-    (Identity &quot;1234567890123456&quot;)
-    (Identity today)
-ghci&gt; runValidator formValidator form1
-Success (FormTemplate {
-    _email = Identity &quot;bhodgson@stackoverflow.com&quot;,
-    _cardType = Identity Visa,
-    _cardNumber = Identity &quot;1234567890123456&quot;,
-    _cardExpiry = Identity 2017-08-17
-    })
-
-ghci&gt; let form2 = FormTemplate
-    (Identity &quot;notanemail&quot;)
-    (Identity Visa)
-    (Identity &quot;1234567890123456&quot;)
-    (Identity today)
-ghci&gt; runValidator formValidator form2
-Failure (FormTemplate {
-    _email = Const [&quot;No @ in email&quot;,&quot;Invalid TLD&quot;],
-    _cardType = Const [],
-    _cardNumber = Const [],
-    _cardExpiry = Const []
-    })</code></pre>
-<h2 id="code-review">Code review</h2>
-<p>So we have a categorical framework for working with records and templates. Other things fit into this framework, more or less neatly:</p>
-<ul>
-<li>Monad transformers are often functorial in their <code>m</code> argument.</li>
-<li><code>Fix f</code> (a “list of <code>f</code>s”, if you will) is also a functor functor, where <code>ffmap</code>ping represents a change of variables.</li>
-<li>Since the <code>Const</code>, <code>Sum</code>, <code>Product</code> and <code>Compose</code> type combinators are poly-kinded, they can be reused as functor functors too.</li>
-<li>Add another primitive <code>FFunctor</code> to apply a functor to a type, <code>newtype At a f = At { getAt :: f a }</code>, and you have a kit to build polynomial functor functors with which you can build templates and write generic programs.</li>
-</ul>
-<p>One design decision I made when developing the <code>FFunctor</code> class was to give <code>ffmap</code> a <code>(Functor f, Functor g)</code> constraint, so you can only <code>ffmap</code> between types that are in fact functors. This is mathematically principled in some sense, but it has certain engineering tradeoffs compared to an unconstrained type for <code>ffmap</code>. It enables more instances of <code>FFunctor</code> - for example, you can only write <code>Fix</code>’s <code>ffmap</code> with a <code>Functor</code> constraint for either the input or output type parameters - but it rules out certain usages of <code>ffmap</code>. You can’t <code>ffmap</code> over a template containing <code>Validator</code>s, for example, because <code>Validator</code> is not a <code>Functor</code>. I <em>didn’t</em> put the same <code>Functor</code> constraints into <code>FRepresentable</code>’s methods. An <code>FRep</code> type typically won’t be functorial - it’ll be GADT-like - so adding a <code>Functor (FRep t)</code> constraint would be far too restrictive.</p>
-<p>You’ll notice that the concept of an applicative functor functor is conspicuously absent from my presentation above. <code>FApplicative</code> would probably look something like this:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb24-1"><a href="#cb24-1"></a><span class="kw">newtype</span> (f <span class="op">:-&gt;</span> g) a <span class="ot">=</span> <span class="dt">Morph</span> {<span class="ot"> getMorph ::</span> f a <span class="ot">-&gt;</span> g a }</span>
-<span id="cb24-2"><a href="#cb24-2"></a></span>
-<span id="cb24-3"><a href="#cb24-3"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FApplicative</span> t <span class="kw">where</span></span>
-<span id="cb24-4"><a href="#cb24-4"></a><span class="ot">    fpure ::</span> (<span class="kw">forall</span> a<span class="op">.</span> f a) <span class="ot">-&gt;</span> t f</span>
-<span id="cb24-5"><a href="#cb24-5"></a><span class="ot">    fap ::</span> t (f <span class="op">:-&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
-<span id="cb24-6"><a href="#cb24-6"></a></span>
-<span id="cb24-7"><a href="#cb24-7"></a><span class="ot">fliftA ::</span> <span class="dt">FApplicative</span> t <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
-<span id="cb24-8"><a href="#cb24-8"></a>fliftA eta t <span class="ot">=</span> fpure (<span class="dt">Morph</span> eta) <span class="ot">`fap`</span> t</span>
-<span id="cb24-9"><a href="#cb24-9"></a></span>
-<span id="cb24-10"><a href="#cb24-10"></a><span class="kw">instance</span> <span class="dt">FApplicative</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb24-11"><a href="#cb24-11"></a>    fpure x <span class="ot">=</span> <span class="dt">FormTemplate</span> x x x x</span>
-<span id="cb24-12"><a href="#cb24-12"></a>    fap</span>
-<span id="cb24-13"><a href="#cb24-13"></a>        (<span class="dt">FormTemplate</span></span>
-<span id="cb24-14"><a href="#cb24-14"></a>            (<span class="dt">Morph</span> f1)</span>
-<span id="cb24-15"><a href="#cb24-15"></a>            (<span class="dt">Morph</span> f2)</span>
-<span id="cb24-16"><a href="#cb24-16"></a>            (<span class="dt">Morph</span> f3)</span>
-<span id="cb24-17"><a href="#cb24-17"></a>            (<span class="dt">Morph</span> f4))</span>
-<span id="cb24-18"><a href="#cb24-18"></a>        (<span class="dt">FormTemplate</span></span>
-<span id="cb24-19"><a href="#cb24-19"></a>            email</span>
-<span id="cb24-20"><a href="#cb24-20"></a>            cardType</span>
-<span id="cb24-21"><a href="#cb24-21"></a>            cardNumber</span>
-<span id="cb24-22"><a href="#cb24-22"></a>            cardExpiry)</span>
-<span id="cb24-23"><a href="#cb24-23"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
-<span id="cb24-24"><a href="#cb24-24"></a>            (f1 email)</span>
-<span id="cb24-25"><a href="#cb24-25"></a>            (f2 cardType)</span>
-<span id="cb24-26"><a href="#cb24-26"></a>            (f3 cardNumber)</span>
-<span id="cb24-27"><a href="#cb24-27"></a>            (f4 cardExpiry)</span></code></pre></div>
-<p><code>FApplicative</code> is a more general interface than <code>FRepresentable</code>, in that it supports notions of composition other than zipping. However, that bookkeeping <code>:-&gt;</code> <code>newtype</code> wrapper is inconvenient. With the normal <code>Applicative</code> class you can map an <em>n</em>-ary function over <em>n</em> applicative values directly: <code>f &lt;$&gt; x &lt;*&gt; y &lt;*&gt; z</code>. With <code>FApplicative</code> you have to apply the <code>Morph</code> constructor as many times as <code>f</code> has arguments: <code>fpure (Morph $ \x -&gt; Morph $ \y -&gt; Morph $ \z -&gt; f x y z) `fap` t `fap` u `fap` v</code>, which becomes very unwieldy very quickly. (<a href="https://www.reddit.com/r/haskell/comments/78xxql/structures_of_arrays_functors_and_continuations/doy80ft/">/u/rampion has come up with nicer syntax for this</a>, but it involves <a href="https://gist.github.com/rampion/20291bde6c8568c11f9cc5923d9639eb#file-ffunctor-hs-L28">a more complicated formulation of <code>FApplicative</code></a>.) On the other hand, <code>FApplicative</code> does open up some interesting options for the design of <code>FTraversable</code>: one can traverse in an <code>FApplicative</code> rather than an <code>Applicative</code>. This gives some nice type signatures - <code>fsequence :: (FTraversable t, FApplicative f) =&gt; t f -&gt; f t</code> - and is strictly more general than the <code>FTraversable</code> I gave above, since any <code>Applicative</code> can be lifted into an <code>FApplicative</code> by composition (<code>newtype ComposeAt a f g = ComposeAt { getComposeAt :: f (g a) }</code>).</p>
-<p>How useful are these tools in practice? Would I structure a production application around functor functors? Probably not. It’s a question of balance - while it’s useful to recognise functorial structures in categories other than <strong>Hask</strong> as a thinking tool, actually representing such abstractions in code doesn’t always pay off. Haskell already has a rich ecosystem of tools for working with the <code>Functor</code> family, but there’s much less code in the wild that’s structured around functor functors. This is partly because <code>Functor</code> has the advantage of being a standard class in <code>base</code>, but it’s also because code built around functor functors is a little less convenient to work with, typically requiring some tedious <code>newtype</code> bookkeeping.</p>
-<p>Over the course of putting together this article I came across some work by others on this very topic. I’ve spotted versions of these classes being packaged with bigger libraries such as <a href="http://hackage.haskell.org/package/hedgehog-0.5.1/docs/Hedgehog-Internal-HTraversable.html"><code>hedgehog</code></a> and <a href="https://hackage.haskell.org/package/quickcheck-state-machine-0.2.0/docs/Test-StateMachine-Types-HFunctor.html"><code>quickcheck-state-machine</code></a>. There are also a few packages providing similar tools. The most mature of these seems to be <a href="http://hackage.haskell.org/package/rank2classes"><code>rank2classes</code></a>, which includes some Template Haskell tools for deriving instances; there’s also <a href="http://hackage.haskell.org/package/conkin">the Conkin package</a>, which has <a href="https://github.com/rampion/conkin/blob/master/README.md">a well-written tutorial</a> focusing on working with data in column-major order.</p>
-<p>Haskell’s full of big ideas and powerful programming idioms. In this post we saw an example of reinterpreting some familiar tools - <code>Functor</code>, <code>Traversable</code> and <code>Representable</code> - in a new context. With the intuition that a record template is a container of functors, and the formalism of functors from the functor category, we were able to reuse intuitions about those familiar tools to write terse and generic programs.</p>
-
-<section class="comments">
-    <h1>Comments</h1>
-
-    <ol class="comments-list">
-        
-            <li class="comment">
-    
-        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on December 15, 2017</h2>
-    
-    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2017-12-15-functor-functors/example.md">send me a pull request</a>.</p></div>
 </li>
         
     </ol>
