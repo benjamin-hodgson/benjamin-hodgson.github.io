@@ -7,7 +7,7 @@ I figured it'd be useful to have some examples of my language tooling libraries 
 
 1. **Introduction & Syntax**
 2. [Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)
-3. Unification
+3. [Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)
 4. The rules engine
 
 You'll find all the code for this series [on GitHub](https://github.com/benjamin-hodgson/Amateurlog).
