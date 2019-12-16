@@ -364,7 +364,7 @@
 <ol type="1">
 <li><a href="/posts/2019-12-01-write-you-a-prolog.html">Introduction &amp; Syntax</a></li>
 <li><strong>Parsing</strong></li>
-<li>Unification</li>
+<li><a href="/posts/2019-12-15-generic-unification-with-sawmill.html">Unification</a></li>
 <li>The rules engine</li>
 </ol>
 <p><img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" /></p>
@@ -569,7 +569,7 @@ p r o <b>g</b> r a m m i n g
 <ol type="1">
 <li><strong>Introduction &amp; Syntax</strong></li>
 <li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
-<li>Unification</li>
+<li><a href="/posts/2019-12-15-generic-unification-with-sawmill.html">Unification</a></li>
 <li>The rules engine</li>
 </ol>
 <p>You’ll find all the code for this series <a href="https://github.com/benjamin-hodgson/Amateurlog">on GitHub</a>.</p>
