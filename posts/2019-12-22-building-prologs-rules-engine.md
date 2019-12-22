@@ -323,3 +323,5 @@ Here are some exercises you could try:
 * Try optimising `Freshen` so that it doesn't rename more variables than it needs to.
     * It's actually possible to avoid freshening altogether by changing the way variables are represented.
 * Backtracking is enabled by default in Prolog (unlike in Pidgin where it's disabled by default). The full Prolog language includes the `!` operator (pronounced _cut_) to disable backtracking when necessary. When Prolog encounters `!` in the right-hand side of a rule, it commits to all of the choices it's made since (and including) selecting that rule from the database. Try implementing cut as an exercise. (You'll need to change the parser, the AST, and the rules engine.)
+
+Today's code is available in [the example repo](https://github.com/benjamin-hodgson/Amateurlog), in the [`Engine.cs`](https://github.com/benjamin-hodgson/Amateurlog/blob/80a4ac12303d007295059ac4d9e36ce935a904c2/Engine.cs) file.
