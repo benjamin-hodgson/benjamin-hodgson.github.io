@@ -43,7 +43,7 @@ main = do
                 >>= relativizeUrls
 
         matchMetadata postsPattern metadataMatcher $ do
-            route $ metadataRoute postRoute
+            route $ setExtension "html"
             compile $ do
                 comments <- compilePostComments
                 let ctx = postCtx comments
@@ -54,7 +54,8 @@ main = do
                     >>= relativizeUrls
 
         version "redirects" $ createRedirects [
-            ("posts/2018-03-10-eighty.html", "2018-03-16-eighty.html")
+            ("posts/2018-03-10-eighty.html", "2018-03-16-eighty.html"),
+            ("posts/2019-12-22-building-prolog's-rules-engine.html", "2019-12-22-building-prologs-rules-engine.html")
             ]
 
         match "comments/*/*" $ do
