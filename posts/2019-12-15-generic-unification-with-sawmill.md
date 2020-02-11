@@ -8,7 +8,7 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 1. [Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)
 2. [Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)
 3. **Unification**
-4. [The rules engine](posts/2019-12-22-building-prologs-rules-engine.html)
+4. [The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)
 
 We're getting on to the fun part of writing an interpreter: actually _interpreting_ the input code. In this post we're going to implement a _unification_ algorithm using my generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill). Unification slots somewhere in the middle or bottom-right of this diagram:
 
