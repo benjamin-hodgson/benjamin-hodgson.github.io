@@ -567,8 +567,8 @@
 <p>A quick test of one of our examples:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span>(<span class="dt">string</span>[] args)</span>
 <span id="cb14-2"><a href="#cb14-2"></a>{</span>
-<span id="cb14-3"><a href="#cb14-3"></a>    <span class="dt">var</span> left = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(X), a)&quot;</span>);</span>
-<span id="cb14-4"><a href="#cb14-4"></a>    <span class="dt">var</span> right = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(Y), X)&quot;</span>);</span>
+<span id="cb14-3"><a href="#cb14-3"></a>    Term left = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(X), a)&quot;</span>);</span>
+<span id="cb14-4"><a href="#cb14-4"></a>    Term right = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(Y), X)&quot;</span>);</span>
 <span id="cb14-5"><a href="#cb14-5"></a></span>
 <span id="cb14-6"><a href="#cb14-6"></a>    <span class="dt">var</span> subst = left.<span class="fu">Unify</span>(right);</span>
 <span id="cb14-7"><a href="#cb14-7"></a></span>
