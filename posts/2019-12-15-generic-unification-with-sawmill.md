@@ -192,7 +192,7 @@ public static ImmutableDictionary<string, T> Unify<T>(this T left, T right) wher
 `Bind(name, value)` returns a substitution with the variable `name` bound to the term `value`. However! There are some important edge cases to watch out for which could result in breaking the invariant I mentioned above.
 
 1. The term `value` could be the _same_ variable as `name`. This would produce a substitution like `X := X` (that is, a do-nothing substitution), so we'll just return an empty substitution in that case.
-2. The term `value` could mention the variable `name` somewhere inside it. This would produce as substitution like `X := foo(X)`. If you try and find a concrete value for `X` you'd end up with an infinitely long chain of `foo`s! Some systems allow infinite terms like this, but others disallow it by checking whether a variable occurs in the term it's being bound to. This check is suitably called the _occurs check_.
+2. The term `value` could mention the variable `name` somewhere inside it. This would produce a substitution like `X := foo(X)`. If you try and find a concrete value for `X` you'd end up with an infinitely long chain of `foo`s! Some systems allow infinite terms like this, but others disallow it by checking whether a variable occurs in the term it's being bound to. This check is suitably called the _occurs check_.
 
 ```csharp
 private static ImmutableDictionary<string, T> Bind<T>(string name, T value) where T : IUnifiable<T>
