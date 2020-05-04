@@ -1288,7 +1288,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb13-5"><a href="#cb13-5"></a>    myInts[<span class="dv">0</span>] = <span class="dv">123</span>;</span>
 <span id="cb13-6"><a href="#cb13-6"></a>    myInts[<span class="dv">1</span>] = <span class="dv">456</span>;</span>
 <span id="cb13-7"><a href="#cb13-7"></a>    myInts[<span class="dv">2</span>] = myInts[<span class="dv">0</span>] + myInts[<span class="dv">1</span>];</span>
-<span id="cb13-8"><a href="#cb13-8"></a>    Console.<span class="fu">WriteLine</span>(myInts[<span class="dv">2</span>]);</span>
+<span id="cb13-8"><a href="#cb13-8"></a>    Console.<span class="fu">WriteLine</span>(myInts[<span class="dv">2</span>]);  <span class="co">// prints 579</span></span>
 <span id="cb13-9"><a href="#cb13-9"></a>}</span></code></pre></div>
 <p>I want to use <code>stackalloc</code> to avoid taking memory from the <code>ChunkStack</code> when an object has a small number (say, 4) of children. This is fairly common in practice. Stack memory tends to be marginally faster than heap memory because it’s more likely to be in the processor cache, so this may have a modest performance benefit as well as relieving pressure on the array pool. If there are more than 4 children we can just fall back on the <code>ChunkStack</code>.</p>
 <p>Here’s the new <code>RewriteChildrenInternal</code>:</p>
