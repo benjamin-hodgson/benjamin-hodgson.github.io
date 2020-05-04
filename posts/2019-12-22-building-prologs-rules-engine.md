@@ -73,7 +73,7 @@ private ImmutableDictionary<string, Term> Query(Rule rule, Term goal)
     {
         return null;
     }
-    //
+    // ...
 }
 ```
 
