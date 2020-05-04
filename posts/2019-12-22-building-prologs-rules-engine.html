@@ -94,7 +94,7 @@
 <span id="cb3-22"><a href="#cb3-22"></a>    {</span>
 <span id="cb3-23"><a href="#cb3-23"></a>        <span class="kw">return</span> <span class="kw">null</span>;</span>
 <span id="cb3-24"><a href="#cb3-24"></a>    }</span>
-<span id="cb3-25"><a href="#cb3-25"></a>    <span class="co">//</span></span>
+<span id="cb3-25"><a href="#cb3-25"></a>    <span class="co">// ...</span></span>
 <span id="cb3-26"><a href="#cb3-26"></a>}</span></code></pre></div>
 <p>If the rule’s head does match the goal, Prolog needs to check the conditions on the right hand side of the rule. Each predicate on the right-hand side becomes a sub-goal; we’ll recursively call <code>Query</code> for each of these sub-goals. These recursive <code>Query</code> calls will return a substitution, and the information from those substitutions needs to be propagated bi-directionally. It’s just like when we were solving a system of equations in the last post: we’ll propagate information forwards by <code>Apply</code>ing the current substitution to later sub-goals, and propagate it backwards by <code>Compose</code>-ing the substitutions from each recursive <code>Query</code> call into the current substitution.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">public</span> ImmutableDictionary&lt;<span class="dt">string</span>, Term&gt; <span class="fu">Query</span>(Rule rule, Term goal)</span>
