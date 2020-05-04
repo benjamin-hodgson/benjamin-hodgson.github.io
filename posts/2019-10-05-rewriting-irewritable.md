@@ -293,7 +293,7 @@ public void Foo()
     myInts[0] = 123;
     myInts[1] = 456;
     myInts[2] = myInts[0] + myInts[1];
-    Console.WriteLine(myInts[2]);
+    Console.WriteLine(myInts[2]);  // prints 579
 }
 ```
 
