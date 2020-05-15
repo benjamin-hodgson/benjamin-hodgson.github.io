@@ -32,6 +32,7 @@ div#header #navigation a#logo {
 }
 div#header #navigation a#logo pre {
     margin: 0;
+    padding: 0;
 }
 
 div#footer {
