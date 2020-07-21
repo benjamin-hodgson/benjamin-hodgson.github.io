@@ -138,7 +138,7 @@ So, taken as a whole, `_atomName` consumes and returns a string as long as it's 
 1. Consume a lowercase character and name it `first`
 2. Consume as many letters, digits and underscores as possible, naming the resulting string `rest`
 3. Skip any whitespace coming after the name (that's what `Tok` does)
-4. Return the string `first + last`
+4. Return the string `first + rest`
 
 `_variableName` works just the same, except in step 1 it consumes an uppercase letter or an underscore. Let's de-duplicate them:
 
