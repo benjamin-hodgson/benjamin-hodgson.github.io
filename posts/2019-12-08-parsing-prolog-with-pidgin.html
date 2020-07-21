@@ -125,7 +125,7 @@ p r o <b>g</b> r a m m i n g
 <li>Consume a lowercase character and name it <code>first</code></li>
 <li>Consume as many letters, digits and underscores as possible, naming the resulting string <code>rest</code></li>
 <li>Skip any whitespace coming after the name (that’s what <code>Tok</code> does)</li>
-<li>Return the string <code>first + last</code></li>
+<li>Return the string <code>first + rest</code></li>
 </ol>
 <p><code>_variableName</code> works just the same, except in step 1 it consumes an uppercase letter or an underscore. Let’s de-duplicate them:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">static</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; <span class="fu">Name</span>(Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; firstLetter)</span>
