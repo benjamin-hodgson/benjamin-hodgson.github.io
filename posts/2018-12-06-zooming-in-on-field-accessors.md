@@ -94,7 +94,7 @@ So a lens picks out a single property inside a given object.
 
 The power of lenses comes from their composability. Given a lens identifying a `T2` inside a `T1` (`ILens<T1, T2>`) and a lens identifying a `T3` inside a `T2` (`ILens<T2, T3>`), you can compose those lenses together to focus all the way from the `T1` to the `T3`.
 
-You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I've given it the shortest name I can think of: `_`. (Readers of [an eariler post of mine](2018-03-16-eighty.html) will know of my fondness for `_`.)
+You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I've given it the shortest name I can think of: `_`. (Readers of [an earlier post of mine](2018-03-16-eighty.html) will know of my fondness for `_`.)
 
 <img src="/images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" width="900" />
 
