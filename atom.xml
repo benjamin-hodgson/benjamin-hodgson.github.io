@@ -1925,7 +1925,7 @@ p r o <b>g</b> r a m m i n g
 <p><img src="/images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" width="900" /></p>
 <p>So a lens picks out a single property inside a given object.</p>
 <p>The power of lenses comes from their composability. Given a lens identifying a <code>T2</code> inside a <code>T1</code> (<code>ILens&lt;T1, T2&gt;</code>) and a lens identifying a <code>T3</code> inside a <code>T2</code> (<code>ILens&lt;T2, T3&gt;</code>), you can compose those lenses together to focus all the way from the <code>T1</code> to the <code>T3</code>.</p>
-<p>You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I’ve given it the shortest name I can think of: <code>_</code>. (Readers of <a href="2018-03-16-eighty.html">an eariler post of mine</a> will know of my fondness for <code>_</code>.)</p>
+<p>You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I’ve given it the shortest name I can think of: <code>_</code>. (Readers of <a href="2018-03-16-eighty.html">an earlier post of mine</a> will know of my fondness for <code>_</code>.)</p>
 <p><img src="/images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" width="900" /></p>
 <p>Compare this terse, declarative code with the tedious version of <code>UpdatePostcode</code> from the beginning:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a>Order <span class="fu">UpdatePostcode</span>(Order order<span class="co">/*👨🏻‍⚖️*/</span>, <span class="dt">string</span> newPostcode)</span>
