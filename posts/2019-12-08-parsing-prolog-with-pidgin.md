@@ -91,7 +91,7 @@ Finally, we can generalise these `Tok` methods to run an arbitrary `Parser` with
 
 ```csharp
 static Parser<char, T> Tok<T>(Parser<char, T> p)
-    => Try(p).Then(SkipWhitespaces);
+    => Try(p).Before(SkipWhitespaces);
 
 static Parser<char, char> Tok(char value) => Tok(Char(value));
 static Parser<char, string> Tok(string value) => Tok(String(value));
