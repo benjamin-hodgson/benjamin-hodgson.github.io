@@ -3,8 +3,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>benjamin.pizza - Zooming In on Field Accessors</title>
-        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../all.css" />
         <link rel="icon" href="../favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon" />
 
@@ -65,7 +67,7 @@
 <span id="cb1-19"><a href="#cb1-19"></a>    <span class="kw">public</span> <span class="dt">string</span> Title { <span class="kw">get</span>; }</span>
 <span id="cb1-20"><a href="#cb1-20"></a>    <span class="kw">public</span> <span class="dt">decimal</span> Price { <span class="kw">get</span>; }</span>
 <span id="cb1-21"><a href="#cb1-21"></a>}</span></code></pre></div>
-<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/model.jpg" width="900" /></p>
+<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/model.jpg" /></p>
 <p>(I’ve omitted the constructors; you can imagine your own.) These objects are immutable, meaning you can’t modify them directly. The way to update an immutable object is to make a copy of that object with the relevant properties changed. This turns out to be surprisingly tedious when you’re working inside a deeply nested structure:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1"></a>Order <span class="fu">UpdatePostcode</span>(Order order<span class="co">/*👨🏻‍⚖️*/</span>, <span class="dt">string</span> newPostcode)</span>
 <span id="cb2-2"><a href="#cb2-2"></a>    =&gt; <span class="kw">new</span> <span class="fu">Order</span>(</span>
@@ -103,11 +105,11 @@
 <span id="cb5-4"><a href="#cb5-4"></a></span>
 <span id="cb5-5"><a href="#cb5-5"></a>    <span class="kw">public</span> Order <span class="fu">Set</span>(Order o, Customer c) =&gt; <span class="kw">new</span> <span class="fu">Order</span>(c, o.<span class="fu">Products</span>);</span>
 <span id="cb5-6"><a href="#cb5-6"></a>}</span></code></pre></div>
-<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" width="900" /></p>
+<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" /></p>
 <p>So a lens picks out a single property inside a given object.</p>
 <p>The power of lenses comes from their composability. Given a lens identifying a <code>T2</code> inside a <code>T1</code> (<code>ILens&lt;T1, T2&gt;</code>) and a lens identifying a <code>T3</code> inside a <code>T2</code> (<code>ILens&lt;T2, T3&gt;</code>), you can compose those lenses together to focus all the way from the <code>T1</code> to the <code>T3</code>.</p>
 <p>You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I’ve given it the shortest name I can think of: <code>_</code>. (Readers of <a href="2018-03-16-eighty.html">an earlier post of mine</a> will know of my fondness for <code>_</code>.)</p>
-<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" width="900" /></p>
+<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" /></p>
 <p>Compare this terse, declarative code with the tedious version of <code>UpdatePostcode</code> from the beginning:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a>Order <span class="fu">UpdatePostcode</span>(Order order<span class="co">/*👨🏻‍⚖️*/</span>, <span class="dt">string</span> newPostcode)</span>
 <span id="cb6-2"><a href="#cb6-2"></a>{</span>
@@ -203,7 +205,7 @@
 <span id="cb13-5"><a href="#cb13-5"></a>    Order <span class="fu">MultiSet</span>(Order order, IEnumerable&lt;Product&gt; newProducts)</span>
 <span id="cb13-6"><a href="#cb13-6"></a>        =&gt; <span class="kw">new</span> <span class="fu">Order</span>(order.<span class="fu">Customer</span>, newProducts);</span>
 <span id="cb13-7"><a href="#cb13-7"></a>}</span></code></pre></div>
-<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/products.jpg" width="900" /></p>
+<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/products.jpg" /></p>
 <p>You can compose multi-lenses, too. If you have a multi-lens which finds <span class="math inline"><em>n</em></span> <code>T2</code>s inside a <code>T1</code>, and a second multi-lens which finds <span class="math inline"><em>m</em></span> <code>T3</code>s inside a <code>T2</code>, you can build a multi-lens which finds <span class="math inline"><em>n</em><em>m</em></span> <code>T3</code>s inside a <code>T1</code>. This works by looking through the second multi-lens at all <span class="math inline"><em>n</em></span> of the first multi-lens’s targets.</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">static</span> <span class="kw">class</span> LensExtensions</span>
 <span id="cb14-2"><a href="#cb14-2"></a>{</span>
@@ -254,7 +256,7 @@
 <span id="cb16-3"><a href="#cb16-3"></a>    IMultiLens&lt;Order, <span class="dt">decimal</span>&gt; l = <span class="kw">new</span> <span class="fu">ProductsL</span>()._(<span class="kw">new</span> <span class="fu">PriceL</span>());</span>
 <span id="cb16-4"><a href="#cb16-4"></a>    <span class="kw">return</span> l.<span class="fu">Map</span>(order, x =&gt; x * <span class="fl">0.8</span>);</span>
 <span id="cb16-5"><a href="#cb16-5"></a>}</span></code></pre></div>
-<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/product-and-price.jpg" width="900" /></p>
+<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/product-and-price.jpg" /></p>
 <p>Incorporating the earlier <code>IGetter</code> fix, and extending <code>IMultiLens</code> upwards in parallel, leaves us with the following hierarchy.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">interface</span> IMultiGetter&lt;T, TProp&gt;</span>
 <span id="cb17-2"><a href="#cb17-2"></a>{</span>
@@ -281,7 +283,7 @@
 <span id="cb17-23"><a href="#cb17-23"></a>    T <span class="fu">MultiSet</span>(T oldObj, IEnumerable&lt;TProp&gt; newVals)</span>
 <span id="cb17-24"><a href="#cb17-24"></a>        =&gt; <span class="fu">Set</span>(oldObj, newVals.<span class="fu">Single</span>());</span>
 <span id="cb17-25"><a href="#cb17-25"></a>}</span></code></pre></div>
-<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" width="900" /></p>
+<p><img src="../images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" /></p>
 <h2 id="default-interface-implementations">Default Interface Implementations</h2>
 <p>The code above makes central use of default interface implementations, so it’s probably time to talk about what they are.</p>
 <p>In C#8, interfaces won’t just be type declarations any more. You’ll be allowed to write code in an interface method, to function as the default implementation of that method. Typically it’ll be written in terms of the other methods on the interface, like an extension method. They differ from extension methods, however, in that they are virtual. If an implementing class has a better (faster, typically) way of implementing the operation, it’s free to override it.</p>

@@ -3,8 +3,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>benjamin.pizza - Parsing Prolog with Pidgin</title>
-        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../all.css" />
         <link rel="icon" href="../favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon" />
 
@@ -50,7 +52,7 @@
 <li><a href="../posts/2019-12-15-generic-unification-with-sawmill.html">Unification</a></li>
 <li><a href="../posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a></li>
 </ol>
-<p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" /></p>
+<p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <p>In this post I’m going to focus on the left-hand part of that diagram. We’ll use my parsing library <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> to convert Prolog source code into the abstract syntax classes I outlined in the previous post.</p>
 <h2 id="about-pidgin">About Pidgin</h2>
 <p>Pidgin is a <em>parser combinator library</em>, meaning it consists of three things:</p>

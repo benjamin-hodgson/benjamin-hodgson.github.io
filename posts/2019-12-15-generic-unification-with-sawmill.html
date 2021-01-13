@@ -3,8 +3,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>benjamin.pizza - Generic Unification with Sawmill</title>
-        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../all.css" />
         <link rel="icon" href="../favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon" />
 
@@ -51,7 +53,7 @@
 <li><a href="../posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a></li>
 </ol>
 <p>We’re getting on to the fun part of writing an interpreter: actually <em>interpreting</em> the input code. In this post we’re going to implement a <em>unification</em> algorithm using my generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Unification slots somewhere in the middle or bottom-right of this diagram:</p>
-<p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" /></p>
+<p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <h2 id="unification">Unification</h2>
 <p>Unification is a process for solving equations, much like the equations you’d solve in algebra at school. It’s all about plugging holes — given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a <em>substitution</em> — a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.</p>
 <p>The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term’s syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process — you can’t apply domain-specific rules such as “add a number to both sides” like you can in algebra.</p>

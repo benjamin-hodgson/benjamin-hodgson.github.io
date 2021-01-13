@@ -3,8 +3,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>benjamin.pizza - The Fourth Type of Variance</title>
-        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../all.css" />
         <link rel="icon" href="../favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon" />
 
@@ -107,7 +109,7 @@
 <p>The only time I’ve actually seen this class used is in <a href="http://comonad.com/reader/2008/rotten-bananas/">Ed Kmett’s old article about attempting to represent higher-order abstract syntax generically</a>.</p>
 <p>Let me spell out the similarity between <code>Invariant</code> functors and Scala’s subtype invariance. For <code>Operation a</code> to be convertible to <code>Operation b</code>, <code>a</code> must be convertible to <code>b</code> <em>and</em> <code>b</code> must be convertible to <code>a</code>. For <code>Set[A]</code> to be a subtype of <code>Set[B]</code>, <code>A</code> must be a subtype of <code>B</code> <em>and</em> <code>B</code> must be a subtype of <code>A</code> (that is, they must be the same type).</p>
 <p>Note that variance is a property of the type parameter (<code>A</code>), not the type constructor (<code>List</code>/<code>Ordering</code>). A given type constructor may have multiple parameters with different variances. <code>Function1[-A, +B]</code>, for example.</p>
-<p><img src="../images/2019-01-11-the-fourth-type-of-variance/hierarchy.png" width="900" /></p>
+<p><img src="../images/2019-01-11-the-fourth-type-of-variance/hierarchy.png" /></p>
 <h2 id="combining-variances">Combining Variances</h2>
 <p>An object which produces a producer of <code>A</code>s effectively produces <code>A</code>s. A type with a covariant type as an output is itself covariant.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb9-1"><a href="#cb9-1"></a><span class="co">// Container returns a covariant type, so Container is covariant</span></span>
@@ -143,7 +145,7 @@
 <span id="cb14-3"><a href="#cb14-3"></a><span class="kw">class</span> <span class="dt">Invariant</span> f <span class="ot">=&gt;</span> <span class="dt">Functor</span> f <span class="kw">where</span> <span class="co">{- ... -}</span></span>
 <span id="cb14-4"><a href="#cb14-4"></a></span>
 <span id="cb14-5"><a href="#cb14-5"></a><span class="kw">class</span> <span class="dt">Invariant</span> f <span class="ot">=&gt;</span> <span class="dt">Contravariant</span> f <span class="kw">where</span> <span class="co">{- ... -}</span></span></code></pre></div>
-<p><img src="../images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" width="900" /></p>
+<p><img src="../images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" /></p>
 <p>So there’s this interesting relationship between the three types of variance. They form a little semilattice, of which <code>Invariant</code> is the supremum.</p>
 <p>But, hmm, the picture seems asymmetric. Is variance really only a semilattice? Or is there something lurking at the bottom of that picture?</p>
 <h2 id="phantom-variance">Phantom Variance</h2>
@@ -153,7 +155,7 @@
 <p>This strange class says that you can map an <code>f a</code> to an <code>f b</code> without needing to map <code>a</code>s or <code>b</code>s at all! Intuitively, you can only convert <code>f a</code> to <code>f b</code> for free when <code>f</code> doesn’t mention <code>a</code> anywhere in its body.</p>
 <p>A functor is <code>Invariant</code> when it has <code>a</code>s both as inputs and outputs. <code>Functor</code> specialises <code>Invariant</code> by promising that <code>f</code> doesn’t have any input <code>a</code>s, so all you need to do is map the outputs. <code>Contravariant</code> specialises <code>Invariant</code> by promising that there are no output <code>a</code>s and all you need to do is map the inputs. <code>Phantom</code>, being a special case of both covariance and contravariance, guarantees that there are no <code>a</code>s at all in the <code>f</code>.</p>
 <p>So the four types of variance form a nice lattice.</p>
-<p><img src="../images/2019-01-11-the-fourth-type-of-variance/lattice.jpg" width="900" /></p>
+<p><img src="../images/2019-01-11-the-fourth-type-of-variance/lattice.jpg" /></p>
 <p>For completeness, here’s the proof that the superclass constraints make sense:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="ot">defaultFmap ::</span> <span class="dt">Phantom</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
 <span id="cb16-2"><a href="#cb16-2"></a>defaultFmap _ <span class="ot">=</span> pmap</span>
