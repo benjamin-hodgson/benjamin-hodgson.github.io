@@ -71,7 +71,7 @@ Functors from the Category of Endofunctors
 
 In Haskell, categories are represented as a _kind_ `k` of objects and a _type constructor_ `c :: k -> k -> *` of morphisms between those objects. If the category `C` has objects in `k1` and morphisms in `c`, and `D` has objects in `k2` and morphisms in `d`, then a functor from `C` to `D` is a type constructor `f :: k1 -> k2` mapping objects paired with an operation `fmap :: c a b -> d (f a) (f b)` mapping the morphisms. The standard `Functor` class is for _endofunctors on **Hask**_ - the special case in which `k1 ~ k2 ~ *` and `c ~ d ~ (->)`.
 
-<img src="/images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" width="900" />
+<img src="/images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" />
 
 Given two categories `C` and `D`, you can construct the category of functors between `C` and `D`, written as `[C, D]`. Objects in this category are functors from `C` to `D`, and morphisms are natural transformations between those functors. Since `[C, D]` is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that'd be a type of kind `(k1 -> k2) -> k3`. I'll call such types _functor functors_.
 
@@ -104,7 +104,7 @@ ffmap id = id
 ffmap (eta . phi) = ffmap eta . ffmap phi
 ```
 
-<img src="/images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" width="900" />
+<img src="/images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" />
 
 `ffmap` encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor `f` into `g`, then you can map a record of `f`s to a record of `g`s by embedding each `f`. (This is also sometimes called "hoisting".) For example, the boring `Identity` functor can be embedded into an arbitrary `Applicative` by injecting the contained value using `pure`. We can use this to turn a total record into a partial one:
 

@@ -29,7 +29,7 @@ class Product
 }
 ```
 
-<img src="/images/2018-12-06-zooming-in-on-field-accessors/model.jpg" width="900" />
+<img src="/images/2018-12-06-zooming-in-on-field-accessors/model.jpg" />
 
 (I've omitted the constructors; you can imagine your own.) These objects are immutable, meaning you can't modify them directly. The way to update an immutable object is to make a copy of that object with the relevant properties changed. This turns out to be surprisingly tedious when you're working inside a deeply nested structure:
 
@@ -88,7 +88,7 @@ class CustomerL : ILens<Order, Customer>
 }
 ```
 
-<img src="/images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" width="900" />
+<img src="/images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" />
 
 So a lens picks out a single property inside a given object.
 
@@ -96,7 +96,7 @@ The power of lenses comes from their composability. Given a lens identifying a `
 
 You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I've given it the shortest name I can think of: `_`. (Readers of [an earlier post of mine](2018-03-16-eighty.html) will know of my fondness for `_`.)
 
-<img src="/images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" width="900" />
+<img src="/images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" />
 
 Compare this terse, declarative code with the tedious version of `UpdatePostcode` from the beginning:
 
@@ -238,7 +238,7 @@ class ProductsL : IMultiLens<Order, Product>
 }
 ```
 
-<img src="/images/2018-12-06-zooming-in-on-field-accessors/products.jpg" width="900" />
+<img src="/images/2018-12-06-zooming-in-on-field-accessors/products.jpg" />
 
 You can compose multi-lenses, too. If you have a multi-lens which finds $n$ `T2`s inside a `T1`, and a second multi-lens which finds $m$ `T3`s inside a `T2`, you can build a multi-lens which finds $nm$ `T3`s inside a `T1`. This works by looking through the second multi-lens at all $n$ of the first multi-lens's targets.
 
@@ -303,7 +303,7 @@ Order TwentyPercentOff(Order order)
     return l.Map(order, x => x * 0.8);
 }
 ```
-<img src="/images/2018-12-06-zooming-in-on-field-accessors/product-and-price.jpg" width="900" />
+<img src="/images/2018-12-06-zooming-in-on-field-accessors/product-and-price.jpg" />
 
 Incorporating the earlier `IGetter` fix, and extending `IMultiLens` upwards in parallel, leaves us with the following hierarchy.
 
@@ -335,7 +335,7 @@ interface ILens<T, TProp> : IGetter<T, TProp>, IMultiLens<T, TProp>
 }
 ```
 
-<img src="/images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" width="900" />
+<img src="/images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" />
 
 Default Interface Implementations
 ---------------------------------

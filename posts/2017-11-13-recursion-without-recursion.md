@@ -8,7 +8,7 @@ If you visit [Stack Overflow Jobs](https://www.stackoverflow.com/jobs) you'll se
 
 It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there's a parser which produces an abstract syntax tree (hereafter _AST_), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)
 
-<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
+<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
 
 In this post I'm going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.
 
@@ -57,7 +57,7 @@ new AndNode(
 )
 ```
 
-<img src="/images/2017-11-13-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" width="900" />
+<img src="/images/2017-11-13-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" />
 
 When you need to analyse a `JqlNode`, you use pattern matching to see what type of node you have, and recursively query the operands of `And`/`Or`/`Not` nodes. Here's a function which searches for the `TagNode`s in a tree:
 
@@ -268,7 +268,7 @@ From Pattern to Library
 
 We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has _children_ which are also nodes.
 
-<img src="/images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" width="900" />
+<img src="/images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" />
 
 As the picture shows, you can reach every node in a tree just by looking at each node's children. If you can show me how to replace your children, I can replace your children's children and so on. So let's use an interface to model the notion of an object with a collection of children.
 
@@ -379,7 +379,7 @@ I've also had success implementing `IRewritable` for a variety of tree-like type
 
 Sawmill's version of `Rewrite` also makes an important optimisation which I glossed over above: parts of the tree which the `transformer` function didn't change are _shared_ between the new and old versions of the tree. If you change a single node, you only have to rebuild that node's ancestors (because their children have changed), not the parts of the tree you didn't touch.
 
-<img src="/images/2017-11-13-recursion-without-recursion/sharing.jpg" alt="The sharing optimisation" width="900" />
+<img src="/images/2017-11-13-recursion-without-recursion/sharing.jpg" alt="The sharing optimisation" />
 
 (This is safe for immutable trees like those in Roslyn; for mutable trees like `XmlNode` the whole tree has to be copied if any part of it changes. This makes me sad - in my view those types should have been immutable all along.)
 

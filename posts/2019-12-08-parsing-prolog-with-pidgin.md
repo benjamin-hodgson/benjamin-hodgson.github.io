@@ -10,7 +10,7 @@ Happy birthday to my sister! This is part of a series of posts about implementin
 3. [Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)
 4. [The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)
 
-<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" width="900" />
+<img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
 
 In this post I'm going to focus on the left-hand part of that diagram. We'll use my parsing library [Pidgin](https://github.com/benjamin-hodgson/Pidgin) to convert Prolog source code into the abstract syntax classes I outlined in the previous post.
 
