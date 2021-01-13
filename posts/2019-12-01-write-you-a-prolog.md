@@ -5,10 +5,14 @@ date: 2019-12-01
 
 I figured it'd be useful to have some examples of my language tooling libraries [Sawmill](https://github.com/benjamin-hodgson/Sawmill) and [Pidgin](https://github.com/benjamin-hodgson/Pidgin) in action. I thought it could be fun to use them to write a miniature [Prolog](https://en.wikipedia.org/wiki/Prolog) interpreter!
 
-1. **Introduction & Syntax**
-2. [Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)
-3. [Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)
-4. [The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)
+<nav>
+    <ol>
+        <li>**Introduction & Syntax**</li>
+        <li>[Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)</li>
+        <li>[Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)</li>
+        <li>[The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)</li>
+    </ol>
+</nav>
 
 You'll find all the code for this series [on GitHub](https://github.com/benjamin-hodgson/Amateurlog).
 

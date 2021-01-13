@@ -1,7 +1,9 @@
-<ul>
-    $for(posts)$
-        <li>
-            <a href="$url$">$title$</a> - $date$
-        </li>
-    $endfor$
-</ul>
+<nav>
+    <ul>
+        $for(posts)$
+            <li>
+                <a href="$url$">$title$</a> $partial("templates/date.html")$
+            </li>
+        $endfor$
+    </ul>
+</nav>

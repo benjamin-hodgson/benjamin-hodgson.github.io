@@ -36,20 +36,12 @@ div#footer {
     text-align: right;
 }
 
-div.info {
-    color: #555;
-    font-size: 14px;
+
+.subtitle {
     font-style: italic;
 }
 
-div#content header p {
-    font-weight: bold;
-    font-style: italic;
-}
 
-.comments {
-
-}
 .comments-list {
     list-style: none;
     padding: 0;
@@ -62,6 +54,7 @@ div#content header p {
 }
 .comment-header {
     font-size: 12pt;
+    margin-top: 12px;
 }
 
 

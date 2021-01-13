@@ -5,10 +5,14 @@ date: 2019-12-08
 
 Happy birthday to my sister! This is part of a series of posts about implementing a miniature Prolog interpreter in C#.
 
-1. [Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)
-2. **Parsing**
-3. [Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)
-4. [The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)
+<nav>
+    <ol>
+        <li>[Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)</li>
+        <li>**Parsing**</li>
+        <li>[Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)</li>
+        <li>[The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)</li>
+    </ol>
+</nav>
 
 <img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
 

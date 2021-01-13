@@ -87,7 +87,6 @@ main = do
             compile $ 
                 loadAllSnapshots postsPattern "content"
                     >>= recentFirst
-                    <&> take 10
                     >>= renderAtom feedConfig atomCtx
 
 
@@ -122,21 +121,17 @@ metadataMatcherForCommand _ = do
 parseDate = Time.parseTimeOrError True Time.defaultTimeLocale "%Y-%m-%d"
 
 
-postRoute metadata =
-    let Just date = lookupString "date" metadata
-        Just title = map (\x -> if isSpace x then '-' else x) <$> map toLower <$> lookupString "title" metadata
-        route = "posts/" ++ date ++ "-" ++ title
-    in constRoute route `composeRoutes` setExtension "html"
-
 postCtx :: [Item String] -> Context String
 postCtx comments =
     listField "comments" commentCtx (return comments) `mappend`
-    dateField "date" "%B %e, %Y" `mappend`
+    dateField "date" "%Y-%m-%d" `mappend`
+    dateField "englishDate" "%B %e, %Y" `mappend`
     defaultContext
 
 postSummaryCtx :: Context String
 postSummaryCtx = 
-    dateField "date" "%B %e, %Y" `mappend`
+    dateField "date" "%Y-%m-%d" `mappend`
+    dateField "englishDate" "%B %e, %Y" `mappend`
     defaultContext
 
 atomCtx :: Context String
@@ -146,7 +141,8 @@ atomCtx =
 
 commentCtx :: Context String
 commentCtx =
-    dateField "date" "%B %e, %Y" `mappend`
+    dateField "date" "%Y-%m-%d" `mappend`
+    dateField "englishDate" "%B %e, %Y" `mappend`
     defaultContext
 
 feedConfig = FeedConfiguration {
@@ -171,6 +167,3 @@ commentNumber =
     . takeBaseName
     . toFilePath
     . itemIdentifier
-
-infixl 1 <&>
-(<&>) = flip (<$>)

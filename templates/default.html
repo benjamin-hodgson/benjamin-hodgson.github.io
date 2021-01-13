@@ -35,11 +35,14 @@
             </div>
         </div>
 
-        <div id="content">
+        <article>
             <header>
                 <h1>$title$</h1>
                 $if(subtitle)$
-                    <p>$subtitle$</p>
+                    <p class="subtitle">$subtitle$</p>
+                $endif$
+                $if(date)$
+                    <p>$partial("templates/date.html")$</p>
                 $endif$
             </header>
 
