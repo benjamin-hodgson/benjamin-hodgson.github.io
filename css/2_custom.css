@@ -1,33 +1,35 @@
-div#header {
+#header {
     border-bottom: 2px solid black;
-    margin-bottom: 30px;
-    padding: 12px 0px 12px 0px;
 }
 
 
-div#header #navigation {
-    text-align: right;
+#header #navigation ul {
+    display: flex;
+    list-style-type: none;
+    padding-left: 0;
 }
-
-div#header #navigation a {
-    color: black;
+#header #navigation ul li {
     font-size: 14pt;
     font-weight: bold;
     margin-left: 12px;
     text-decoration: none;
     text-transform: uppercase;
 }
-div#header #navigation a#logo {
-    float: left;
-    margin-left: 0;
-    text-transform: lowercase;
+#header #navigation ul li a {
+    color: black;
 }
-div#header #navigation a#logo pre {
+
+#header #navigation #logo {
+    text-transform: lowercase;
+    font-family: monospace;
+    flex-grow: 1;
+}
+#header #navigation a#logo pre {
     margin: 0;
     padding: 0;
 }
 
-div#footer {
+#footer {
     border-top: solid 2px black;
     color: #555;
     font-size: 12px;
