@@ -33,8 +33,13 @@ main = do
             compile copyFileCompiler
 
         match "css/*" $ do
+            compile getResourceBody
+
+        create ["all.css"] $ do
             route   idRoute
-            compile compressCssCompiler
+            compile $ do
+                items <- loadAll "css/*"
+                makeItem $ compressCss $ concatMap itemBody items
 
         match (fromList ["about.md", "contact.md"]) $ do
             route   $ setExtension "html"
