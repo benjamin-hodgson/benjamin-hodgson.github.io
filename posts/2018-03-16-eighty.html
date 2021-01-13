@@ -23,31 +23,30 @@
         <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     </head>
     <body>
-        <div id="header">
-            <div id="navigation">
-                <a href="../" id="logo"><pre class="title">benjamin.pizza</pre></a>
-                <a href="../">Home</a>
-                <a href="../about.html">About</a>
-                <a href="../contact.html">Contact</a>
-                <a href="../archive.html">Archive</a>
-                <a href="../atom.xml"><img src="../images/Feed-icon.svg" style="width: 14pt; margin-bottom: -3px;"></a>
-            </div>
-        </div>
+        <header id="header">
+            <nav id="navigation">
+                <ul>
+                    <li id="logo"><a href="../">benjamin.pizza</a></li>
+                    <li><a href="../about.html">About</a></li>
+                    <li><a href="../contact.html">Contact</a></li>
+                    <li><a href="../archive.html">Archive</a></li>
+                    <li><a href="../atom.xml"><img src="../images/Feed-icon.svg" style="width: 14pt; margin-bottom: -3px;"></a></li>
+                </ul>
+            </header>
+        </header>
 
-        <div id="content">
+        <article>
             <header>
                 <h1>Eighty</h1>
                 
-                    <p>Simple and fast HTML generation</p>
+                    <p class="subtitle">Simple and fast HTML generation</p>
+                
+                
+                    <p><time datetime="2018-03-16">March 16, 2018</time></p>
                 
             </header>
 
-            <div class="info">
-    Posted on March 16, 2018
-    
-</div>
-
-<p>HTML templating systems are great but they sure are complex. ASP.NET’s Razor, for example, is a whole new programming language! While Razor does happen to have a large chunk of C# embedded within it, and it works by generating and then compiling C# code, it’s still a separate language with a separate syntax, separate abstraction techniques, separate compiler tooling, a separate file type, and separate (and usually inferior) editor support. All this for a task as simple and common as generating HTML!</p>
+            <p>HTML templating systems are great but they sure are complex. ASP.NET’s Razor, for example, is a whole new programming language! While Razor does happen to have a large chunk of C# embedded within it, and it works by generating and then compiling C# code, it’s still a separate language with a separate syntax, separate abstraction techniques, separate compiler tooling, a separate file type, and separate (and usually inferior) editor support. All this for a task as simple and common as generating HTML!</p>
 <p>This overhead can be worth it if you’re building a complex web application, but for simple tools such as report generators or email batch mailers Razor is unwieldy. Many people in these situations resort to generating their own HTML, either by building strings manually or by imperatively building tags using .NET’s supplied XML manipulation APIs. But there’s a whole world of possible designs out there, and there’s a lot of space in between “complex templating language” and “build strings by hand”.</p>
 <h2 id="eighty">Eighty</h2>
 <p><a href="https://github.com/benjamin-hodgson/Eighty">Eighty</a> (as in <em>eigh-ty-M-L</em>) is my attempt at striking a balance between these two extremes: not so abstract as to constitute a separate programming language, but not so concrete that you have to manipulate XML tags or strings manually. It’s a simple embedded domain-specific language which piggybacks on C#’s syntax, enabling you to write code resembling the HTML you’re generating. Rather than embedding C# into an HTML generator, Eighty embeds an HTML generator into C#.</p>
@@ -236,24 +235,26 @@
 <p>Eighty is available <a href="https://www.nuget.org/packages/Eighty">on Nuget</a>, along with some helpers to integrate Eighty with <a href="https://www.nuget.org/packages/Eighty.AspNet.Mvc">MVC</a> and <a href="https://www.nuget.org/packages/Eighty.AspNetCore">ASP.NET Core</a>. API docs are hosted <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.html">on this very domain</a>, and the code’s all <a href="https://github.com/benjamin-hodgson/Eighty">on GitHub</a> where contributions and bug reports are very welcome!</p>
 
 <section class="comments">
-    <h1>Comments</h1>
+    <h2>Comments</h2>
 
     <ol class="comments-list">
         
             <li class="comment">
     
-        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on March 16, 2018</h2>
+        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on <time datetime="2018-03-16">March 16, 2018</time></h2>
     
     <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2018-03-16-eighty/example.md">send me a pull request</a>.</p></div>
 </li>
+
         
     </ol>
 </section>
 
-        </div>
-        <div id="footer">
+        </article>
+
+        <footer id="footer">
             Site proudly generated by
             <a href="http://jaspervdj.be/hakyll">Hakyll</a>
-        </div>
+        </footer>
     </body>
 </html>
