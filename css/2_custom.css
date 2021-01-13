@@ -2,7 +2,6 @@
     border-bottom: 2px solid var(--border);
 }
 
-
 #header #navigation ul {
     display: flex;
     list-style-type: none;
@@ -11,30 +10,28 @@
 #header #navigation ul li {
     font-size: 14pt;
     font-weight: bold;
-    margin-left: 12px;
-    text-decoration: none;
+    margin: 0px 6px;
     text-transform: uppercase;
+}
+#header #navigation ul li:first-child {
+    margin-left: 0px;
+}
+#header #navigation ul li:last-child {
+    margin-right: 0px;
 }
 #header #navigation ul li a {
     color: var(--text-bright);
 }
-
 #header #navigation #logo {
     text-transform: lowercase;
     font-family: monospace;
-    flex-grow: 1;
+    flex-grow: 1;  /* push all the way left */
 }
-#header #navigation a#logo pre {
-    margin: 0;
-    padding: 0;
-}
+
 
 #footer {
     border-top: solid 2px var(--border);
     color: var(--text-muted);
-    font-size: 12px;
-    margin-top: 30px;
-    padding: 12px 0px 12px 0px;
     text-align: right;
 }
 
@@ -70,7 +67,7 @@ code {
 }
 pre {
     overflow-x: auto;
-    overflow-wrap: normal;
+    overflow-wrap: normal;  /* fix scrolling in safari */
 }
 pre code {
     counter-reset: lineNumber;
