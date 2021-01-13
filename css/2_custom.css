@@ -75,7 +75,7 @@ code {
 }
 pre {
     overflow-x: auto;
-    word-wrap: normal;
+    overflow-wrap: normal;
 }
 pre code {
     counter-reset: lineNumber;
