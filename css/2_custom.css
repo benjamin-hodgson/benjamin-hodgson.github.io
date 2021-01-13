@@ -1,5 +1,5 @@
 #header {
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid var(--border);
 }
 
 
@@ -16,7 +16,7 @@
     text-transform: uppercase;
 }
 #header #navigation ul li a {
-    color: black;
+    color: var(--text-bright);
 }
 
 #header #navigation #logo {
@@ -30,8 +30,8 @@
 }
 
 #footer {
-    border-top: solid 2px black;
-    color: #555;
+    border-top: solid 2px var(--border);
+    color: var(--text-muted);
     font-size: 12px;
     margin-top: 30px;
     padding: 12px 0px 12px 0px;
@@ -49,7 +49,7 @@
     padding: 0;
 }
 .comment {
-    border: 1px solid lightgray;
+    border: 1px solid var(--border);
     border-radius: 2px;
     padding: 1em;
     margin: 1em 0 1em 1em;
@@ -80,9 +80,9 @@ pre code>span::before {
     content: counter(lineNumber);
     width: 1.25em;
     display: inline-block;
-    border-right: 1px solid #AAAAAA;
+    border-right: 1px solid var(--border);
     margin-right: 0.25em;
     padding-right: 0.25em;
-    color: #AAAAAA;
+    color: var(--text-muted);
     text-align: right;
 }
