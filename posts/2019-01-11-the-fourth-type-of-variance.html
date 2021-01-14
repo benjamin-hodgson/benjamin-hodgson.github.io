@@ -172,22 +172,6 @@
 <span id="cb18-4"><a href="#cb18-4"></a><span class="kw">val</span> dogProxy : Proxy[Dog] = catProxy</span></code></pre></div>
 <p><code>Proxy[A]</code> is always a subtype of <code>Proxy[B]</code> (and vice versa!), even when <code>A</code> and <code>B</code> are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry — two different types can both be a subtype of each other — so subtyping is no longer a partial order. As a language feature, phantom variance probably isn’t actually all that desirable.</p>
 
-<section class="comments">
-    <h2>Comments</h2>
-
-    <ol class="comments-list">
-        
-            <li class="comment">
-    
-        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on <time datetime="2019-01-11">January 11, 2019</time></h2>
-    
-    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/develop/comments/2019-01-11-the-fourth-type-of-variance/example.md">send me a pull request</a>.</p></div>
-</li>
-
-        
-    </ol>
-</section>
-
         </article>
 
         <footer id="footer">

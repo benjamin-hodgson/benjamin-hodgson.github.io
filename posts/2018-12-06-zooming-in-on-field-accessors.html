@@ -367,22 +367,6 @@
 <p>All that said, there are a couple of things which I find preferable about this design when compared to <code>lens</code>. Haskell doesn’t feature subtyping directly, so <code>lens</code> uses a clever function-based encoding of its type hierarchy, using the type class solver to handle the various subtype relationships. Encoding lenses as functions is partly why <code>lens</code> is so fast, but it does make for a steep learning curve and notoriously confusing type errors. Using a more direct representation of subtyping means the model is clearer, and it’s easier to see how one would slot (eg) prisms or indexed lenses into the system I outlined above. What’s more, the four-parameter version of <code>ILens</code> I mentioned above is variously co- and contra-variant in its parameters, meaning it interoperates well with the rest of C#’s type hierarchy. In some sense these lenses are <em>more</em> composable than <code>lens</code>’s lenses.</p>
 <p>I’d love to tell you I’ve written this up as a published library, but the shortfalls I noted above make this formulation of lenses impractical for real-world use. I’d love to hear your ideas on how to improve the situation! In the meantime, I bagsie the name <code>OptiCS</code>.</p>
 
-<section class="comments">
-    <h2>Comments</h2>
-
-    <ol class="comments-list">
-        
-            <li class="comment">
-    
-        <h2 class="comment-header">By <a href="http://www.benjamin.pizza">Benjamin</a> on <time datetime="2018-12-06">December  6, 2018</time></h2>
-    
-    <div class="comment-body"><p>To join the discussion, <a href="https://github.com/benjamin-hodgson/benjamin-hodgson.github.io/blob/live/comments/2018-12-06-zooming-in-on-field-accessors/example.md">send me a pull request</a>.</p></div>
-</li>
-
-        
-    </ol>
-</section>
-
         </article>
 
         <footer id="footer">
