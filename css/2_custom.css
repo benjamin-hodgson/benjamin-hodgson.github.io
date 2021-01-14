@@ -7,6 +7,11 @@
     list-style-type: none;
     padding-left: 0;
 }
+@media screen and (min-width: 500px) {
+    #header #navigation ul {
+        flex-direction: column;
+    }
+}
 #header #navigation ul li {
     font-size: 14pt;
     font-weight: bold;
