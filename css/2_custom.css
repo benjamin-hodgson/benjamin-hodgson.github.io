@@ -49,22 +49,6 @@
 }
 
 
-.comments-list {
-    list-style: none;
-    padding: 0;
-}
-.comment {
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    padding: 1em;
-    margin: 1em 0 1em 1em;
-}
-.comment-header {
-    font-size: 12pt;
-    margin-top: 12px;
-}
-
-
 .math.display {
     display: block;
     text-align: center;

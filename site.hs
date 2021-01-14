@@ -50,12 +50,10 @@ main = do
         matchMetadata postsPattern metadataMatcher $ do
             route $ setExtension "html"
             compile $ do
-                comments <- compilePostComments
-                let ctx = postCtx comments
                 pandocCompiler
-                    >>= loadAndApplyTemplate "templates/post.html" ctx
+                    >>= loadAndApplyTemplate "templates/post.html" postCtx
                     >>= saveSnapshot "content"
-                    >>= loadAndApplyTemplate "templates/default.html" ctx
+                    >>= loadAndApplyTemplate "templates/default.html" postCtx
                     >>= relativizeUrls
 
         version "redirects" $ createRedirects [
@@ -63,18 +61,13 @@ main = do
             ("posts/2019-12-22-building-prolog's-rules-engine.html", "2019-12-22-building-prologs-rules-engine.html")
             ]
 
-        match "comments/*/*" $ do
-            compile $
-                pandocCompiler
-                    >>= loadAndApplyTemplate "templates/comment.html" commentCtx
-
         create ["archive.html"] $ do
             route idRoute
             compile $ do
                 posts <- recentFirst =<< loadAll postsPattern
                 let archiveCtx =
-                        listField "posts" postSummaryCtx (return posts) `mappend`
-                        constField "title" "Archives"                   `mappend`
+                        listField "posts" postCtx (return posts) `mappend`
+                        constField "title" "Archives"            `mappend`
                         defaultContext
 
                 makeItem ""
@@ -95,7 +88,7 @@ main = do
             compile $ do
                 posts <- recentFirst =<< loadAll postsPattern
                 let indexCtx =
-                        listField "posts" postSummaryCtx (return posts) `mappend`
+                        listField "posts" postCtx (return posts) `mappend`
                         defaultContext
 
                 getResourceBody
@@ -121,29 +114,16 @@ metadataMatcherForCommand _ = do
 parseDate = Time.parseTimeOrError True Time.defaultTimeLocale "%Y-%m-%d"
 
 
-postCtx :: [Item String] -> Context String
-postCtx comments =
-    listField "comments" commentCtx (return comments) `mappend`
-    dateField "date" "%Y-%m-%d" `mappend`
-    dateField "englishDate" "%B %e, %Y" `mappend`
-    defaultContext
-
-postSummaryCtx :: Context String
-postSummaryCtx = 
+postCtx :: Context String
+postCtx =
     dateField "date" "%Y-%m-%d" `mappend`
     dateField "englishDate" "%B %e, %Y" `mappend`
     defaultContext
 
 atomCtx :: Context String
 atomCtx =
-    postSummaryCtx `mappend`
+    postCtx `mappend`
     bodyField "description"
-
-commentCtx :: Context String
-commentCtx =
-    dateField "date" "%Y-%m-%d" `mappend`
-    dateField "englishDate" "%B %e, %Y" `mappend`
-    defaultContext
 
 feedConfig = FeedConfiguration {
     feedTitle = "benjamin.pizza",
@@ -152,18 +132,3 @@ feedConfig = FeedConfiguration {
     feedAuthorEmail = "bhodgson@stackoverflow.com",
     feedRoot = "http://www.benjamin.pizza"
 }
-
-
-compilePostComments :: Compiler [Item String]
-compilePostComments = do
-    filename <- fmap (takeBaseName . toFilePath) getUnderlying
-    sortBy (comparing commentNumber) <$> loadAll (fromGlob $ "comments/" ++ filename ++ "/*")
-
-commentNumber :: Item a -> Int
-commentNumber =
-    fromMaybe maxBound
-    . readMaybe
-    . takeWhile isDigit
-    . takeBaseName
-    . toFilePath
-    . itemIdentifier
