@@ -7,11 +7,6 @@
     list-style-type: none;
     padding-left: 0;
 }
-@media screen and (min-width: 500px) {
-    #header #navigation ul {
-        flex-direction: column;
-    }
-}
 #header #navigation ul li {
     font-size: 14pt;
     font-weight: bold;
@@ -23,6 +18,14 @@
 }
 #header #navigation ul li:last-child {
     margin-right: 0px;
+}
+@media screen and (max-width: 500px) {
+    #header #navigation ul {
+        flex-direction: column;
+    }
+    #header #navigation ul li {
+        margin: 0;
+    }
 }
 #header #navigation ul li a {
     color: var(--text-bright);
