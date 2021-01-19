@@ -75,3 +75,12 @@ pre code>span::before {
     color: var(--text-muted);
     text-align: right;
 }
+
+/* pasting blockquote styles from water.css */
+aside {
+    border-left: 4px solid #0096bfab;
+    border-left: 4px solid var(--focus);
+    margin: 1.5em 0;
+    padding: 0.5em 1em;
+    font-style: italic;
+}
