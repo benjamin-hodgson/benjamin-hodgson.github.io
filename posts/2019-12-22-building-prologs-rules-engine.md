@@ -1,6 +1,5 @@
 ---
 title: Building Prolog's Rules Engine
-date: 2019-12-22
 ---
 
 This is part of a series of posts about implementing a miniature Prolog interpreter in C#.

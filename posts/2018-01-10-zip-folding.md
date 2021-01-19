@@ -1,6 +1,5 @@
 ---
 title: Zip-Folding
-date: 2018-01-10
 ---
 
 One of my favourite little gems of functional programming is the following implementation of the dot product:

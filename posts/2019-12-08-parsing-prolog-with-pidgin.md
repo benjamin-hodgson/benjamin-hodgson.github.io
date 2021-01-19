@@ -1,6 +1,5 @@
 ---
 title: Parsing Prolog with Pidgin
-date: 2019-12-08
 ---
 
 Happy birthday to my sister! This is part of a series of posts about implementing a miniature Prolog interpreter in C#.
