@@ -1,5 +1,6 @@
 ---
 title: Zooming In on Field Accessors
+date: 2018-12-06
 ---
 
 It's common in functional languages --- and increasingly in hybrid languages like C# --- to work with complex systems of immutable datatypes. For a contrived example, suppose you're working on a billing application:
