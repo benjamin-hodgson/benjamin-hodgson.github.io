@@ -91,7 +91,8 @@ aside {
     border-radius: 6px;
     float: right;
     padding: 0px 12px;
-    max-width: 40%
+    max-width: 40%;
+    min-width: 30%;
 }
 .toc h2 {
     margin-top: 12px;
