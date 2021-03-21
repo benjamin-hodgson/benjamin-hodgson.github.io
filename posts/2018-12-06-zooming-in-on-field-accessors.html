@@ -149,7 +149,7 @@
 <span id="cb8-7"><a href="#cb8-7"></a>        =&gt; <span class="fu">Set</span>(oldObj, <span class="fu">transformer</span>(<span class="fu">Get</span>(oldObj))).</span>
 <span id="cb8-8"><a href="#cb8-8"></a>}</span></code></pre></div>
 <p>Here’s an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you’re working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
-<hr><a href="#"></a></hr>
+<hr />
 <p>Powerful as they are, these lenses don’t quite scale up to cover all of the important ways to access data. Specifically, they don’t support computed properties or lists.</p>
 <h2 id="getters"><a href="#getters">Getters</a></h2>
 <p>How would you write a lens which focuses on a list’s <code>Count</code>? You can’t set <code>Count</code> directly - it measures the number of times you’ve added or removed something from the list. The only way to change the <code>Count</code> is to add or remove an item!</p>

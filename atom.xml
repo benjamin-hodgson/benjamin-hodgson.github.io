@@ -200,8 +200,8 @@
 <div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">private</span> <span class="dt">int</span> _freshenCounter = <span class="dv">0</span>;</span>
 <span id="cb12-2"><a href="#cb12-2"></a><span class="kw">private</span> Rule <span class="fu">Freshen</span>(Rule rule)</span>
 <span id="cb12-3"><a href="#cb12-3"></a>{</span>
-<span id="cb12-4"><a href="#cb12-4"></a>    <span class="co">// find all of the rule's local variables.</span></span>
-<span id="cb12-5"><a href="#cb12-5"></a>    <span class="co">// NB: local variables may appear in the rule's body but not the head.</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a>    <span class="co">// find all of the rule&#39;s local variables.</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a>    <span class="co">// NB: local variables may appear in the rule&#39;s body but not the head.</span></span>
 <span id="cb12-6"><a href="#cb12-6"></a>    <span class="dt">var</span> variables = rule.<span class="fu">Body</span></span>
 <span id="cb12-7"><a href="#cb12-7"></a>        .<span class="fu">Select</span>(x =&gt; ((Term)x).<span class="fu">Variables</span>())</span>
 <span id="cb12-8"><a href="#cb12-8"></a>        .<span class="fu">Aggregate</span>(((Term)rule.<span class="fu">Head</span>).<span class="fu">Variables</span>(), (xs, ys) =&gt; xs.<span class="fu">Union</span>(ys));</span>
@@ -462,7 +462,7 @@
 <span id="cb8-3"><a href="#cb8-3"></a>    <span class="co">// ...</span></span>
 <span id="cb8-4"><a href="#cb8-4"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
 <span id="cb8-5"><a href="#cb8-5"></a>    {</span>
-<span id="cb8-6"><a href="#cb8-6"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
+<span id="cb8-6"><a href="#cb8-6"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
 <span id="cb8-7"><a href="#cb8-7"></a>    }</span>
 <span id="cb8-8"><a href="#cb8-8"></a>    <span class="co">// ...</span></span>
 <span id="cb8-9"><a href="#cb8-9"></a>}</span></code></pre></div>
@@ -481,7 +481,7 @@
 <span id="cb10-2"><a href="#cb10-2"></a>{</span>
 <span id="cb10-3"><a href="#cb10-3"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
 <span id="cb10-4"><a href="#cb10-4"></a>    {</span>
-<span id="cb10-5"><a href="#cb10-5"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
+<span id="cb10-5"><a href="#cb10-5"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
 <span id="cb10-6"><a href="#cb10-6"></a>    }</span>
 <span id="cb10-7"><a href="#cb10-7"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
 <span id="cb10-8"><a href="#cb10-8"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
@@ -539,7 +539,7 @@
 <span id="cb13-12"><a href="#cb13-12"></a>    }</span>
 <span id="cb13-13"><a href="#cb13-13"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
 <span id="cb13-14"><a href="#cb13-14"></a>    {</span>
-<span id="cb13-15"><a href="#cb13-15"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
+<span id="cb13-15"><a href="#cb13-15"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
 <span id="cb13-16"><a href="#cb13-16"></a>    }</span>
 <span id="cb13-17"><a href="#cb13-17"></a>    <span class="dt">var</span> leftChildren = left.<span class="fu">GetChildren</span>();</span>
 <span id="cb13-18"><a href="#cb13-18"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
@@ -549,7 +549,7 @@
 <span id="cb13-22"><a href="#cb13-22"></a>{</span>
 <span id="cb13-23"><a href="#cb13-23"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
 <span id="cb13-24"><a href="#cb13-24"></a>    {</span>
-<span id="cb13-25"><a href="#cb13-25"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
+<span id="cb13-25"><a href="#cb13-25"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
 <span id="cb13-26"><a href="#cb13-26"></a>    }</span>
 <span id="cb13-27"><a href="#cb13-27"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
 <span id="cb13-28"><a href="#cb13-28"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
@@ -672,22 +672,22 @@ p r o <b>g</b> r a m m i n g
 <span id="cb4-5"><a href="#cb4-5"></a><span class="kw">static</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; <span class="fu">Tok</span>(<span class="dt">string</span> value) =&gt; <span class="fu">Tok</span>(<span class="fu">String</span>(value));</span></code></pre></div>
 <p>I have a half-baked plan to add this <code>Tok</code> parser, along with some other tools for handling whitespace, to the Pidgin library itself, so you don’t have to write it yourself every time you write a parser.</p>
 <p>Some useful token parsers for Prolog:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _comma = <span class="fu">Tok</span>(<span class="ch">','</span>);</span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _openParen = <span class="fu">Tok</span>(<span class="ch">'('</span>);</span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _closeParen = <span class="fu">Tok</span>(<span class="ch">')'</span>);</span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _dot = <span class="fu">Tok</span>(<span class="ch">'.'</span>);</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _comma = <span class="fu">Tok</span>(<span class="ch">&#39;,&#39;</span>);</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _openParen = <span class="fu">Tok</span>(<span class="ch">&#39;(&#39;</span>);</span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _closeParen = <span class="fu">Tok</span>(<span class="ch">&#39;)&#39;</span>);</span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _dot = <span class="fu">Tok</span>(<span class="ch">&#39;.&#39;</span>);</span>
 <span id="cb5-5"><a href="#cb5-5"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; _colonDash = <span class="fu">Tok</span>(<span class="st">&quot;:-&quot;</span>);</span></code></pre></div>
 <h2 id="names"><a href="#names">Names</a></h2>
 <p>Prolog has two types of names — <em>atoms</em> start with a lowercase letter and <em>variables</em> start with an uppercase letter or an underscore.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; _atomName = <span class="fu">Tok</span>(</span>
 <span id="cb6-2"><a href="#cb6-2"></a>    from first <span class="kw">in</span> Lowercase</span>
 <span id="cb6-3"><a href="#cb6-3"></a>    <span class="co">// OneOf is like Or, but it works with more than two parsers</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">'_'</span>)).<span class="fu">ManyString</span>()</span>
+<span id="cb6-4"><a href="#cb6-4"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)).<span class="fu">ManyString</span>()</span>
 <span id="cb6-5"><a href="#cb6-5"></a>    select first + rest</span>
 <span id="cb6-6"><a href="#cb6-6"></a>);</span>
 <span id="cb6-7"><a href="#cb6-7"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; _variableName = <span class="fu">Tok</span>(</span>
-<span id="cb6-8"><a href="#cb6-8"></a>    from first <span class="kw">in</span> Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">'_'</span>))</span>
-<span id="cb6-9"><a href="#cb6-9"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">'_'</span>)).<span class="fu">ManyString</span>()</span>
+<span id="cb6-8"><a href="#cb6-8"></a>    from first <span class="kw">in</span> Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>))</span>
+<span id="cb6-9"><a href="#cb6-9"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)).<span class="fu">ManyString</span>()</span>
 <span id="cb6-10"><a href="#cb6-10"></a>    select first + rest</span>
 <span id="cb6-11"><a href="#cb6-11"></a>);</span></code></pre></div>
 <p>One of the fun things about C#’s <code>from...select</code> syntax is that it’s <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers — <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
@@ -703,7 +703,7 @@ p r o <b>g</b> r a m m i n g
 <div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">static</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; <span class="fu">Name</span>(Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; firstLetter)</span>
 <span id="cb7-2"><a href="#cb7-2"></a>    =&gt; <span class="fu">Tok</span>(</span>
 <span id="cb7-3"><a href="#cb7-3"></a>        from first <span class="kw">in</span> firstLetter</span>
-<span id="cb7-4"><a href="#cb7-4"></a>        from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">'_'</span>)).<span class="fu">ManyString</span>()</span>
+<span id="cb7-4"><a href="#cb7-4"></a>        from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)).<span class="fu">ManyString</span>()</span>
 <span id="cb7-5"><a href="#cb7-5"></a>        select first + rest</span>
 <span id="cb7-6"><a href="#cb7-6"></a>    );</span></code></pre></div>
 <h2 id="terms"><a href="#terms">Terms</a></h2>
@@ -722,7 +722,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb9-4"><a href="#cb9-4"></a>        .<span class="fu">Labelled</span>(<span class="st">&quot;atom&quot;</span>);</span>
 <span id="cb9-5"><a href="#cb9-5"></a></span>
 <span id="cb9-6"><a href="#cb9-6"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, Term&gt; _variable</span>
-<span id="cb9-7"><a href="#cb9-7"></a>    = <span class="fu">Name</span>(Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">'_'</span>)))</span>
+<span id="cb9-7"><a href="#cb9-7"></a>    = <span class="fu">Name</span>(Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)))</span>
 <span id="cb9-8"><a href="#cb9-8"></a>        .<span class="fu">Select</span>(name =&gt; (Term)<span class="kw">new</span> <span class="fu">Variable</span>(name))</span>
 <span id="cb9-9"><a href="#cb9-9"></a>        .<span class="fu">Labelled</span>(<span class="st">&quot;variable&quot;</span>);</span>
 <span id="cb9-10"><a href="#cb9-10"></a></span>
@@ -828,7 +828,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb1-4"><a href="#cb1-4"></a><span class="co">% If someone loves a given food, then they also like it.</span></span>
 <span id="cb1-5"><a href="#cb1-5"></a>likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> loves(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
 <span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="co">% If we're going to have dinner, we'd better agree on what to eat.</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="co">% If we&#39;re going to have dinner, we&#39;d better agree on what to eat.</span></span>
 <span id="cb1-8"><a href="#cb1-8"></a>dinner(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> wants(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">,</span> wants(<span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span></code></pre></div>
 <p>Variables in Prolog start with a capital letter. <code>:-</code> means “if” and <code>,</code> means “and”. You can give multiple alternative ways of satisfying the same predicate by just declaring it more than once. In other words, multiple declarations of the same predicate means “or”.</p>
 <p>Next, we’ll prime Prolog’s database with a couple of <em>facts</em> about people and foods.</p>
@@ -1499,14 +1499,14 @@ p r o <b>g</b> r a m m i n g
 <h2 id="error-messages"><a href="#error-messages">Error messages</a></h2>
 <p>Part of Pidgin’s job is to report when you gave a parser bad input. For example, the top level of a C# file must contain <code>class</code>es and <code>namespace</code>s, so feeding a C# parser the text <code>Console.WriteLine("foo");</code> (without an enclosing <code>class</code>) should fail with some information about the problem:</p>
 <pre><code>Parse error.
-    unexpected 'C'
+    unexpected &#39;C&#39;
     expected &quot;class&quot; or &quot;namespace&quot;
     at line 1, col 1</code></pre>
 <p>A mistake I made early on in Pidgin’s development nearly two years ago(!) was trying to pre-compute the content of these error messages. Under the assumption that parsers are typically built once and then run repeatedly, I wrote some code to examine your parser upon construction and try to predict the ways it could fail on unexpected input, in order to avoid constructing error messages at runtime. This code calculated a set of “expected” input strings, accounting for <code>Then</code>s and <code>Or</code>s by concatenating the strings in the set and by unioning the sets respectively. (The idea was that a parser like <code>Keyword("public").Optional().Then(Keyword("class"))</code> would report that it expected <code>"class" or "public class"</code>.)</p>
 <p>This went catastrophically wrong for complex parsers. Here’s a sketch of some code which parses left-associative mathematical operators with precedence, so <code>3^2 + 4 * 3^5 * 5</code> is parsed as <code>(3^2) + ((4 * (3^5)) * 5)</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="dt">var</span> topPrecedence = Number.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">'^'</span>).<span class="fu">Then</span>(Number).<span class="fu">Many</span>());</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="dt">var</span> midPrecedence = topPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">'*'</span>).<span class="fu">Then</span>(topPrecedence).<span class="fu">Many</span>());</span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="dt">var</span> lowPrecedence = midPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">'+'</span>).<span class="fu">Then</span>(midPrecedence).<span class="fu">Many</span>());</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="dt">var</span> topPrecedence = Number.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;^&#39;</span>).<span class="fu">Then</span>(Number).<span class="fu">Many</span>());</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="dt">var</span> midPrecedence = topPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;*&#39;</span>).<span class="fu">Then</span>(topPrecedence).<span class="fu">Many</span>());</span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="dt">var</span> lowPrecedence = midPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;+&#39;</span>).<span class="fu">Then</span>(midPrecedence).<span class="fu">Many</span>());</span></code></pre></div>
 <p><code>topPrecedence</code> expects a number, or a number followed by a sequence of exponents — two possibilities. <code>midPrecedence</code> therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications — four possibilities. <code>lowPrecedence</code> has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.</p>
 <p>I made some attempts to optimise this by using more efficient data structures, but I realised this was a losing proposition and decided to throw it out altogether in v2.0. Error messages are now computed at runtime, when the error actually occurs. This means I can be more precise about what the parser was expecting at that particular point in the input: once a parsing process has committed to a branch I can report expected inputs <em>from that branch</em>, rather than reporting all possible expected inputs.</p>
 <p>Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the <em>prioritised choice</em> operator <code>Or</code> works — <code>String("foo").Or(String("bar"))</code> only tries <code>bar</code> if an attempt to parse <code>foo</code> failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using <code>ArrayPool</code>), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children’s error messages adds some interesting complications here, which I’ve described in a <a href="https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74">long comment</a>.)</p>
@@ -1701,7 +1701,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb9-3"><a href="#cb9-3"></a>    <span class="kw">def</span> <span class="fu">toList</span>(): List[A]</span>
 <span id="cb9-4"><a href="#cb9-4"></a>}</span></code></pre></div>
 <p>Consuming a producer of <code>A</code>s is basically the same as consuming <code>A</code>s. A type which has a covariant type as an input is contravariant.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb10-1"><a href="#cb10-1"></a><span class="co">// Printer consumes a covariant type, so it's contravariant</span></span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb10-1"><a href="#cb10-1"></a><span class="co">// Printer consumes a covariant type, so it&#39;s contravariant</span></span>
 <span id="cb10-2"><a href="#cb10-2"></a><span class="kw">trait</span> Printer[-A] {</span>
 <span id="cb10-3"><a href="#cb10-3"></a>    <span class="kw">def</span> <span class="fu">printAll</span>(items: List[A]): Unit</span>
 <span id="cb10-4"><a href="#cb10-4"></a>}</span></code></pre></div>
@@ -1869,7 +1869,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb8-7"><a href="#cb8-7"></a>        =&gt; <span class="fu">Set</span>(oldObj, <span class="fu">transformer</span>(<span class="fu">Get</span>(oldObj))).</span>
 <span id="cb8-8"><a href="#cb8-8"></a>}</span></code></pre></div>
 <p>Here’s an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you’re working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
-<hr><a href="#"></a></hr>
+<hr />
 <p>Powerful as they are, these lenses don’t quite scale up to cover all of the important ways to access data. Specifically, they don’t support computed properties or lists.</p>
 <h2 id="getters"><a href="#getters">Getters</a></h2>
 <p>How would you write a lens which focuses on a list’s <code>Count</code>? You can’t set <code>Count</code> directly - it measures the number of times you’ve added or removed something from the list. The only way to change the <code>Count</code> is to add or remove an item!</p>
@@ -2291,7 +2291,7 @@ p r o <b>g</b> r a m m i n g
 </ul></li>
 </ul>
 <p>I’m not sure exactly why Razor is slower by comparison. My guess is that Razor’s template compiler just tends to generate comparatively slow C# code — so there’s probably some room for improvement — but I would like to investigate this more.</p>
-<hr><a href="#"></a></hr>
+<hr />
 <p>HTML generators are an example of a problem where the spectrum of possible solutions is very broad indeed. Just within the C# ecosystem there exists a menagerie of different templating languages, as well as imperative object-oriented APIs like <code>TagBuilder</code> and streaming APIs like <code>XmlWriter</code>. Even Eighty and Twenty, two implementations of the same idea, are substantially different. You can often find yourself somewhere quite interesting if you appreach a common problem from a different direction than the established solutions. What parts of the library ecosystem do you think you could do with a fresh perspective?</p>
 <p>Eighty is available <a href="https://www.nuget.org/packages/Eighty">on Nuget</a>, along with some helpers to integrate Eighty with <a href="https://www.nuget.org/packages/Eighty.AspNet.Mvc">MVC</a> and <a href="https://www.nuget.org/packages/Eighty.AspNetCore">ASP.NET Core</a>. API docs are hosted <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.html">on this very domain</a>, and the code’s all <a href="https://github.com/benjamin-hodgson/Eighty">on GitHub</a> where contributions and bug reports are very welcome!</p>
 ]]></summary>
@@ -2308,15 +2308,15 @@ p r o <b>g</b> r a m m i n g
 <span id="cb1-2"><a href="#cb1-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> <span class="fu">sum</span> (<span class="fu">zipWith</span> (<span class="op">*</span>) xs ys)</span></code></pre></div>
 <p><code>dot</code> zips two lists of numbers, multiplying each pair of elements using <code>(*)</code>, and then aggregates the results with <code>sum</code>. It’s like a <em>map-reduce</em> program, but it processes two collections, not one. It generalises rather beautifully to any zippily <code>Applicative</code> <code>Foldable</code> container whose elements form a <code>Semiring</code>:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">dot ::</span> (<span class="dt">Semiring</span> a, <span class="dt">Applicative</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
-<span id="cb2-2"><a href="#cb2-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> foldl' (<span class="op">&lt;+&gt;</span>) zero (liftA2 (<span class="op">&lt;.&gt;</span>) xs ys)</span></code></pre></div>
+<span id="cb2-2"><a href="#cb2-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> foldl&#39; (<span class="op">&lt;+&gt;</span>) zero (liftA2 (<span class="op">&lt;.&gt;</span>) xs ys)</span></code></pre></div>
 <p>I think I’m particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It’s a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call <em>zip-folding</em>.</p>
-<hr><a href="#"></a></hr>
+<hr />
 <p>Until recently I felt rather embarrassed that my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> didn’t have a good story for consuming more than one tree at a time. I had lots of tools for <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs">querying</a>, <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs">editing</a>, and <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs">tearing down</a> single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you’re unit testing a parser or a transformation pass, you need to compare the output tree to the one that you expected.</p>
 <p>I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don’t have a partner (the grey-coloured ones in the drawing):</p>
 <p><img src="/images/2018-01-10-zip-folding/zip.jpg" alt="Pairing up nodes" /></p>
 <p>But I got stuck on how to plug those paired nodes back into a single tree representing the zipped trees. Nodes typically have space for a fixed number of children, but pairing up children will typically change that number. That is, a binary operator has precisely two children, but when zipping two binary operators together you need to do something with four children.</p>
 <p>And, more generally, what would it mean to zip trees recursively? You can imagine a scheme wherein each child of a node is replaced with a tuple of two children. But each child is really a subtree, with its own children, so the two subtrees need to be zipped - but that ought to produce a single tree, not a pair of trees. It’s contradictory! The intuitive idea that a node in a tree is a container of subtrees fails when you consider zipping.</p>
-<hr><a href="#"></a></hr>
+<hr />
 <p>Guess where this is going: you can’t <em>zip</em> trees to produce a new tree, but you can <em>zip-fold</em> trees to produce a value. The idea is to take pairs of nodes in a tree and combine them with the results of zipping their children.</p>
 <p>Let’s start by looking at (an abbreviated version of) Sawmill’s existing <code>Fold</code>. <code>Fold</code> says <em>if you give me a way to combine a node with the results of folding its children, I can recursively fold the entire tree to produce a single summary value</em>.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">public</span> <span class="kw">static</span> U Fold&lt;T, U&gt;(</span>
@@ -2543,8 +2543,8 @@ p r o <b>g</b> r a m m i n g
 <span id="cb7-11"><a href="#cb7-11"></a>ffmapDefault eta <span class="ot">=</span></span>
 <span id="cb7-12"><a href="#cb7-12"></a>    runIdentity <span class="op">.</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span> <span class="op">.</span> eta)</span>
 <span id="cb7-13"><a href="#cb7-13"></a></span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="ot">fsequence' ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</span>
-<span id="cb7-15"><a href="#cb7-15"></a>fsequence' <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span></code></pre></div>
+<span id="cb7-14"><a href="#cb7-14"></a><span class="ot">fsequence&#39; ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</span>
+<span id="cb7-15"><a href="#cb7-15"></a>fsequence&#39; <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span></code></pre></div>
 <p>The <code>FTraversable</code> laws come about by adjusting the <code>Traversable</code> laws to add some <code>Compose</code>-bookkeeping.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">-- naturality</span></span>
 <span id="cb8-2"><a href="#cb8-2"></a>nu <span class="op">.</span> ftraverse eta <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> nu <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
@@ -2634,21 +2634,21 @@ p r o <b>g</b> r a m m i n g
 <span id="cb15-7"><a href="#cb15-7"></a>fillInDefaults t defaults <span class="ot">=</span> defaults <span class="ot">`with`</span> t</span></code></pre></div>
 <p>You can also make a record of <code>Monoid</code> values into a <code>Monoid</code>, once again by zipping.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">newtype</span> <span class="dt">Wrap</span> t f <span class="ot">=</span> <span class="dt">Wrap</span> {<span class="ot"> unWrap ::</span> t f }</span>
-<span id="cb16-2"><a href="#cb16-2"></a>makeWrapped '<span class="dt">'Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a>makeWrapped &#39;<span class="dt">&#39;Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></span>
 <span id="cb16-3"><a href="#cb16-3"></a></span>
 <span id="cb16-4"><a href="#cb16-4"></a><span class="kw">instance</span> (<span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> c) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Wrap</span> t (<span class="dt">Const</span> c)) <span class="kw">where</span></span>
 <span id="cb16-5"><a href="#cb16-5"></a>    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> ftabulate (<span class="fu">const</span> (<span class="dt">Const</span> <span class="fu">mempty</span>))</span>
 <span id="cb16-6"><a href="#cb16-6"></a>    <span class="dt">Wrap</span> t <span class="ot">`mappend`</span> <span class="dt">Wrap</span> u <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> fzipWith <span class="fu">mappend</span> t u</span></code></pre></div>
 <h2 id="lenses"><a href="#lenses">Lenses</a></h2>
 <p>Rather than come up with a new notion of <code>Lens</code> formulated in terms of <code>FFunctor</code>, we can reuse the standard <code>Lens</code> type as long as we’re careful about how polymorphic lenses should be. Specifically, a lens into a record template should express no opinion as to which functor the template should be instantiated with.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="ot">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="op">.</span> <span class="dt">Lens'</span> (t f) (f a))</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="ot">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="op">.</span> <span class="dt">Lens&#39;</span> (t f) (f a))</span></code></pre></div>
 <p>We can store a template’s lenses in an instance of the template itself!</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1"></a><span class="kw">type</span> <span class="dt">Lenses</span> t <span class="ot">=</span> t (<span class="dt">FLens</span> t)</span>
 <span id="cb18-2"><a href="#cb18-2"></a></span>
 <span id="cb18-3"><a href="#cb18-3"></a><span class="kw">class</span> <span class="dt">HasLenses</span> t <span class="kw">where</span></span>
 <span id="cb18-4"><a href="#cb18-4"></a><span class="ot">    lenses ::</span> <span class="dt">Lenses</span> t</span>
 <span id="cb18-5"><a href="#cb18-5"></a></span>
-<span id="cb18-6"><a href="#cb18-6"></a>makeLenses '<span class="dt">'FormTemplate</span></span>
+<span id="cb18-6"><a href="#cb18-6"></a>makeLenses &#39;<span class="dt">&#39;FormTemplate</span></span>
 <span id="cb18-7"><a href="#cb18-7"></a><span class="kw">instance</span> <span class="dt">HasLenses</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
 <span id="cb18-8"><a href="#cb18-8"></a>    lenses <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
 <span id="cb18-9"><a href="#cb18-9"></a>        _email <span class="ot">=</span> <span class="dt">FLens</span> email,</span>
@@ -2705,14 +2705,14 @@ p r o <b>g</b> r a m m i n g
 <span id="cb22-7"><a href="#cb22-7"></a>         <span class="ot">-&gt;</span> <span class="dt">Validator</span> (<span class="dt">Errors</span> e t) (<span class="dt">Record</span> t)</span>
 <span id="cb22-8"><a href="#cb22-8"></a>validate validators <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \record <span class="ot">-&gt;</span></span>
 <span id="cb22-9"><a href="#cb22-9"></a>    first unWrap <span class="op">$</span></span>
-<span id="cb22-10"><a href="#cb22-10"></a>    fsequence' <span class="op">$</span></span>
+<span id="cb22-10"><a href="#cb22-10"></a>    fsequence&#39; <span class="op">$</span></span>
 <span id="cb22-11"><a href="#cb22-11"></a>    fzipWith3 applyValidator lenses validators record</span>
 <span id="cb22-12"><a href="#cb22-12"></a>    <span class="kw">where</span></span>
 <span id="cb22-13"><a href="#cb22-13"></a>        applyValidator</span>
 <span id="cb22-14"><a href="#cb22-14"></a>            (<span class="dt">FLens</span> lens)</span>
 <span id="cb22-15"><a href="#cb22-15"></a>            (<span class="dt">Validator</span> validator)</span>
 <span id="cb22-16"><a href="#cb22-16"></a>            (<span class="dt">Identity</span> value) <span class="ot">=</span></span>
-<span id="cb22-17"><a href="#cb22-17"></a>                <span class="kw">let</span> setError e <span class="ot">=</span> <span class="fu">mempty</span> <span class="op">&amp;</span> _Wrapped'<span class="op">.</span>lens<span class="op">.</span>_Wrapped' <span class="op">.~</span> e</span>
+<span id="cb22-17"><a href="#cb22-17"></a>                <span class="kw">let</span> setError e <span class="ot">=</span> <span class="fu">mempty</span> <span class="op">&amp;</span> _Wrapped&#39;<span class="op">.</span>lens<span class="op">.</span>_Wrapped&#39; <span class="op">.~</span> e</span>
 <span id="cb22-18"><a href="#cb22-18"></a>                <span class="kw">in</span> first setError <span class="op">$</span> validator value</span></code></pre></div>
 <p><code>applyValidator</code> takes a lens into a record field, a validator for that field and the value in that field. It applies the validator to the value; upon failure it stores the error message (<code>e</code>) in the correct field of the <code>Errors</code> record using the lens. <code>fzipWith3</code> handles the logic of running <code>applyValidator</code> for each field of the record, then <code>fsequence'</code> combines the resulting <code>Validation</code> applicative actions into a single one. So all of the errors from all of the fields are eventually collected into the matching fields of the <code>Errors</code> record and combined monoidally.</p>
 <p>A quick test, wherein I test validation on the email field:</p>
