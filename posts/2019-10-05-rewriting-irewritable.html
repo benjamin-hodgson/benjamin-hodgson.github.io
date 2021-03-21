@@ -44,10 +44,11 @@
                 
             </header>
 
-            <blockquote>
+            
+<blockquote>
 <p><em>I got married yesterday! This post is about my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Have a read of <a href="../posts/2017-11-13-recursion-without-recursion.html">my earlier post</a> for an introduction.</em></p>
 </blockquote>
-<h2 id="how-things-were">How things were</h2>
+<h2 id="how-things-were"><a href="#how-things-were">How things were</a></h2>
 <p>I recently made a substantial change to Sawmill’s core <code>IRewritable</code> interface. Here’s what it used to look like:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;</span>
 <span id="cb1-2"><a href="#cb1-2"></a>{</span>
@@ -56,7 +57,7 @@
 <span id="cb1-5"><a href="#cb1-5"></a>    T <span class="fu">RewriteChildren</span>(Func&lt;T, T&gt; transformer);</span>
 <span id="cb1-6"><a href="#cb1-6"></a>}</span></code></pre></div>
 <p>It’s a pleasingly simple interface with two core operations — <code>GetChildren</code> returns the current object’s immediate children and <code>SetChildren</code> replaces them. But there are also some warts.</p>
-<h3 id="wart-1-childrent">Wart 1: <code>Children&lt;T&gt;</code></h3>
+<h3 id="wart-1-childrent"><a href="#wart-1-childrent">Wart 1: <code>Children&lt;T&gt;</code></a></h3>
 <p><code>Children&lt;T&gt;</code> is a custom struct, not a standard collection type:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">struct</span> Children&lt;T&gt;</span>
 <span id="cb2-2"><a href="#cb2-2"></a>{</span>
@@ -71,7 +72,7 @@
 <span id="cb2-11"><a href="#cb2-11"></a>}</span></code></pre></div>
 <p>I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So <code>GetChildren</code> returns a <code>Children&lt;T&gt;</code>, passing up to two children on the stack and the rest in an <code>ImmutableList</code>. The <code>NumberOfChildren</code> property tells the library how many of the struct’s fields are filled in.</p>
 <p>This custom collection type is an extra hurdle to understanding <code>IRewritable</code>’s API. It also makes certain parts of Sawmill’s implementation more complex — many internal methods have to <code>switch</code> on the <code>NumberOfChildren</code> they’re working with and do the same work in four different ways. It’s also relatively large for a <code>struct</code> (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.</p>
-<h3 id="wart-2-collections">Wart 2: Collections</h3>
+<h3 id="wart-2-collections"><a href="#wart-2-collections">Wart 2: Collections</a></h3>
 <p>In fact, having <code>GetChildren</code> return a collection at all is problematic, because it forces implementations to allocate memory. If your object has three or more children (and they’re not already stored in an <code>ImmutableList</code>) then you have to create a new <code>ImmutableList</code> whenever <code>GetChildren</code> is called:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">class</span> ThreeChildren : IRewritable&lt;ThreeChildren&gt;</span>
 <span id="cb3-2"><a href="#cb3-2"></a>{</span>
@@ -110,7 +111,7 @@
 <span id="cb5-8"><a href="#cb5-8"></a>}</span></code></pre></div>
 <p>This is not a “pit of success” API — <code>SetChildren</code> looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each <code>GetChildren</code>/<code>SetChildren</code> call in order to be safe. So this design would end up allocating just as much as the <code>ImmutableList</code> version.</p>
 <p>(Keep the buffer idea in your head, though, because we’ll be coming back to it in a minute.)</p>
-<h3 id="wart-3-rewritechildren">Wart 3: <code>RewriteChildren</code></h3>
+<h3 id="wart-3-rewritechildren"><a href="#wart-3-rewritechildren">Wart 3: <code>RewriteChildren</code></a></h3>
 <p><code>RewriteChildren</code>, which applies a transformation function to the object’s immediate children (in other words, a one-level <code>Rewrite</code>), has a sensible implementation in terms of the other two methods: get the children, transform them, and put them back.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">public</span> <span class="kw">static</span> T DefaultRewriteChildren&lt;T&gt;(<span class="kw">this</span> T value, Func&lt;T, T&gt; transformer)</span>
 <span id="cb6-2"><a href="#cb6-2"></a>    where T : IRewritable&lt;T&gt;</span>
@@ -128,7 +129,7 @@
 <span id="cb7-5"><a href="#cb7-5"></a>        =&gt; <span class="kw">new</span> <span class="fu">ThreeChildren</span>(<span class="fu">f</span>(_child1), <span class="fu">f</span>(_child2), <span class="fu">f</span>(_child3));  <span class="co">// no ImmutableList</span></span>
 <span id="cb7-6"><a href="#cb7-6"></a>}</span></code></pre></div>
 <p>The extra method makes <code>IRewritable</code> harder to understand and harder to implement. Implementing <code>RewriteChildren</code> (without using <code>DefaultRewriteChildren</code>) can be tricky; if the transformer function doesn’t change anything you should avoid recreating the object.</p>
-<h2 id="the-new-way">The new way</h2>
+<h2 id="the-new-way"><a href="#the-new-way">The new way</a></h2>
 <p>I’m pleased to say that <code>IRewritable</code>’s new design addresses all three of these warts. Remember the “buffer” idea from earlier?</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;</span>
 <span id="cb8-2"><a href="#cb8-2"></a>{</span>
@@ -165,7 +166,7 @@
 <span id="cb9-18"><a href="#cb9-18"></a>    <span class="kw">return</span> result;</span>
 <span id="cb9-19"><a href="#cb9-19"></a>}</span></code></pre></div>
 <p>The main reason for having <code>RewriteChildren</code> be a method on the interface was to avoid allocating memory (for the <code>GetChildren</code> calls). So we don’t need it on the interface any more — this extension method serves as a single universal implementation. Likewise, <code>Children&lt;T&gt;</code>’s purpose was also to avoid allocating memory, so we can do away with it too.</p>
-<h2 id="relieving-arraypool-pressure">Relieving <code>ArrayPool</code> pressure</h2>
+<h2 id="relieving-arraypool-pressure"><a href="#relieving-arraypool-pressure">Relieving <code>ArrayPool</code> pressure</a></h2>
 <p>There’s one operational problem with this implementation: it can end up renting a large number of arrays from the pool. <code>Rewrite</code>, which applies a transformation function to every node in a tree (not just one layer), is implemented something like this:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">public</span> <span class="kw">static</span> T <span class="fu">Rewrite</span>(<span class="kw">this</span> T value, Func&lt;T, T&gt; transformer) where T : IRewritable&lt;T&gt;</span>
 <span id="cb10-2"><a href="#cb10-2"></a>    =&gt; <span class="fu">transformer</span>(t.<span class="fu">RewriteChildren</span>(child =&gt; child.<span class="fu">Rewrite</span>(transformer)));</span></code></pre></div>
@@ -248,7 +249,7 @@
 <span id="cb12-24"><a href="#cb12-24"></a>}</span></code></pre></div>
 <p>I’ve glossed over an important part of <code>ChunkStack</code>’s implementation: what happens when the array fills up? The <a href="https://github.com/benjamin-hodgson/Sawmill/blob/bf652359023a76d3ea395d7d743db1a8d6559ec2/Sawmill/ChunkStack.cs">real implementation</a> manages a collection of “regions”, taking a new region from the array pool when existing regions fill up.</p>
 <p>In the pathological case of a <em>very</em> large tree, this version of <code>Rewrite</code> can still exhaust the array pool, but it’ll happen much less quickly.</p>
-<h2 id="hackalloc">Hackalloc</h2>
+<h2 id="hackalloc"><a href="#hackalloc">Hackalloc</a></h2>
 <p>I mentioned earlier that a <code>Span</code> is not necessarily backed by an array. <code>Span</code> represents <em>a contiguous block of memory</em>, with no assumptions about where that memory is or how it’s managed. A <code>Span</code> could be a slice of an array, or it could be a chunk of unmanaged memory, or it could be an area of the stack. Under the hood it’s <em>just a pointer</em>; <code>Span</code> doesn’t care exactly where the pointer points.</p>
 <p>In fact, C# has built in support for that last case. The <code>stackalloc</code> keyword works like C’s <code>alloca</code>: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, <code>stackalloc</code> was only available in an <code>unsafe</code> context, but today it’s available in safe code thanks to <code>Span</code>.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">Foo</span>()</span>

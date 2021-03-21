@@ -15,7 +15,8 @@
     <id>http://www.benjamin.pizza/posts/2019-12-22-building-prologs-rules-engine.html</id>
     <published>2019-12-22T00:00:00Z</published>
     <updated>2019-12-22T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
+    <summary type="html"><![CDATA[
+<p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
 <nav>
 <ol>
 <li>
@@ -34,7 +35,7 @@
 <p></nav></p>
 <p><img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <p>Today’s the day! We’re going to turn last week’s unification algorithm into an actual programming language by filling in the bottom-right part of the above diagram. Prolog’s <em>rules engine</em> is the system which processes the predicates and facts in your program to answer queries.</p>
-<h2 id="the-database">The Database</h2>
+<h2 id="the-database"><a href="#the-database">The Database</a></h2>
 <p>When you load a program into your Prolog interpreter, it reads the collection of rules into an internal data structure. This data structure is known as Prolog’s <em>database</em>. For simplicity we can represent the database as an array of rules (ie, the same structure which comes out of the parser), but a real Prolog interpreter would use a more specialised data structure to make querying more efficient.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">class</span> Engine</span>
 <span id="cb1-2"><a href="#cb1-2"></a>{</span>
@@ -47,7 +48,7 @@
 <span id="cb1-9"><a href="#cb1-9"></a></span>
 <span id="cb1-10"><a href="#cb1-10"></a>    <span class="co">// ...</span></span>
 <span id="cb1-11"><a href="#cb1-11"></a>}</span></code></pre></div>
-<h2 id="a-first-attempt">A First Attempt</h2>
+<h2 id="a-first-attempt"><a href="#a-first-attempt">A First Attempt</a></h2>
 <p>Prolog’s interactive terminal accepts <em>queries</em> (predicates) and outputs a <em>substitution</em> which satisfies the query, according to the rules in the database. So the signature for <code>Query</code> is</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">public</span> ImmutableDictionary&lt;<span class="dt">string</span>, Term&gt; <span class="fu">Query</span>(Term goal)</span></code></pre></div>
 <p>If a goal can’t be satisfied, <code>Query</code> will return <code>null</code>.</p>
@@ -95,7 +96,7 @@
 <span id="cb4-14"><a href="#cb4-14"></a>}</span></code></pre></div>
 <p>If any of the recursive <code>Query</code> calls failed, that means one of the conditions on the right hand side was not satisfiable, so the whole rule fails (this function returns <code>null</code>) and we have to try the next one. Eventually we hope to find a rule whose head matches the goal <em>and</em> whose conditions are satisfied. This means the query was successful, so we return the <code>subst</code> corresponding to the rule.</p>
 <p>That’s a decent first stab at the code for <code>Query</code>. Now we have to fix the bugs.</p>
-<h2 id="backtracking">Backtracking</h2>
+<h2 id="backtracking"><a href="#backtracking">Backtracking</a></h2>
 <p>Here’s a trimmed-down version of the example database from the first post.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb5-1"><a href="#cb5-1"></a>likes(benjamin<span class="kw">,</span> asparagus)<span class="kw">.</span></span>
 <span id="cb5-2"><a href="#cb5-2"></a>likes(benjamin<span class="kw">,</span> pizza)<span class="kw">.</span></span>
@@ -165,8 +166,8 @@
 <p><code>SelectMany</code> (and <code>from...select</code>, which is the same thing under the hood) coming in clutch here. Each predicate in the body of a rule has potentially many solutions, so each recursive call to <code>Query</code> introduces potentially many possible branches to choose from. <code>SelectMany</code> lets us take all of them — but because <code>IEnumerable</code> is lazy, at runtime it doesn’t actually explore more branches than necessary to find a single solution. It also handles the “no solutions” case gracefully: if <code>substs</code> is empty then the body of the <code>foreach</code> loop does nothing. (<code>SelectMany</code> always returns an empty collection when its input collection is empty.)</p>
 <p>Working with immutable data is of utmost importance here. Combining lazy <code>IEnumerable</code>s with mutable data can have catastrophic consequences because it’s hard to predict when your code will be run. The body of my loop computes a <em>new</em> <code>substs</code> to be used for the next iteration; it doesn’t update a single collection of solutions. I don’t know what would happen if you did write it like that but I know it would be wrong!</p>
 <p>Feeding the <code>dinner(Food)</code> query into this version of the code correctly outputs <code>Food := pizza</code>.</p>
-<h2 id="scope-management">Scope Management</h2>
-<h3 id="discharging">Discharging</h3>
+<h2 id="scope-management"><a href="#scope-management">Scope Management</a></h2>
+<h3 id="discharging"><a href="#discharging">Discharging</a></h3>
 <p>Here’s another example program which reveals a bug in <code>Query</code>.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb9-1"><a href="#cb9-1"></a>foo(<span class="dt">X</span>)<span class="kw">.</span></span>
 <span id="cb9-2"><a href="#cb9-2"></a>bar(baz)<span class="kw">.</span></span>
@@ -191,7 +192,7 @@
 <span id="cb10-9"><a href="#cb10-9"></a>        .<span class="fu">Where</span>(kvp =&gt; goal.<span class="fu">Variables</span>().<span class="fu">Contains</span>(kvp.<span class="fu">Key</span>))</span>
 <span id="cb10-10"><a href="#cb10-10"></a>        .<span class="fu">ToImmutableDictionary</span>();</span></code></pre></div>
 <p>This fixes the bug. <code>test()</code> now correctly returns an empty substitution.</p>
-<h3 id="freshening">Freshening</h3>
+<h3 id="freshening"><a href="#freshening">Freshening</a></h3>
 <p>There’s one final bug to fix in the engine.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb11-1"><a href="#cb11-1"></a>foo(a<span class="kw">,</span> <span class="dt">X</span>)<span class="kw">.</span></span></code></pre></div>
 <p>Running the query <code>foo(X, b)</code> should return <code>X := a</code>, but the interpreter prints <code>no solution</code>. This is of course another name collision issue. When unifying the goal with the left hand side, the interpreter has mistaken the two <code>X</code>s for being the <em>same</em> <code>X</code>. The <code>X</code> in <code>foo</code>’s left hand side should be local to <code>foo</code>.</p>
@@ -199,8 +200,8 @@
 <div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">private</span> <span class="dt">int</span> _freshenCounter = <span class="dv">0</span>;</span>
 <span id="cb12-2"><a href="#cb12-2"></a><span class="kw">private</span> Rule <span class="fu">Freshen</span>(Rule rule)</span>
 <span id="cb12-3"><a href="#cb12-3"></a>{</span>
-<span id="cb12-4"><a href="#cb12-4"></a>    <span class="co">// find all of the rule&#39;s local variables.</span></span>
-<span id="cb12-5"><a href="#cb12-5"></a>    <span class="co">// NB: local variables may appear in the rule&#39;s body but not the head.</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a>    <span class="co">// find all of the rule's local variables.</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a>    <span class="co">// NB: local variables may appear in the rule's body but not the head.</span></span>
 <span id="cb12-6"><a href="#cb12-6"></a>    <span class="dt">var</span> variables = rule.<span class="fu">Body</span></span>
 <span id="cb12-7"><a href="#cb12-7"></a>        .<span class="fu">Select</span>(x =&gt; ((Term)x).<span class="fu">Variables</span>())</span>
 <span id="cb12-8"><a href="#cb12-8"></a>        .<span class="fu">Aggregate</span>(((Term)rule.<span class="fu">Head</span>).<span class="fu">Variables</span>(), (xs, ys) =&gt; xs.<span class="fu">Union</span>(ys));</span>
@@ -272,7 +273,8 @@
     <id>http://www.benjamin.pizza/posts/2019-12-15-generic-unification-with-sawmill.html</id>
     <published>2019-12-15T00:00:00Z</published>
     <updated>2019-12-15T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
+    <summary type="html"><![CDATA[
+<p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
 <nav>
 <ol>
 <li>
@@ -291,7 +293,7 @@
 <p></nav></p>
 <p>We’re getting on to the fun part of writing an interpreter: actually <em>interpreting</em> the input code. In this post we’re going to implement a <em>unification</em> algorithm using my generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Unification slots somewhere in the middle or bottom-right of this diagram:</p>
 <p><img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
-<h2 id="unification">Unification</h2>
+<h2 id="unification"><a href="#unification">Unification</a></h2>
 <p>Unification is a process for solving equations, much like the equations you’d solve in algebra at school. It’s all about plugging holes — given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a <em>substitution</em> — a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.</p>
 <p>The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term’s syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process — you can’t apply domain-specific rules such as “add a number to both sides” like you can in algebra.</p>
 <p>Let’s work through some examples to get a feel for it.</p>
@@ -345,7 +347,7 @@
 <li>Otherwise, the terms don’t match and we should abort unification.</li>
 </ol>
 <p>Hopefully you can see how I’ve applied these steps in the examples above. I’ve glossed over some important details here (particularly regarding what happens in step 1 when a variable is already in the substitution) but I’ll be sure to fill them in when we get to writing code. (In fact we’re going to design our code so that a variable will never already be in the substitution.)</p>
-<h2 id="iunifiable"><code>IUnifiable</code></h2>
+<h2 id="iunifiable"><a href="#iunifiable"><code>IUnifiable</code></a></h2>
 <p>Unification is a central part of Prolog’s programming model, but it has applications outside of Prolog as well (type inference, for example). Any time you have a syntactic structure with placeholder variables, the question “what can I plug in for these variables?” makes sense.</p>
 <p>Let’s quantify that. Reading back over the description of the algorithm, it seems to build on a few core concepts:</p>
 <ul>
@@ -402,7 +404,7 @@
 <span id="cb3-5"><a href="#cb3-5"></a>        .<span class="fu">Where</span>(name =&gt; name != <span class="kw">null</span>)</span>
 <span id="cb3-6"><a href="#cb3-6"></a>        .<span class="fu">Distinct</span>()</span>
 <span id="cb3-7"><a href="#cb3-7"></a>        .<span class="fu">ToImmutableHashSet</span>();</span></code></pre></div>
-<h2 id="substitutions">Substitutions</h2>
+<h2 id="substitutions"><a href="#substitutions">Substitutions</a></h2>
 <p>I mentioned that the output of unification is a <em>substitution</em> — a mapping from variable names to terms. We’ll model that using an ordinary dictionary of strings and <code>T</code>s. Our signature for <code>Unify</code> is going to look like this:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span></code></pre></div>
 <p>The main thing you can do with a substitution is <em>apply</em> it to a term. That means replacing all the variables in the term with the sub-terms they’re mapped to by the substitution. This should eliminate any variables in the term which are bound by the substitution.</p>
@@ -419,7 +421,7 @@
 <span id="cb5-11"><a href="#cb5-11"></a>        }</span>
 <span id="cb5-12"><a href="#cb5-12"></a>    );</span></code></pre></div>
 <p>We’re going to maintain the invariant that the terms in a substitution are never going to contain any variables which are bound by the substitution. (It’s possible, and indeed desirable for efficiency, to relax this invariant, but today we’re going to focus on simplicity.)</p>
-<h2 id="binding-single-variables-the-occurs-check">Binding Single Variables &amp; the Occurs Check</h2>
+<h2 id="binding-single-variables-the-occurs-check"><a href="#binding-single-variables-the-occurs-check">Binding Single Variables &amp; the Occurs Check</a></h2>
 <p>Time to fill in the body of <code>Unify</code>. Let’s start with step 2 of the algorithm: what to do when either of the input terms is a variable.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
 <span id="cb6-2"><a href="#cb6-2"></a>{</span>
@@ -453,14 +455,14 @@
 <span id="cb7-11"><a href="#cb7-11"></a>    }</span>
 <span id="cb7-12"><a href="#cb7-12"></a>    <span class="kw">return</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>.<span class="fu">Add</span>(name, value);</span>
 <span id="cb7-13"><a href="#cb7-13"></a>}</span></code></pre></div>
-<h2 id="handling-non-variables">Handling Non-Variables</h2>
+<h2 id="handling-non-variables"><a href="#handling-non-variables">Handling Non-Variables</a></h2>
 <p>Let’s continue implementing <code>Unify</code>. At this point we know that neither <code>left</code> nor <code>right</code> are variables, so they must be either composite terms or leaf nodes. In either case, we need to check whether they match.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
 <span id="cb8-2"><a href="#cb8-2"></a>{</span>
 <span id="cb8-3"><a href="#cb8-3"></a>    <span class="co">// ...</span></span>
 <span id="cb8-4"><a href="#cb8-4"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
 <span id="cb8-5"><a href="#cb8-5"></a>    {</span>
-<span id="cb8-6"><a href="#cb8-6"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb8-6"><a href="#cb8-6"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
 <span id="cb8-7"><a href="#cb8-7"></a>    }</span>
 <span id="cb8-8"><a href="#cb8-8"></a>    <span class="co">// ...</span></span>
 <span id="cb8-9"><a href="#cb8-9"></a>}</span></code></pre></div>
@@ -472,14 +474,14 @@
 <span id="cb9-5"><a href="#cb9-5"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
 <span id="cb9-6"><a href="#cb9-6"></a>    <span class="kw">return</span> <span class="fu">Solve</span>(leftChildren, rightChildren);</span>
 <span id="cb9-7"><a href="#cb9-7"></a>}</span></code></pre></div>
-<h2 id="unifying-children-systems-of-equations">Unifying Children — Systems of Equations</h2>
+<h2 id="unifying-children-systems-of-equations"><a href="#unifying-children-systems-of-equations">Unifying Children — Systems of Equations</a></h2>
 <p>Unifying the children means solving a <em>system</em> of equations. If more than one equation mentions the same variable, they have to agree on what that variable should be.</p>
 <p>The plain is to pair up the children in the two lists and try to unify each with their partner, building up a substitution as we go.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
 <span id="cb10-2"><a href="#cb10-2"></a>{</span>
 <span id="cb10-3"><a href="#cb10-3"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
 <span id="cb10-4"><a href="#cb10-4"></a>    {</span>
-<span id="cb10-5"><a href="#cb10-5"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb10-5"><a href="#cb10-5"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
 <span id="cb10-6"><a href="#cb10-6"></a>    }</span>
 <span id="cb10-7"><a href="#cb10-7"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
 <span id="cb10-8"><a href="#cb10-8"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
@@ -537,7 +539,7 @@
 <span id="cb13-12"><a href="#cb13-12"></a>    }</span>
 <span id="cb13-13"><a href="#cb13-13"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
 <span id="cb13-14"><a href="#cb13-14"></a>    {</span>
-<span id="cb13-15"><a href="#cb13-15"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb13-15"><a href="#cb13-15"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
 <span id="cb13-16"><a href="#cb13-16"></a>    }</span>
 <span id="cb13-17"><a href="#cb13-17"></a>    <span class="dt">var</span> leftChildren = left.<span class="fu">GetChildren</span>();</span>
 <span id="cb13-18"><a href="#cb13-18"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
@@ -547,7 +549,7 @@
 <span id="cb13-22"><a href="#cb13-22"></a>{</span>
 <span id="cb13-23"><a href="#cb13-23"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
 <span id="cb13-24"><a href="#cb13-24"></a>    {</span>
-<span id="cb13-25"><a href="#cb13-25"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn&#39;t match&quot;</span>);</span>
+<span id="cb13-25"><a href="#cb13-25"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
 <span id="cb13-26"><a href="#cb13-26"></a>    }</span>
 <span id="cb13-27"><a href="#cb13-27"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
 <span id="cb13-28"><a href="#cb13-28"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
@@ -602,7 +604,8 @@
     <id>http://www.benjamin.pizza/posts/2019-12-08-parsing-prolog-with-pidgin.html</id>
     <published>2019-12-08T00:00:00Z</published>
     <updated>2019-12-08T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>Happy birthday to my sister! This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
+    <summary type="html"><![CDATA[
+<p>Happy birthday to my sister! This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
 <nav>
 <ol>
 <li>
@@ -621,7 +624,7 @@
 <p></nav></p>
 <p><img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <p>In this post I’m going to focus on the left-hand part of that diagram. We’ll use my parsing library <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> to convert Prolog source code into the abstract syntax classes I outlined in the previous post.</p>
-<h2 id="about-pidgin">About Pidgin</h2>
+<h2 id="about-pidgin"><a href="#about-pidgin">About Pidgin</a></h2>
 <p>Pidgin is a <em>parser combinator library</em>, meaning it consists of three things:</p>
 <ol type="1">
 <li>A type <code>Parser&lt;TToken, T&gt;</code>, representing a process which consumes a sequence of <code>TToken</code>s and produces a <code>T</code>. (In our case, <code>TToken</code> will be <code>char</code> because we’re parsing textual data from a string.)</li>
@@ -631,7 +634,7 @@
 <p>The power of parser combinators comes from the fact that parsers are treated as ordinary values. You can pass them around as parameters, return them, store them in fields… Programming with parser combinators is <em>just programming</em>. Contrast this with “language workbench” tools like Antlr, which are often more powerful than parser combinators but have a separate syntax, toolchain, etc. Parser combinators are great for medium-sized parsing tasks like this one.</p>
 <p>It’s worth elaborating a bit on what I mean by “consume a sequence”. A parser walks left to right along an input sequence, keeping track of its location in the input. Consuming a token means moving the “current location” pointer along to the next token. This is much like how the <code>Stream</code> classes work in .NET — calling a stream’s <code>Read</code> method moves the stream’s current position, so that successive calls to <code>Read</code> return different results. (Pidgin indeed lets you feed a <code>Stream</code> to a <code>Parser</code>.)</p>
 <p>When a parser makes a decision about what to do next, that decision is based only on the current character and not on what comes next. If the parser moves further along the string and then realises that decision was wrong, it has to <em>backtrack</em> to the position where it made the decision before it can proceed with a different choice. Backtracking can be catastrophically costly (as described in <a href="https://vimeo.com/112065252">a short talk by my esteemed ex-colleague Balpha</a>), so you want to code your parser to minimise the amount of backtracking it might have to do. With Pidgin, backtracking is disabled by default; it’s enabled by the <code>Try</code> function.</p>
-<h2 id="handling-tokens-and-whitespace">Handling Tokens and Whitespace</h2>
+<h2 id="handling-tokens-and-whitespace"><a href="#handling-tokens-and-whitespace">Handling Tokens and Whitespace</a></h2>
 <p>Let’s start with the basics and build upwards. Prolog is a <em>whitespace-insensitive</em> language, so we need a way to skip over the whitespace in the source code. We’ll use a convention where each component <code>Parser</code> will consume any whitespace <em>after</em> parsing any relevant non-whitespace characters.</p>
 <p>Here’s a method which creates a <code>Parser</code> which consumes a specific character, skips over any whitespace, and then returns the original character.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">static</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; <span class="fu">Tok</span>(<span class="dt">char</span> value)  <span class="co">// for &quot;token&quot;</span></span>
@@ -669,22 +672,22 @@ p r o <b>g</b> r a m m i n g
 <span id="cb4-5"><a href="#cb4-5"></a><span class="kw">static</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; <span class="fu">Tok</span>(<span class="dt">string</span> value) =&gt; <span class="fu">Tok</span>(<span class="fu">String</span>(value));</span></code></pre></div>
 <p>I have a half-baked plan to add this <code>Tok</code> parser, along with some other tools for handling whitespace, to the Pidgin library itself, so you don’t have to write it yourself every time you write a parser.</p>
 <p>Some useful token parsers for Prolog:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _comma = <span class="fu">Tok</span>(<span class="ch">&#39;,&#39;</span>);</span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _openParen = <span class="fu">Tok</span>(<span class="ch">&#39;(&#39;</span>);</span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _closeParen = <span class="fu">Tok</span>(<span class="ch">&#39;)&#39;</span>);</span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _dot = <span class="fu">Tok</span>(<span class="ch">&#39;.&#39;</span>);</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _comma = <span class="fu">Tok</span>(<span class="ch">','</span>);</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _openParen = <span class="fu">Tok</span>(<span class="ch">'('</span>);</span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _closeParen = <span class="fu">Tok</span>(<span class="ch">')'</span>);</span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; _dot = <span class="fu">Tok</span>(<span class="ch">'.'</span>);</span>
 <span id="cb5-5"><a href="#cb5-5"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; _colonDash = <span class="fu">Tok</span>(<span class="st">&quot;:-&quot;</span>);</span></code></pre></div>
-<h2 id="names">Names</h2>
+<h2 id="names"><a href="#names">Names</a></h2>
 <p>Prolog has two types of names — <em>atoms</em> start with a lowercase letter and <em>variables</em> start with an uppercase letter or an underscore.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; _atomName = <span class="fu">Tok</span>(</span>
 <span id="cb6-2"><a href="#cb6-2"></a>    from first <span class="kw">in</span> Lowercase</span>
 <span id="cb6-3"><a href="#cb6-3"></a>    <span class="co">// OneOf is like Or, but it works with more than two parsers</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)).<span class="fu">ManyString</span>()</span>
+<span id="cb6-4"><a href="#cb6-4"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">'_'</span>)).<span class="fu">ManyString</span>()</span>
 <span id="cb6-5"><a href="#cb6-5"></a>    select first + rest</span>
 <span id="cb6-6"><a href="#cb6-6"></a>);</span>
 <span id="cb6-7"><a href="#cb6-7"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; _variableName = <span class="fu">Tok</span>(</span>
-<span id="cb6-8"><a href="#cb6-8"></a>    from first <span class="kw">in</span> Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>))</span>
-<span id="cb6-9"><a href="#cb6-9"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)).<span class="fu">ManyString</span>()</span>
+<span id="cb6-8"><a href="#cb6-8"></a>    from first <span class="kw">in</span> Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">'_'</span>))</span>
+<span id="cb6-9"><a href="#cb6-9"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">'_'</span>)).<span class="fu">ManyString</span>()</span>
 <span id="cb6-10"><a href="#cb6-10"></a>    select first + rest</span>
 <span id="cb6-11"><a href="#cb6-11"></a>);</span></code></pre></div>
 <p>One of the fun things about C#’s <code>from...select</code> syntax is that it’s <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers — <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
@@ -700,10 +703,10 @@ p r o <b>g</b> r a m m i n g
 <div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">static</span> Parser&lt;<span class="dt">char</span>, <span class="dt">string</span>&gt; <span class="fu">Name</span>(Parser&lt;<span class="dt">char</span>, <span class="dt">char</span>&gt; firstLetter)</span>
 <span id="cb7-2"><a href="#cb7-2"></a>    =&gt; <span class="fu">Tok</span>(</span>
 <span id="cb7-3"><a href="#cb7-3"></a>        from first <span class="kw">in</span> firstLetter</span>
-<span id="cb7-4"><a href="#cb7-4"></a>        from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)).<span class="fu">ManyString</span>()</span>
+<span id="cb7-4"><a href="#cb7-4"></a>        from rest <span class="kw">in</span> <span class="fu">OneOf</span>(Letter, Digit, <span class="fu">Char</span>(<span class="ch">'_'</span>)).<span class="fu">ManyString</span>()</span>
 <span id="cb7-5"><a href="#cb7-5"></a>        select first + rest</span>
 <span id="cb7-6"><a href="#cb7-6"></a>    );</span></code></pre></div>
-<h2 id="terms">Terms</h2>
+<h2 id="terms"><a href="#terms">Terms</a></h2>
 <p>Terms in Prolog have a recursive structure, as <a href="/posts/2019-12-01-write-you-a-prolog.html">discussed previously</a>. A predicate’s arguments can be any term, including another predicate. This circularity poses a problem for our parser code — the <code>_predicate</code> parser needs to call <code>_term</code>, but <code>_term</code> needs to call <code>_predicate</code>, so what order can you put the declarations in?</p>
 <p>Pidgin’s built-in <code>Rec</code> function enables forward references like this. The idea is to use a lambda to delay the access to the field until after it’s been initialised.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, Term&gt; _term = <span class="fu">Rec</span>(() =&gt; <span class="fu">OneOf</span>(</span>
@@ -719,7 +722,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb9-4"><a href="#cb9-4"></a>        .<span class="fu">Labelled</span>(<span class="st">&quot;atom&quot;</span>);</span>
 <span id="cb9-5"><a href="#cb9-5"></a></span>
 <span id="cb9-6"><a href="#cb9-6"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, Term&gt; _variable</span>
-<span id="cb9-7"><a href="#cb9-7"></a>    = <span class="fu">Name</span>(Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">&#39;_&#39;</span>)))</span>
+<span id="cb9-7"><a href="#cb9-7"></a>    = <span class="fu">Name</span>(Uppercase.<span class="fu">Or</span>(<span class="fu">Char</span>(<span class="ch">'_'</span>)))</span>
 <span id="cb9-8"><a href="#cb9-8"></a>        .<span class="fu">Select</span>(name =&gt; (Term)<span class="kw">new</span> <span class="fu">Variable</span>(name))</span>
 <span id="cb9-9"><a href="#cb9-9"></a>        .<span class="fu">Labelled</span>(<span class="st">&quot;variable&quot;</span>);</span>
 <span id="cb9-10"><a href="#cb9-10"></a></span>
@@ -732,7 +735,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb9-17"><a href="#cb9-17"></a><span class="kw">static</span> Parser&lt;<span class="dt">char</span>, ImmutableArray&lt;T&gt;&gt; CommaSeparated&lt;T&gt;(Parser&lt;<span class="dt">char</span>, T&gt; p)</span>
 <span id="cb9-18"><a href="#cb9-18"></a>    =&gt; p.<span class="fu">Separated</span>(_comma).<span class="fu">Select</span>(x =&gt; x.<span class="fu">ToImmutableArray</span>());</span></code></pre></div>
 <p>I’m using <code>Try</code> again in the <code>_predicate</code> parser. This is to disambiguate predicates from atoms. Both start in the same way (a lowercase letter) and you can’t be sure you’re parsing a predicate until you see a parenthesis. So our <code>_term</code> parser first attempts to read a predicate, but if it doesn’t see a parenthesis then it backtracks and reads the name as an atom instead. The order of <code>OneOf</code>’s arguments matters!</p>
-<h2 id="rules-queries-and-whole-programs">Rules, Queries and Whole Programs</h2>
+<h2 id="rules-queries-and-whole-programs"><a href="#rules-queries-and-whole-programs">Rules, Queries and Whole Programs</a></h2>
 <p>We’re on the home straight. A Prolog program consists of a collection of top-level <em>rules</em> and <em>facts</em>. A rule consists of a predicate followed by the symbol <code>:-</code> and a comma-separated list of predicates, and ends with a <code>.</code> symbol. A fact is just a rule with no right-hand side.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser&lt;<span class="dt">char</span>, Rule&gt; _rule</span>
 <span id="cb10-2"><a href="#cb10-2"></a>    = <span class="fu">Map</span>(</span>
@@ -797,7 +800,8 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2019-12-01-write-you-a-prolog.html</id>
     <published>2019-12-01T00:00:00Z</published>
     <updated>2019-12-01T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>I figured it’d be useful to have some examples of my language tooling libraries <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> and <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> in action. I thought it could be fun to use them to write a miniature <a href="https://en.wikipedia.org/wiki/Prolog">Prolog</a> interpreter!</p>
+    <summary type="html"><![CDATA[
+<p>I figured it’d be useful to have some examples of my language tooling libraries <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> and <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> in action. I thought it could be fun to use them to write a miniature <a href="https://en.wikipedia.org/wiki/Prolog">Prolog</a> interpreter!</p>
 <nav>
 <ol>
 <li>
@@ -815,7 +819,7 @@ p r o <b>g</b> r a m m i n g
 </ol>
 <p></nav></p>
 <p>You’ll find all the code for this series <a href="https://github.com/benjamin-hodgson/Amateurlog">on GitHub</a>.</p>
-<h2 id="whistle-stop-introduction-to-prolog">Whistle-Stop Introduction to Prolog</h2>
+<h2 id="whistle-stop-introduction-to-prolog"><a href="#whistle-stop-introduction-to-prolog">Whistle-Stop Introduction to Prolog</a></h2>
 <p>Prolog is a <em>logic programming</em> language. Prolog code consists of a collection of <em>rules</em>. Each rule says “X is true if Y (and Z and…) is true”. A rule is a logical axiom, with a set of premises (on the right) and a conclusion you can draw from those premises (on the left).</p>
 <p>As an example, you might say that a <code>Person</code> wants a certain <code>Food</code> if they’re hungry and they like that food. And — I don’t know about you — but I’ll eat something I really love even if I’m not hungry.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb1-1"><a href="#cb1-1"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> hungry(<span class="dt">Person</span>)<span class="kw">,</span> likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
@@ -824,7 +828,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb1-4"><a href="#cb1-4"></a><span class="co">% If someone loves a given food, then they also like it.</span></span>
 <span id="cb1-5"><a href="#cb1-5"></a>likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> loves(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
 <span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="co">% If we&#39;re going to have dinner, we&#39;d better agree on what to eat.</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="co">% If we're going to have dinner, we'd better agree on what to eat.</span></span>
 <span id="cb1-8"><a href="#cb1-8"></a>dinner(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> wants(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">,</span> wants(<span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span></code></pre></div>
 <p>Variables in Prolog start with a capital letter. <code>:-</code> means “if” and <code>,</code> means “and”. You can give multiple alternative ways of satisfying the same predicate by just declaring it more than once. In other words, multiple declarations of the same predicate means “or”.</p>
 <p>Next, we’ll prime Prolog’s database with a couple of <em>facts</em> about people and foods.</p>
@@ -844,7 +848,7 @@ p r o <b>g</b> r a m m i n g
 <div class="sourceCode" id="cb4"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">?-</span> dinner(benjamin<span class="kw">,</span> clio<span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
 <span id="cb4-2"><a href="#cb4-2"></a><span class="dt">Food</span> <span class="kw">=</span> pizza</span></code></pre></div>
 <p>Even though predicates don’t return anything per se — they either succeed or fail — you can use variables in this way to get information out of a predicate. Prolog’s constraint solving system is <strong>bi-directional</strong> — a predicate’s parameters can serve as both inputs and outputs.</p>
-<h3 id="pattern-matching-and-recursion">Pattern Matching and Recursion</h3>
+<h3 id="pattern-matching-and-recursion"><a href="#pattern-matching-and-recursion">Pattern Matching and Recursion</a></h3>
 <p>As well as putting <em>conditions</em> on the right-hand side of a rule, you can put <em>patterns</em> on the left. This is somewhat like pattern matching in functional languages — the right-hand side of a rule is only entered if its arguments match the pattern on the left.</p>
 <p>Here’s a recursive predicate <code>last(List, Item)</code> which succeeds when <code>Item</code> is the last element of <code>List</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb5-1"><a href="#cb5-1"></a>last(cons(<span class="dt">X</span><span class="kw">,</span> nil)<span class="kw">,</span> <span class="dt">X</span>)<span class="kw">.</span></span>
@@ -860,7 +864,7 @@ p r o <b>g</b> r a m m i n g
 <li>Now it tries the second rule. Prolog tries to unify the goal with <code>last(cons(X, Xs), Y)</code>. This succeeds — the terms match when <code>X = apples</code>, <code>Xs = cons(oranges, nil)</code>, and <code>Y = oranges</code>. So now Prolog creates a sub-goal for each clause on the right, of which there’s only one (<code>last(Xs, Y)</code>). Since <code>Xs = cons(oranges, nil)</code> and <code>Y = oranges</code>, the goal is <code>last(cons(oranges, nil), oranges)</code>. So now the code has to recursively call <code>last</code>.</li>
 <li>With this new goal we try the first clause again. Prolog tries to unify <code>last(cons(oranges, nil), oranges)</code> with <code>last(cons(X, nil), X)</code>. This succeeds when <code>X = oranges</code>. Since there are no conditions on the right hand side (this clause is the base case of the recursive function), we’re done! The query succeeded; <code>oranges</code> is indeed the last element of the list.</li>
 </ol>
-<h2 id="representing-prolog-syntax">Representing Prolog Syntax</h2>
+<h2 id="representing-prolog-syntax"><a href="#representing-prolog-syntax">Representing Prolog Syntax</a></h2>
 <p>Hopefully blasting through Prolog’s core in only a few paragraphs was enough to get you excited about implementing it! The first step in interpreting a programming lanugage is to come up with a way to represent programs in that language. That means writing down some types representing the language’s <em>abstract syntax tree</em>. The middle part of the diagram I drew for <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">my post announcing Sawmill</a>:</p>
 <p><img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <p>As the name suggests, the exercise is to come up with an abstract representation of Prolog’s syntax. Think beyond the specifics of how the language is presented as text (such as where parentheses go and so on); we want to talk about the high-level grammatical constructs and how they relate to one another. This mode of thinking is akin to thinking about English at the level of sentence structure — subordinate clauses and so on — rather than spelling and punctuation.</p>
@@ -927,7 +931,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb11-14"><a href="#cb11-14"></a>)</span></code></pre></div>
 <p><img src="/images/2019-12-01-write-you-a-prolog/anatomy.png" alt="Anatomy of a Rule" /></p>
 <p>Prolog’s rules engine is based entirely on manipulating terms, so these three classes will turn out to be quite important in our little interpreter.</p>
-<h2 id="implementing-irewritable">Implementing <code>IRewritable</code></h2>
+<h2 id="implementing-irewritable"><a href="#implementing-irewritable">Implementing <code>IRewritable</code></a></h2>
 <p><code>Term</code> is an immutable type with a recursive tree-shaped structure — a predicate’s arguments can be any <code>Term</code>, including more predicates. My generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> is filled with tools for working with immutable trees! As a Sawmill user, you implement its core <code>IRewritable</code> interface on your tree structure, and Sawmill takes care of much of the boilerplate of traversing the tree for you. (See <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">my earlier post</a> for an introduction to Sawmill.)</p>
 <p><code>IRewritable</code> is all about addressing the immediate children of the current node in a tree. It has three methods, <code>CountChildren</code>, <code>GetChildren</code>, and <code>SetChildren</code>, which we have to implement for each subclass of our <code>Term</code> tree. Variables and atoms don’t have child terms — only predicates.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term : IRewritable&lt;Term&gt;</span>
@@ -1029,10 +1033,11 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2019-10-05-rewriting-irewritable.html</id>
     <published>2019-10-05T00:00:00Z</published>
     <updated>2019-10-05T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<blockquote>
+    <summary type="html"><![CDATA[
+<blockquote>
 <p><em>I got married yesterday! This post is about my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Have a read of <a href="/posts/2017-11-13-recursion-without-recursion.html">my earlier post</a> for an introduction.</em></p>
 </blockquote>
-<h2 id="how-things-were">How things were</h2>
+<h2 id="how-things-were"><a href="#how-things-were">How things were</a></h2>
 <p>I recently made a substantial change to Sawmill’s core <code>IRewritable</code> interface. Here’s what it used to look like:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;</span>
 <span id="cb1-2"><a href="#cb1-2"></a>{</span>
@@ -1041,7 +1046,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb1-5"><a href="#cb1-5"></a>    T <span class="fu">RewriteChildren</span>(Func&lt;T, T&gt; transformer);</span>
 <span id="cb1-6"><a href="#cb1-6"></a>}</span></code></pre></div>
 <p>It’s a pleasingly simple interface with two core operations — <code>GetChildren</code> returns the current object’s immediate children and <code>SetChildren</code> replaces them. But there are also some warts.</p>
-<h3 id="wart-1-childrent">Wart 1: <code>Children&lt;T&gt;</code></h3>
+<h3 id="wart-1-childrent"><a href="#wart-1-childrent">Wart 1: <code>Children&lt;T&gt;</code></a></h3>
 <p><code>Children&lt;T&gt;</code> is a custom struct, not a standard collection type:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">struct</span> Children&lt;T&gt;</span>
 <span id="cb2-2"><a href="#cb2-2"></a>{</span>
@@ -1056,7 +1061,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb2-11"><a href="#cb2-11"></a>}</span></code></pre></div>
 <p>I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So <code>GetChildren</code> returns a <code>Children&lt;T&gt;</code>, passing up to two children on the stack and the rest in an <code>ImmutableList</code>. The <code>NumberOfChildren</code> property tells the library how many of the struct’s fields are filled in.</p>
 <p>This custom collection type is an extra hurdle to understanding <code>IRewritable</code>’s API. It also makes certain parts of Sawmill’s implementation more complex — many internal methods have to <code>switch</code> on the <code>NumberOfChildren</code> they’re working with and do the same work in four different ways. It’s also relatively large for a <code>struct</code> (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.</p>
-<h3 id="wart-2-collections">Wart 2: Collections</h3>
+<h3 id="wart-2-collections"><a href="#wart-2-collections">Wart 2: Collections</a></h3>
 <p>In fact, having <code>GetChildren</code> return a collection at all is problematic, because it forces implementations to allocate memory. If your object has three or more children (and they’re not already stored in an <code>ImmutableList</code>) then you have to create a new <code>ImmutableList</code> whenever <code>GetChildren</code> is called:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">class</span> ThreeChildren : IRewritable&lt;ThreeChildren&gt;</span>
 <span id="cb3-2"><a href="#cb3-2"></a>{</span>
@@ -1095,7 +1100,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb5-8"><a href="#cb5-8"></a>}</span></code></pre></div>
 <p>This is not a “pit of success” API — <code>SetChildren</code> looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each <code>GetChildren</code>/<code>SetChildren</code> call in order to be safe. So this design would end up allocating just as much as the <code>ImmutableList</code> version.</p>
 <p>(Keep the buffer idea in your head, though, because we’ll be coming back to it in a minute.)</p>
-<h3 id="wart-3-rewritechildren">Wart 3: <code>RewriteChildren</code></h3>
+<h3 id="wart-3-rewritechildren"><a href="#wart-3-rewritechildren">Wart 3: <code>RewriteChildren</code></a></h3>
 <p><code>RewriteChildren</code>, which applies a transformation function to the object’s immediate children (in other words, a one-level <code>Rewrite</code>), has a sensible implementation in terms of the other two methods: get the children, transform them, and put them back.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">public</span> <span class="kw">static</span> T DefaultRewriteChildren&lt;T&gt;(<span class="kw">this</span> T value, Func&lt;T, T&gt; transformer)</span>
 <span id="cb6-2"><a href="#cb6-2"></a>    where T : IRewritable&lt;T&gt;</span>
@@ -1113,7 +1118,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb7-5"><a href="#cb7-5"></a>        =&gt; <span class="kw">new</span> <span class="fu">ThreeChildren</span>(<span class="fu">f</span>(_child1), <span class="fu">f</span>(_child2), <span class="fu">f</span>(_child3));  <span class="co">// no ImmutableList</span></span>
 <span id="cb7-6"><a href="#cb7-6"></a>}</span></code></pre></div>
 <p>The extra method makes <code>IRewritable</code> harder to understand and harder to implement. Implementing <code>RewriteChildren</code> (without using <code>DefaultRewriteChildren</code>) can be tricky; if the transformer function doesn’t change anything you should avoid recreating the object.</p>
-<h2 id="the-new-way">The new way</h2>
+<h2 id="the-new-way"><a href="#the-new-way">The new way</a></h2>
 <p>I’m pleased to say that <code>IRewritable</code>’s new design addresses all three of these warts. Remember the “buffer” idea from earlier?</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">interface</span> IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;</span>
 <span id="cb8-2"><a href="#cb8-2"></a>{</span>
@@ -1150,7 +1155,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb9-18"><a href="#cb9-18"></a>    <span class="kw">return</span> result;</span>
 <span id="cb9-19"><a href="#cb9-19"></a>}</span></code></pre></div>
 <p>The main reason for having <code>RewriteChildren</code> be a method on the interface was to avoid allocating memory (for the <code>GetChildren</code> calls). So we don’t need it on the interface any more — this extension method serves as a single universal implementation. Likewise, <code>Children&lt;T&gt;</code>’s purpose was also to avoid allocating memory, so we can do away with it too.</p>
-<h2 id="relieving-arraypool-pressure">Relieving <code>ArrayPool</code> pressure</h2>
+<h2 id="relieving-arraypool-pressure"><a href="#relieving-arraypool-pressure">Relieving <code>ArrayPool</code> pressure</a></h2>
 <p>There’s one operational problem with this implementation: it can end up renting a large number of arrays from the pool. <code>Rewrite</code>, which applies a transformation function to every node in a tree (not just one layer), is implemented something like this:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">public</span> <span class="kw">static</span> T <span class="fu">Rewrite</span>(<span class="kw">this</span> T value, Func&lt;T, T&gt; transformer) where T : IRewritable&lt;T&gt;</span>
 <span id="cb10-2"><a href="#cb10-2"></a>    =&gt; <span class="fu">transformer</span>(t.<span class="fu">RewriteChildren</span>(child =&gt; child.<span class="fu">Rewrite</span>(transformer)));</span></code></pre></div>
@@ -1233,7 +1238,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb12-24"><a href="#cb12-24"></a>}</span></code></pre></div>
 <p>I’ve glossed over an important part of <code>ChunkStack</code>’s implementation: what happens when the array fills up? The <a href="https://github.com/benjamin-hodgson/Sawmill/blob/bf652359023a76d3ea395d7d743db1a8d6559ec2/Sawmill/ChunkStack.cs">real implementation</a> manages a collection of “regions”, taking a new region from the array pool when existing regions fill up.</p>
 <p>In the pathological case of a <em>very</em> large tree, this version of <code>Rewrite</code> can still exhaust the array pool, but it’ll happen much less quickly.</p>
-<h2 id="hackalloc">Hackalloc</h2>
+<h2 id="hackalloc"><a href="#hackalloc">Hackalloc</a></h2>
 <p>I mentioned earlier that a <code>Span</code> is not necessarily backed by an array. <code>Span</code> represents <em>a contiguous block of memory</em>, with no assumptions about where that memory is or how it’s managed. A <code>Span</code> could be a slice of an array, or it could be a chunk of unmanaged memory, or it could be an area of the stack. Under the hood it’s <em>just a pointer</em>; <code>Span</code> doesn’t care exactly where the pointer points.</p>
 <p>In fact, C# has built in support for that last case. The <code>stackalloc</code> keyword works like C’s <code>alloca</code>: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, <code>stackalloc</code> was only available in an <code>unsafe</code> context, but today it’s available in safe code thanks to <code>Span</code>.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">Foo</span>()</span>
@@ -1398,8 +1403,9 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2019-01-26-announcing-pidgin-v2.0.html</id>
     <published>2019-01-26T00:00:00Z</published>
     <updated>2019-01-26T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>Happy birthday to me! I’m pleased to announce that version 2.0 of my functional parsing library, <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a>, is now available <a href="https://www.nuget.org/packages/Pidgin">on Nuget</a>. In this release I’ve focused on error messages, performance, and <code>Span</code> support.</p>
-<h2 id="parser-combinators">Parser Combinators</h2>
+    <summary type="html"><![CDATA[
+<p>Happy birthday to me! I’m pleased to announce that version 2.0 of my functional parsing library, <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a>, is now available <a href="https://www.nuget.org/packages/Pidgin">on Nuget</a>. In this release I’ve focused on error messages, performance, and <code>Span</code> support.</p>
+<h2 id="parser-combinators"><a href="#parser-combinators">Parser Combinators</a></h2>
 <p>I haven’t written about Pidgin before, so allow me to briefly introduce it. Pidgin is a <a href="https://en.wikipedia.org/wiki/Parser_combinator"><em>parser combinator</em></a> library, meaning that it consists of three main concepts:</p>
 <ul>
 <li>A type <code>Parser</code> which models a <em>parsing process</em></li>
@@ -1423,7 +1429,7 @@ p r o <b>g</b> r a m m i n g
 </ul>
 <p>Parser combinators’ power comes from their composability. The library comprises a small number of building blocks, which you can put together in rich and varied ways to build a parser which does what you need. The library’s level of abstraction is a good fit for small-to-medium sized parsing tasks: it’s not as high-level as a full-blown parser generator like Antlr, but it’s much simpler to integrate. Rewriting our hand-written <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">JQL</a> parser in Pidgin took around four times less code.</p>
 <p>That’s the overview — I won’t dive into a full tutorial on parser combinators because there are already <a href="http://www.lihaoyi.com/post/EasyParsingwithParserCombinators.html">plenty</a> <a href="http://webdoc.sub.gwdg.de/ebook/serien/ah/UU-CS/2008-044.pdf">of</a> <a href="https://news.ycombinator.com/item?id=14600079">those</a> a mere Google away.</p>
-<h3 id="how-it-works">How it works</h3>
+<h3 id="how-it-works"><a href="#how-it-works">How it works</a></h3>
 <p>Pidgin’s <code>Parser&lt;TToken, T&gt;</code> type represents a process which pulls <code>TToken</code>s one at a time from a (stateful) input stream, and either successfully returns a <code>T</code> or fails with an error message.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">public</span> <span class="kw">abstract</span> <span class="kw">class</span> Parser&lt;TToken, T&gt;</span>
 <span id="cb2-2"><a href="#cb2-2"></a>{</span>
@@ -1490,21 +1496,21 @@ p r o <b>g</b> r a m m i n g
 <span id="cb4-19"><a href="#cb4-19"></a>        <span class="kw">return</span> Result.<span class="fu">Success</span>(_<span class="fu">resultSelector</span>(result1.<span class="fu">Value</span>, result2.<span class="fu">Value</span>));</span>
 <span id="cb4-20"><a href="#cb4-20"></a>    }</span>
 <span id="cb4-21"><a href="#cb4-21"></a>}</span></code></pre></div>
-<h2 id="error-messages">Error messages</h2>
+<h2 id="error-messages"><a href="#error-messages">Error messages</a></h2>
 <p>Part of Pidgin’s job is to report when you gave a parser bad input. For example, the top level of a C# file must contain <code>class</code>es and <code>namespace</code>s, so feeding a C# parser the text <code>Console.WriteLine("foo");</code> (without an enclosing <code>class</code>) should fail with some information about the problem:</p>
 <pre><code>Parse error.
-    unexpected &#39;C&#39;
+    unexpected 'C'
     expected &quot;class&quot; or &quot;namespace&quot;
     at line 1, col 1</code></pre>
 <p>A mistake I made early on in Pidgin’s development nearly two years ago(!) was trying to pre-compute the content of these error messages. Under the assumption that parsers are typically built once and then run repeatedly, I wrote some code to examine your parser upon construction and try to predict the ways it could fail on unexpected input, in order to avoid constructing error messages at runtime. This code calculated a set of “expected” input strings, accounting for <code>Then</code>s and <code>Or</code>s by concatenating the strings in the set and by unioning the sets respectively. (The idea was that a parser like <code>Keyword("public").Optional().Then(Keyword("class"))</code> would report that it expected <code>"class" or "public class"</code>.)</p>
 <p>This went catastrophically wrong for complex parsers. Here’s a sketch of some code which parses left-associative mathematical operators with precedence, so <code>3^2 + 4 * 3^5 * 5</code> is parsed as <code>(3^2) + ((4 * (3^5)) * 5)</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="dt">var</span> topPrecedence = Number.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;^&#39;</span>).<span class="fu">Then</span>(Number).<span class="fu">Many</span>());</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="dt">var</span> midPrecedence = topPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;*&#39;</span>).<span class="fu">Then</span>(topPrecedence).<span class="fu">Many</span>());</span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="dt">var</span> lowPrecedence = midPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">&#39;+&#39;</span>).<span class="fu">Then</span>(midPrecedence).<span class="fu">Many</span>());</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="dt">var</span> topPrecedence = Number.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">'^'</span>).<span class="fu">Then</span>(Number).<span class="fu">Many</span>());</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="dt">var</span> midPrecedence = topPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">'*'</span>).<span class="fu">Then</span>(topPrecedence).<span class="fu">Many</span>());</span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="dt">var</span> lowPrecedence = midPrecedence.<span class="fu">Then</span>(<span class="fu">Char</span>(<span class="ch">'+'</span>).<span class="fu">Then</span>(midPrecedence).<span class="fu">Many</span>());</span></code></pre></div>
 <p><code>topPrecedence</code> expects a number, or a number followed by a sequence of exponents — two possibilities. <code>midPrecedence</code> therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications — four possibilities. <code>lowPrecedence</code> has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.</p>
 <p>I made some attempts to optimise this by using more efficient data structures, but I realised this was a losing proposition and decided to throw it out altogether in v2.0. Error messages are now computed at runtime, when the error actually occurs. This means I can be more precise about what the parser was expecting at that particular point in the input: once a parsing process has committed to a branch I can report expected inputs <em>from that branch</em>, rather than reporting all possible expected inputs.</p>
 <p>Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the <em>prioritised choice</em> operator <code>Or</code> works — <code>String("foo").Or(String("bar"))</code> only tries <code>bar</code> if an attempt to parse <code>foo</code> failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using <code>ArrayPool</code>), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children’s error messages adds some interesting complications here, which I’ve described in a <a href="https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74">long comment</a>.)</p>
-<h2 id="span"><code>Span</code></h2>
+<h2 id="span"><a href="#span"><code>Span</code></a></h2>
 <blockquote>
 <p><strong>Note</strong>: You can watch <a href="https://twitter.com/g3rv4">my esteemed colleague Gervasio</a> and me carrying out the work I describe here in <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">a live-stream on YouTube</a>. It was pretty fun!</p>
 </blockquote>
@@ -1539,12 +1545,12 @@ p r o <b>g</b> r a m m i n g
 <span id="cb9-4"><a href="#cb9-4"></a>    <span class="kw">public</span> <span class="kw">static</span> <span class="kw">ref</span> Span&lt;T&gt; <span class="fu">AsRef</span>(<span class="dt">void</span>* ptr);</span>
 <span id="cb9-5"><a href="#cb9-5"></a>}</span></code></pre></div>
 <p><code>AsPointer</code> and <code>AsRef</code> are not expressible in C# (even <code>unsafe</code> C#); <code>System.Runtime.CompilerServices.Unsafe</code> is implemented in raw IL. My copies of those methods have stubs in C# which are filled in by rewriting the DLL’s IL in a post-compile step.</p>
-<h2 id="assorted-performance-improvements">Assorted Performance Improvements</h2>
+<h2 id="assorted-performance-improvements"><a href="#assorted-performance-improvements">Assorted Performance Improvements</a></h2>
 <p>Performance has always been one of Pidgin’s priorities — I’m proud that Pidgin is C#’s fastest parser combinator library (that I know of!) — but there’s always room for improvement. In my tests Pidgin still runs somewhat slower than F#’s FParsec library, for example. In this release I made some architectural changes to <code>IParseState</code> to help close that gap.</p>
-<h3 id="buffering-uniformly">Buffering Uniformly</h3>
+<h3 id="buffering-uniformly"><a href="#buffering-uniformly">Buffering Uniformly</a></h3>
 <p>As I mentioned earlier, Pidgin has several internal implementations of <code>IParseState</code>, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to <em>backtrack</em> on failure (using the <code>Try</code> combinator), so you can’t always discard a token as soon as you’ve seen it. Some <code>IParseState</code> implementations — specifically the ones that are built on top of streaming storage (like <code>Stream</code>) — therefore <em>buffer</em> their input into an array. The ones that are backed by in-memory storage like <code>string</code> don’t need to buffer because their data is already in memory.</p>
 <p>I decided to move the buffering logic to a shared part of the code. Now <em>all</em> <code>IParseState</code> implementations buffer their input, even the in-memory ones. On its own this should make the code slower (it’s more expensive to copy a <code>string</code> into an array than not to!), but it enables all of the optimisations I’m about to describe.</p>
-<h3 id="de-virtualisation-inlining">De-Virtualisation &amp; Inlining</h3>
+<h3 id="de-virtualisation-inlining"><a href="#de-virtualisation-inlining">De-Virtualisation &amp; Inlining</a></h3>
 <p>Virtual method calls are comparatively expensive in .NET, and they happen frequently in Pidgin’s implementation because of <code>IParseState</code>’s design: a parser which consumes <em>n</em> tokens makes a minimum of <em>n</em> virtual calls to <code>Advance</code>.</p>
 <p>With the buffering code extracted into a single place, there was no longer any need to keep it behind an interface. I moved all the buffering and error handling code into a mutable struct which is stored on the stack and passed to the <code>Parser</code>s by reference. Now <code>Advance</code> and <code>Peek</code> are non-virtual.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">struct</span> ParseState&lt;TToken&gt;</span>
@@ -1585,7 +1591,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb11-7"><a href="#cb11-7"></a>    <span class="kw">public</span> TToken Current =&gt; _buffer[_currentPosition];</span>
 <span id="cb11-8"><a href="#cb11-8"></a>}</span></code></pre></div>
 <p>These properties are short and non-virtual, so they are good inlining candidates. After inlining them, the JIT sees simple array-manipulating code, which it can easily optimise in the context of the containing method. This simple change resulted in a 15-20% performance improvement across the board.</p>
-<h3 id="chunking">Chunking</h3>
+<h3 id="chunking"><a href="#chunking">Chunking</a></h3>
 <p>The <code>Stream</code> version of <code>Advance</code> called <code>stream.Read()</code>, which reads and returns a single byte from the stream. This is not as efficient as <code>stream.Read(byte[])</code>, which reads a chunk of bytes from the stream and copies them into an array. (The former requires <em>n</em> virtual method calls to read <em>n</em> bytes, whereas the latter requires only <em>n / <code>array.Length</code></em>.)</p>
 <p>I replaced <code>ITokenStream</code>’s <code>Advance</code> and <code>Peek</code> methods with a method which reads a chunk of tokens into the <code>ParseState</code>’s buffer.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">interface</span> ITokenStream&lt;TToken&gt;</span>
@@ -1610,7 +1616,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb14-12"><a href="#cb14-12"></a>    }</span>
 <span id="cb14-13"><a href="#cb14-13"></a>}</span></code></pre></div>
 <p>This runs about 20% faster for long strings.</p>
-<h2 id="make-your-own-opportunities">Make Your Own Opportunities</h2>
+<h2 id="make-your-own-opportunities"><a href="#make-your-own-opportunities">Make Your Own Opportunities</a></h2>
 <p>Indulge me for a moment while I dispense some unsolicited career advice. For a long time, performance engineering was something that <a href="https://twitter.com/marcgravell/">other</a>, <a href="https://twitter.com/davidfowl">cleverer</a> <a href="https://mattwarren.org/">people</a> did while I observed from a distance with awe. Why is ASP.NET fast? Because the guys that wrote it are Actual Wizards.</p>
 <p>I’ve been lucky enough to work with some of those clever people for a few years now, and actually they’re not Actual Wizards. They just have more experience than me — they know how to use and interpret profiles and benchmarks, they’ve seen enough to know what does and doesn’t work, and they’ve had practice coming up with ideas to improve performance.</p>
 <p>The good news is that performance optimisation usually doesn’t involve fiddly low-level programming like this — simply being aware of when your code performs IO makes a big difference — and it’s never too early or late to start building your experience level, no matter where you are in your career. For me, that meant setting myself the goal of making my open source libraries as fast as I could. For you, it could mean picking a slow part of your codebase at work and trying to make it faster, or pair-programming with a colleague, or thoroughly reading through some unfamiliar code. Making your own opportunities to learn new things is the best way to get better.</p>
@@ -1622,8 +1628,9 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2019-01-11-the-fourth-type-of-variance.html</id>
     <published>2019-01-11T00:00:00Z</published>
     <updated>2019-01-11T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>Given a polymorphic type, like <code>List</code>, what can we say about the relationship between different usages of that type? If <code>A</code> and <code>B</code> are related, is <code>List[A]</code> related to <code>List[B]</code>? <em>Variance</em> is the word for this type of relationship, and it turns out there are a few different answers to that question, depending on the type you’re asking about.</p>
-<h2 id="covariance">Covariance</h2>
+    <summary type="html"><![CDATA[
+<p>Given a polymorphic type, like <code>List</code>, what can we say about the relationship between different usages of that type? If <code>A</code> and <code>B</code> are related, is <code>List[A]</code> related to <code>List[B]</code>? <em>Variance</em> is the word for this type of relationship, and it turns out there are a few different answers to that question, depending on the type you’re asking about.</p>
+<h2 id="covariance"><a href="#covariance">Covariance</a></h2>
 <p>Probably the most familiar situation is when the parameterised types are related in the same way as the parameter. This is the type of variance exhibited by most “container” types, like <code>List</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">sealed</span> <span class="kw">abstract</span> <span class="kw">class</span> List[+A]</span>
 <span id="cb1-2"><a href="#cb1-2"></a></span>
@@ -1638,7 +1645,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb2-5"><a href="#cb2-5"></a>    <span class="fu">fmap</span> f xs <span class="ot">=</span> [f x <span class="op">|</span> x <span class="ot">&lt;-</span> xs]</span></code></pre></div>
 <p>This chimes with the intuition that a functor <code>f</code> is a container of sorts. If you can write a function to convert each <code>a</code> in the container into a <code>b</code>, then <code>fmap</code> can convert a container of <code>a</code>s into a container of <code>b</code>s by converting each item in the container.</p>
 <p>In general, a type is covariant if its parameter is used as an output. An object which produces <code>Cat</code>s can be used to produce <code>Animal</code>s. All you have to do is ignore the cattiness of the animals you get out of the producer.</p>
-<h2 id="contravariance">Contravariance</h2>
+<h2 id="contravariance"><a href="#contravariance">Contravariance</a></h2>
 <p><em>Contravariance</em>, covariance’s evil twin, is the word for when the parameterised types are related in the opposite way as the parameters. Scala’s <code>Ordering</code>, which determines which way round to put two objects (like C#’s <code>IComparer</code>), is an example of a contravariant type.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">trait</span> Ordering[-A] {</span>
 <span id="cb3-2"><a href="#cb3-2"></a>    <span class="kw">def</span> <span class="fu">apply</span>(x : A, y : A) : Int</span>
@@ -1657,7 +1664,7 @@ p r o <b>g</b> r a m m i n g
 <p>If you can turn <code>b</code>s into <code>a</code>s, then you can turn a comparer of <code>a</code>s into a comparer of <code>b</code>s by converting the <code>b</code>s into <code>a</code>s before they go into the comparer. Note how <code>f</code> is applied to <code>p</code>’s inputs in the implementation of <code>contramap</code>.</p>
 <p>In general, a type is contravariant if its parameter appears as an input. An object which consumes <code>Animals</code> can be used to consume <code>Cat</code>s. All you have to do is forget about the cattiness of the animals before you put them into the consumer.</p>
 <p>Julie Moronuki has <a href="https://typeclasses.com/contravariance">the best explanation of contravariance</a> that I know of.</p>
-<h2 id="invariance">Invariance</h2>
+<h2 id="invariance"><a href="#invariance">Invariance</a></h2>
 <p><em>Invariance</em> is the word for when there’s no relationship at all between different usages of a parameterised type.</p>
 <p>In Scala a type parameter unadorned with a sign is invariant. The following mutable set type is invariant:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">trait</span> Set[A] {</span>
@@ -1687,14 +1694,14 @@ p r o <b>g</b> r a m m i n g
 <p>Let me spell out the similarity between <code>Invariant</code> functors and Scala’s subtype invariance. For <code>Operation a</code> to be convertible to <code>Operation b</code>, <code>a</code> must be convertible to <code>b</code> <em>and</em> <code>b</code> must be convertible to <code>a</code>. For <code>Set[A]</code> to be a subtype of <code>Set[B]</code>, <code>A</code> must be a subtype of <code>B</code> <em>and</em> <code>B</code> must be a subtype of <code>A</code> (that is, they must be the same type).</p>
 <p>Note that variance is a property of the type parameter (<code>A</code>), not the type constructor (<code>List</code>/<code>Ordering</code>). A given type constructor may have multiple parameters with different variances. <code>Function1[-A, +B]</code>, for example.</p>
 <p><img src="/images/2019-01-11-the-fourth-type-of-variance/hierarchy.png" /></p>
-<h2 id="combining-variances">Combining Variances</h2>
+<h2 id="combining-variances"><a href="#combining-variances">Combining Variances</a></h2>
 <p>An object which produces a producer of <code>A</code>s effectively produces <code>A</code>s. A type with a covariant type as an output is itself covariant.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb9-1"><a href="#cb9-1"></a><span class="co">// Container returns a covariant type, so Container is covariant</span></span>
 <span id="cb9-2"><a href="#cb9-2"></a><span class="kw">trait</span> Container[+A] {</span>
 <span id="cb9-3"><a href="#cb9-3"></a>    <span class="kw">def</span> <span class="fu">toList</span>(): List[A]</span>
 <span id="cb9-4"><a href="#cb9-4"></a>}</span></code></pre></div>
 <p>Consuming a producer of <code>A</code>s is basically the same as consuming <code>A</code>s. A type which has a covariant type as an input is contravariant.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb10-1"><a href="#cb10-1"></a><span class="co">// Printer consumes a covariant type, so it&#39;s contravariant</span></span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb10-1"><a href="#cb10-1"></a><span class="co">// Printer consumes a covariant type, so it's contravariant</span></span>
 <span id="cb10-2"><a href="#cb10-2"></a><span class="kw">trait</span> Printer[-A] {</span>
 <span id="cb10-3"><a href="#cb10-3"></a>    <span class="kw">def</span> <span class="fu">printAll</span>(items: List[A]): Unit</span>
 <span id="cb10-4"><a href="#cb10-4"></a>}</span></code></pre></div>
@@ -1709,7 +1716,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb12-3"><a href="#cb12-3"></a>    <span class="kw">def</span> <span class="fu">sortBy</span>(ordering: Ordering[A]): Unit</span>
 <span id="cb12-4"><a href="#cb12-4"></a>}</span></code></pre></div>
 <p>Mnemonically, you can think of input parameters as meaning “times -1”. <code>Ordering</code> takes <code>A</code>s as its inputs, so <code>Ordering</code> is negative. <code>Sortable</code> takes a (negative) <code>Ordering</code> as an input, so it’s positive (-1 * -1 = 1). Printer takes a (positive) <code>List</code> as input, so it’s negative. This explains Scala’s choice of <code>+</code> and <code>-</code> as the syntax for its variance annotations.</p>
-<h2 id="the-semilattice-of-variances">The Semilattice of Variances</h2>
+<h2 id="the-semilattice-of-variances"><a href="#the-semilattice-of-variances">The Semilattice of Variances</a></h2>
 <p>Now, it turns out that these three types of variance have a relationship to each other. Invariance generalises both covariance and contravariance. Covariant things are also invariant, and contravariant things are also also invariant.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="ot">defaultInvmapCo ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
 <span id="cb13-2"><a href="#cb13-2"></a>defaultInvmapCo f _ x <span class="ot">=</span> <span class="fu">fmap</span> f x</span>
@@ -1725,7 +1732,7 @@ p r o <b>g</b> r a m m i n g
 <p><img src="/images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" /></p>
 <p>So there’s this interesting relationship between the three types of variance. They form a little semilattice, of which <code>Invariant</code> is the supremum.</p>
 <p>But, hmm, the picture seems asymmetric. Is variance really only a semilattice? Or is there something lurking at the bottom of that picture?</p>
-<h2 id="phantom-variance">Phantom Variance</h2>
+<h2 id="phantom-variance"><a href="#phantom-variance">Phantom Variance</a></h2>
 <p>Looking at the code above, it appears that <code>Functor</code> and <code>Contravariant</code> both specialise <code>Invariant</code> by ignoring one of <code>Invariant</code>’s function parameters. What if we ignored both of them?</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">class</span> (<span class="dt">Functor</span> f, <span class="dt">Contravariant</span> f) <span class="ot">=&gt;</span> <span class="dt">Phantom</span> f <span class="kw">where</span></span>
 <span id="cb15-2"><a href="#cb15-2"></a><span class="ot">    pmap ::</span> f a <span class="ot">-&gt;</span> f b</span></code></pre></div>
@@ -1757,7 +1764,8 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2018-12-06-zooming-in-on-field-accessors.html</id>
     <published>2018-12-06T00:00:00Z</published>
     <updated>2018-12-06T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>It’s common in functional languages — and increasingly in hybrid languages like C# — to work with complex systems of immutable datatypes. For a contrived example, suppose you’re working on a billing application:</p>
+    <summary type="html"><![CDATA[
+<p>It’s common in functional languages — and increasingly in hybrid languages like C# — to work with complex systems of immutable datatypes. For a contrived example, suppose you’re working on a billing application:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">class</span> Order</span>
 <span id="cb1-2"><a href="#cb1-2"></a>{</span>
 <span id="cb1-3"><a href="#cb1-3"></a>    <span class="kw">public</span> Customer Customer { <span class="kw">get</span>; }</span>
@@ -1803,7 +1811,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb3-7"><a href="#cb3-7"></a>}</span></code></pre></div>
 <p>This pain is caused by immutability. In an imperative setting you can say <code>order.Customer.Address.Postcode = newPostcode;</code>, although of course mutable data is less reliable and harder to work with overall. Rather than give up on immutability, functional programmers have invented a remarkable family of composable tools called <em>optics</em> for poking around inside complex datatypes. Optics are a way of describing “paths” through structures: you can compose paths together, and read and write the values at the end of those paths. I’m here today to demonstrate that C#8’s upcoming <a href="https://github.com/dotnet/csharplang/issues/52"><em>default interface methods</em></a> are great at modelling optics.</p>
 <p>Let’s start with <em>lenses</em>, the family member that gave the family its name.</p>
-<h2 id="lenses">Lenses</h2>
+<h2 id="lenses"><a href="#lenses">Lenses</a></h2>
 <p>A <em>lens</em> is a first-class property for an immutable object. It’s an object with a pair of methods, a <em>getter</em> which retrives the value of a property and a <em>setter</em> which updates it. Remember, we’re working with immutable data, so the setter returns a new copy of the object.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">interface</span> ILens&lt;T, TProp&gt;</span>
 <span id="cb4-2"><a href="#cb4-2"></a>{</span>
@@ -1850,7 +1858,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb7-15"><a href="#cb7-15"></a>    }</span>
 <span id="cb7-16"><a href="#cb7-16"></a>}</span></code></pre></div>
 <p>To summarise, a lens is a way to focus on a small part of a big immutable structure. They’re like a first-class version of the <code>.</code> and <code>=</code> operators: you can compose lenses together to focus deeper, and upon focusing on a location you can get and set the value at that location.</p>
-<h3 id="mapping-under-a-lens">Mapping under a lens</h3>
+<h3 id="mapping-under-a-lens"><a href="#mapping-under-a-lens">Mapping under a lens</a></h3>
 <p>A common pattern is to get a value from a lens, apply some sort of transformation to it, and then put it back where it was. The <code>Map</code> helper function wraps up this pattern:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">interface</span> ILens&lt;T, TProp&gt;</span>
 <span id="cb8-2"><a href="#cb8-2"></a>{</span>
@@ -1861,9 +1869,9 @@ p r o <b>g</b> r a m m i n g
 <span id="cb8-7"><a href="#cb8-7"></a>        =&gt; <span class="fu">Set</span>(oldObj, <span class="fu">transformer</span>(<span class="fu">Get</span>(oldObj))).</span>
 <span id="cb8-8"><a href="#cb8-8"></a>}</span></code></pre></div>
 <p>Here’s an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you’re working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
-<hr />
+<hr><a href="#"></a></hr>
 <p>Powerful as they are, these lenses don’t quite scale up to cover all of the important ways to access data. Specifically, they don’t support computed properties or lists.</p>
-<h2 id="getters">Getters</h2>
+<h2 id="getters"><a href="#getters">Getters</a></h2>
 <p>How would you write a lens which focuses on a list’s <code>Count</code>? You can’t set <code>Count</code> directly - it measures the number of times you’ve added or removed something from the list. The only way to change the <code>Count</code> is to add or remove an item!</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">class</span> CountL&lt;T&gt; : ILens&lt;ImmutableList&lt;T&gt;, <span class="dt">int</span>&gt;</span>
 <span id="cb9-2"><a href="#cb9-2"></a>{</span>
@@ -1896,7 +1904,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb11-14"><a href="#cb11-14"></a>    }</span>
 <span id="cb11-15"><a href="#cb11-15"></a>}</span></code></pre></div>
 <p>If you compose a lens with a getter, you get a getter. This makes sense: if any part of a given path through a data structure is read-only, then the whole path must be read-only. It Just Works™ because <code>ILens</code> is a subtype of <code>IGetter</code>. Overload resolution takes care of it: you type <code>_</code> and the compiler picks the right return type based on the types of <code>_</code>’s arguments.</p>
-<h2 id="multi-lenses">Multi-lenses</h2>
+<h2 id="multi-lenses"><a href="#multi-lenses">Multi-lenses</a></h2>
 <p><code>ILens</code> focuses on a single part of a structure. Its <code>Get</code> method returns a single <code>TProp</code> and its <code>Set</code> method takes a single <code>TProp</code>. This means you can’t use lenses to, for example, update the price of all the products in an order.</p>
 <p>Enter <em>multi-lenses</em>, also known as <em>traversals</em>.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">interface</span> IMultiLens&lt;T, TProp&gt;</span>
@@ -1996,7 +2004,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb17-24"><a href="#cb17-24"></a>        =&gt; <span class="fu">Set</span>(oldObj, newVals.<span class="fu">Single</span>());</span>
 <span id="cb17-25"><a href="#cb17-25"></a>}</span></code></pre></div>
 <p><img src="/images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" /></p>
-<h2 id="default-interface-implementations">Default Interface Implementations</h2>
+<h2 id="default-interface-implementations"><a href="#default-interface-implementations">Default Interface Implementations</a></h2>
 <p>The code above makes central use of default interface implementations, so it’s probably time to talk about what they are.</p>
 <p>In C#8, interfaces won’t just be type declarations any more. You’ll be allowed to write code in an interface method, to function as the default implementation of that method. Typically it’ll be written in terms of the other methods on the interface, like an extension method. They differ from extension methods, however, in that they are virtual. If an implementing class has a better (faster, typically) way of implementing the operation, it’s free to override it.</p>
 <p>Here’s an example. How would LINQ’s design look different if default interface methods had been around at the time? Today’s <a href="https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.count"><code>Count</code></a> method, an extension method, works in linear time by counting up all of the elements of the input <code>IEnumerable</code>.</p>
@@ -2049,7 +2057,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb20-26"><a href="#cb20-26"></a>}</span></code></pre></div>
 <p>Interfaces with default methods are somewhat like abstract classes with virtual methods. The main difference is that a class can implement multiple interfaces, while it can only derive from one class. So default interface implementations amount to a form of multiple inheritance! (This provoked much whingeing in <a href="https://github.com/dotnet/csharplang/issues/288">the discussion on GitHub</a>.)</p>
 <p>The optics library I’ve outlined above makes central use of multiple inheritance. <code>ILens</code> inherits its <code>MultiGet</code> implementation from <code>IGetter</code> and its <code>Map</code> implementation from <code>IMultiLens</code>. So it wouldn’t work with abstract classes; before C#8 we wouldn’t have been able to write this program. Default interface implementations add new expressive power to the language.</p>
-<h2 id="production-worthiness">Production-Worthiness</h2>
+<h2 id="production-worthiness"><a href="#production-worthiness">Production-Worthiness</a></h2>
 <p>Lenses are very useful in functional languages, but I would not recommend you use them in practical C#, even after the release of C#8. When you stand it next to <a href="http://hackage.haskell.org/package/lens">Haskell’s <code>lens</code> library</a>, the API I outlined above has a number of significant shortcomings.</p>
 <ul>
 <li><p><strong>Performance</strong>. The big one! Accessing a field is such a common operation that it’d better be fast. The <code>.</code> operator (<code>order.Customer.Address.Postcode</code>) is very fast on the CLR — just a pointer hop. Composed lenses, on the other hand, are tree-shaped objects, and calling <code>Get</code> means traversing that tree with a interface method call at each level. I ran some rudimentary benchmarks and found deeply nested lenses to be orders of magnitude slower than equivalent lensless code.</p>
@@ -2087,7 +2095,8 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2018-07-16-live-streaming.html</id>
     <published>2018-07-16T00:00:00Z</published>
     <updated>2018-07-16T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>My esteemed colleague <a href="https://twitter.com/g3rv4?lang=en">Gervasio</a> and I have arranged to live-stream some programming <del>this Friday, the 20th of July</del> <strong>Update</strong>: we’ve decided to move it to next <strong>Tuesday, the 24th</strong>, at 2PM BST. We’re going to be working on adding some basic <code>Span</code> support to <a href="https://github.com/benjamin-hodgson/Pidgin">my parsing library</a>, and it’s going to involve <code>unsafe</code> and custom IL, which should be a bit of fun.</p>
+    <summary type="html"><![CDATA[
+<p>My esteemed colleague <a href="https://twitter.com/g3rv4?lang=en">Gervasio</a> and I have arranged to live-stream some programming <del>this Friday, the 20th of July</del> <strong>Update</strong>: we’ve decided to move it to next <strong>Tuesday, the 24th</strong>, at 2PM BST. We’re going to be working on adding some basic <code>Span</code> support to <a href="https://github.com/benjamin-hodgson/Pidgin">my parsing library</a>, and it’s going to involve <code>unsafe</code> and custom IL, which should be a bit of fun.</p>
 <p>The stream will be <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">on YouTube</a> and we’re planning to start at 2PM BST. Hope to see you there with your questions!</p>
 ]]></summary>
 </entry>
@@ -2097,9 +2106,10 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2018-03-16-eighty.html</id>
     <published>2018-03-16T00:00:00Z</published>
     <updated>2018-03-16T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>HTML templating systems are great but they sure are complex. ASP.NET’s Razor, for example, is a whole new programming language! While Razor does happen to have a large chunk of C# embedded within it, and it works by generating and then compiling C# code, it’s still a separate language with a separate syntax, separate abstraction techniques, separate compiler tooling, a separate file type, and separate (and usually inferior) editor support. All this for a task as simple and common as generating HTML!</p>
+    <summary type="html"><![CDATA[
+<p>HTML templating systems are great but they sure are complex. ASP.NET’s Razor, for example, is a whole new programming language! While Razor does happen to have a large chunk of C# embedded within it, and it works by generating and then compiling C# code, it’s still a separate language with a separate syntax, separate abstraction techniques, separate compiler tooling, a separate file type, and separate (and usually inferior) editor support. All this for a task as simple and common as generating HTML!</p>
 <p>This overhead can be worth it if you’re building a complex web application, but for simple tools such as report generators or email batch mailers Razor is unwieldy. Many people in these situations resort to generating their own HTML, either by building strings manually or by imperatively building tags using .NET’s supplied XML manipulation APIs. But there’s a whole world of possible designs out there, and there’s a lot of space in between “complex templating language” and “build strings by hand”.</p>
-<h2 id="eighty">Eighty</h2>
+<h2 id="eighty"><a href="#eighty">Eighty</a></h2>
 <p><a href="https://github.com/benjamin-hodgson/Eighty">Eighty</a> (as in <em>eigh-ty-M-L</em>) is my attempt at striking a balance between these two extremes: not so abstract as to constitute a separate programming language, but not so concrete that you have to manipulate XML tags or strings manually. It’s a simple embedded domain-specific language which piggybacks on C#’s syntax, enabling you to write code resembling the HTML you’re generating. Rather than embedding C# into an HTML generator, Eighty embeds an HTML generator into C#.</p>
 <p>Here’s an example from <a href="https://github.com/benjamin-hodgson/Eighty/blob/master/README.md">the readme</a>:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="dt">var</span> html = <span class="fu">article</span>(@class: <span class="st">&quot;readme&quot;</span>)._(</span>
@@ -2118,14 +2128,14 @@ p r o <b>g</b> r a m m i n g
 <li>A tag’s children are introduced using the <code>_</code> character, which can appear at the end of a method name or as a method name all by itself. <code>a(href: "benjamin.pizza")._("Visit my website")</code> creates an <code>a</code> tag with an <code>href</code> attribute and some text inside it; <code>p_("a paragraph of text")</code> represents a <code>p</code> tag with some text but no attributes. I chose <code>_</code> because it’s the least noisy character that can be used as an identifier in C#.</li>
 <li>Strings can be implicitly converted to <code>Html</code> and are interpreted as HTML text. Text is HTML-encoded by default. You can opt out of this using the <code>Raw</code> method.</li>
 </ul>
-<h2 id="eighty-vs-razor">Eighty vs Razor</h2>
+<h2 id="eighty-vs-razor"><a href="#eighty-vs-razor">Eighty vs Razor</a></h2>
 <p>Of course, C# code will only ever look <em>a bit</em> like HTML. Razor code looks much more like HTML than this! This can be a drawback when you’re working with designers who want to read and write HTML — I’m planning to write a tool to convert HTML text into an Eighty expression to partially ease this pain point. But Eighty has two big advantages which make it simpler and easier than Razor to program with:</p>
 <ol type="1">
 <li>It plugs into your existing system. You don’t require any extra tools to work with Eighty: if you can compile C#, you can use Eighty.</li>
 <li>Programming with Eighty is <em>just programming</em>. <code>Html</code> instances are plain old immutable CLR objects, so you can use all your favourite techniques for abstraction and code reuse.</li>
 </ol>
 <p>To illustrate the second point, here are some examples of how you might emulate some of Razor’s programming constructs using Eighty. In many of these cases Eighty does a better job than Razor of allowing abstraction and code reuse, because Eighty is embedded within C# rather than layered on top of C#.</p>
-<h3 id="models">Models</h3>
+<h3 id="models"><a href="#models">Models</a></h3>
 <p>In Razor, each view file you write declares a <em>model type</em> — the type of object it expects you to pass in to direct the generation of HTML. You use the <code>@model</code> directive at the top of your file, and then you can access members of the model in your Razor code.</p>
 <pre class="cshtml"><code>@model ExampleModel
 
@@ -2136,7 +2146,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb3-2"><a href="#cb3-2"></a>    =&gt; <span class="fu">h1_</span>(model.<span class="fu">Title</span>);</span></code></pre></div>
 <p>Since a template is a regular C# method, it’s much easier to run in a unit test harness than Razor. You can just call the method and make assertions about the generated HTML, either by looking at the string directly or by parsing it and traversing the resultant DOM.</p>
 <p>Eighty includes <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.IHtmlRenderer-1.html">an <code>IHtmlRenderer&lt;TModel&gt;</code> interface</a>, which captures this pattern of parameterising a chunk of HTML by a model, but its use is optional — it’s used primarily by Eighty’s ASP.NET integration packages.</p>
-<h3 id="control-flow">Control flow</h3>
+<h3 id="control-flow"><a href="#control-flow">Control flow</a></h3>
 <p>Razor allows you to mix markup with C#’s control flow constructs such as <code>foreach</code> and <code>if</code>. Here’s a simple example of populating a <code>ul</code> based on a list of values:</p>
 <pre class="cshtml"><code>&lt;ul&gt;
     @foreach (var item in Model.Items)
@@ -2164,7 +2174,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb6-8"><a href="#cb6-8"></a>}</span>
 <span id="cb6-9"><a href="#cb6-9"></a><span class="kw">return</span> <span class="fu">ul_</span>(lis);</span></code></pre></div>
 <p>Mixing markup with C# is not a problem, because markup <em>is</em> C#.</p>
-<h3 id="partials-and-helpers">Partials and Helpers</h3>
+<h3 id="partials-and-helpers"><a href="#partials-and-helpers">Partials and Helpers</a></h3>
 <p>Razor’s two main tools for code reuse are <em>partial views</em> and <em>helpers</em>. For the purposes of this article, they’re roughly equivalent. Partial views can be returned directly from a controller but their model type is checked at runtime, whereas helpers’ parameters are checked by the compiler but they can only be invoked from within a Razor view.</p>
 <p>Eighty handles both of these uses in the simplest of ways: <em>calling a function</em>. If I want to include an HTML snippet in more than one place, I can just extract it into a method returning an <code>Html</code> object. Transliterating an example from <a href="https://docs.microsoft.com/en-us/aspnet/web-pages/overview/ui-layouts-and-themes/creating-and-using-a-helper-in-an-aspnet-web-pages-site">the MVC documentation</a>:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a>Html <span class="fu">MakeNote</span>(<span class="dt">string</span> content)</span>
@@ -2187,7 +2197,7 @@ p r o <b>g</b> r a m m i n g
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a>Html <span class="fu">RepeatFiveTimes</span>(Html html)</span>
 <span id="cb8-2"><a href="#cb8-2"></a>    =&gt; <span class="fu">_</span>(Enumerable.<span class="fu">Repeat</span>(html, <span class="dv">5</span>));</span></code></pre></div>
 <p>Since <code>Html</code> values are immutable, you can safely share them between different HTML documents, across different threads, etc. Sharing parts of your HTML document that don’t change can be an important optimisation.</p>
-<h3 id="layouts">Layouts</h3>
+<h3 id="layouts"><a href="#layouts">Layouts</a></h3>
 <p>Razor lets you define a shared <em>layout</em> page, which acts as a template for the other pages in your application. For example, you might put the <code>html</code> and <code>body</code> tags in a layout page, and use the built in <code>RenderBody</code> helper to render the concrete page’s body inside the <code>body</code> tag. This is also where global navs and the like are defined.</p>
 <p>One way to handle global layouts and sections in Eighty would be to define an abstract base class. Each section becomes an abstract method, allowing individual pages to fill in their own HTML for those sections.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Layout</span>
@@ -2235,7 +2245,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb10-16"><a href="#cb10-16"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Body</span>()</span>
 <span id="cb10-17"><a href="#cb10-17"></a>        =&gt; <span class="co">/* The body of the dashboard page */</span>;</span>
 <span id="cb10-18"><a href="#cb10-18"></a>}</span></code></pre></div>
-<h2 id="twenty">Twenty</h2>
+<h2 id="twenty"><a href="#twenty">Twenty</a></h2>
 <p>Eighty comes bundled with a second HTML generation library called Twenty. Twenty is harder to use correctly than Eighty, and its API is more verbose, but it’s faster.</p>
 <p>HTML tags have to be balanced: every opening tag has to have a matching closing tag and vice versa. While an <code>Html</code> value is being written to a <code>TextWriter</code>, Eighty manages the stack of currently-open tags using the call stack. Each tag writes its opening tag, tells its children to write themselves, and then writes its closing tag. This is possible because <code>Html</code> is an ordinary reference type; the objects you build with methods like <code>p()</code> and <code>h1()</code> are tree-shaped objects representing a DOM of statically-unknown size.</p>
 <p>Twenty instead takes an imperative view of HTML generation. Each tag method writes an opening tag to the <code>TextWriter</code> immediately, and returns an <code>IDisposable</code> which writes out the closing tag when it’s disposed. You, the programmer, use C#’s <code>using</code> statement to ensure that the <code>Dispose</code> method is called as soon as the children have been written. The structure of your HTML document is still visible in the code, but it’s present in the nesting of <code>using</code> statements, rather than by the structure of a tree-shaped object.</p>
@@ -2265,7 +2275,7 @@ p r o <b>g</b> r a m m i n g
 <li>There’s no <code>async</code> API, because there’s no way to call <code>Dispose</code> asynchronously.</li>
 </ul>
 <p>Given Twenty’s limitations, my advice is to write your markup using <code>Html</code>, and convert it to <code>HtmlBuilder</code> if you see that building <code>Html</code> values is a performance bottleneck.</p>
-<h2 id="performance">Performance</h2>
+<h2 id="performance"><a href="#performance">Performance</a></h2>
 <p>Eighty is pretty fast. I wrote a benchmark testing how long it takes to spit out around 30kB of HTML (with some encoding characters thrown in for good measure) while running in an in-memory hosted MVC application. Eighty’s synchronous code path does this around three times faster than Razor, and Twenty runs about 30% faster than that — so, four times faster than Razor.</p>
 <p>What have I done to make Eighty fast? Honestly, not a huge amount. There are a only few interesting optimisations in Eighty’s codebase.</p>
 <ul>
@@ -2281,7 +2291,7 @@ p r o <b>g</b> r a m m i n g
 </ul></li>
 </ul>
 <p>I’m not sure exactly why Razor is slower by comparison. My guess is that Razor’s template compiler just tends to generate comparatively slow C# code — so there’s probably some room for improvement — but I would like to investigate this more.</p>
-<hr />
+<hr><a href="#"></a></hr>
 <p>HTML generators are an example of a problem where the spectrum of possible solutions is very broad indeed. Just within the C# ecosystem there exists a menagerie of different templating languages, as well as imperative object-oriented APIs like <code>TagBuilder</code> and streaming APIs like <code>XmlWriter</code>. Even Eighty and Twenty, two implementations of the same idea, are substantially different. You can often find yourself somewhere quite interesting if you appreach a common problem from a different direction than the established solutions. What parts of the library ecosystem do you think you could do with a fresh perspective?</p>
 <p>Eighty is available <a href="https://www.nuget.org/packages/Eighty">on Nuget</a>, along with some helpers to integrate Eighty with <a href="https://www.nuget.org/packages/Eighty.AspNet.Mvc">MVC</a> and <a href="https://www.nuget.org/packages/Eighty.AspNetCore">ASP.NET Core</a>. API docs are hosted <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.html">on this very domain</a>, and the code’s all <a href="https://github.com/benjamin-hodgson/Eighty">on GitHub</a> where contributions and bug reports are very welcome!</p>
 ]]></summary>
@@ -2292,20 +2302,21 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2018-01-10-zip-folding.html</id>
     <published>2018-01-10T00:00:00Z</published>
     <updated>2018-01-10T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>One of my favourite little gems of functional programming is the following implementation of the dot product:</p>
+    <summary type="html"><![CDATA[
+<p>One of my favourite little gems of functional programming is the following implementation of the dot product:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="ot">dot ::</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> <span class="dt">Double</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> <span class="fu">sum</span> (<span class="fu">zipWith</span> (<span class="op">*</span>) xs ys)</span></code></pre></div>
 <p><code>dot</code> zips two lists of numbers, multiplying each pair of elements using <code>(*)</code>, and then aggregates the results with <code>sum</code>. It’s like a <em>map-reduce</em> program, but it processes two collections, not one. It generalises rather beautifully to any zippily <code>Applicative</code> <code>Foldable</code> container whose elements form a <code>Semiring</code>:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">dot ::</span> (<span class="dt">Semiring</span> a, <span class="dt">Applicative</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
-<span id="cb2-2"><a href="#cb2-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> foldl&#39; (<span class="op">&lt;+&gt;</span>) zero (liftA2 (<span class="op">&lt;.&gt;</span>) xs ys)</span></code></pre></div>
+<span id="cb2-2"><a href="#cb2-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> foldl' (<span class="op">&lt;+&gt;</span>) zero (liftA2 (<span class="op">&lt;.&gt;</span>) xs ys)</span></code></pre></div>
 <p>I think I’m particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It’s a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call <em>zip-folding</em>.</p>
-<hr />
+<hr><a href="#"></a></hr>
 <p>Until recently I felt rather embarrassed that my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> didn’t have a good story for consuming more than one tree at a time. I had lots of tools for <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs">querying</a>, <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs">editing</a>, and <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs">tearing down</a> single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you’re unit testing a parser or a transformation pass, you need to compare the output tree to the one that you expected.</p>
 <p>I got to thinking about what it means to zip two trees together - an operation which should make sense if you think of a tree as a container of subtrees. Pairing up nodes in a tree is straightforward, even if the two trees are unevenly shaped. You just pair up the children of each pair of nodes, ignoring those which don’t have a partner (the grey-coloured ones in the drawing):</p>
 <p><img src="/images/2018-01-10-zip-folding/zip.jpg" alt="Pairing up nodes" /></p>
 <p>But I got stuck on how to plug those paired nodes back into a single tree representing the zipped trees. Nodes typically have space for a fixed number of children, but pairing up children will typically change that number. That is, a binary operator has precisely two children, but when zipping two binary operators together you need to do something with four children.</p>
 <p>And, more generally, what would it mean to zip trees recursively? You can imagine a scheme wherein each child of a node is replaced with a tuple of two children. But each child is really a subtree, with its own children, so the two subtrees need to be zipped - but that ought to produce a single tree, not a pair of trees. It’s contradictory! The intuitive idea that a node in a tree is a container of subtrees fails when you consider zipping.</p>
-<hr />
+<hr><a href="#"></a></hr>
 <p>Guess where this is going: you can’t <em>zip</em> trees to produce a new tree, but you can <em>zip-fold</em> trees to produce a value. The idea is to take pairs of nodes in a tree and combine them with the results of zipping their children.</p>
 <p>Let’s start by looking at (an abbreviated version of) Sawmill’s existing <code>Fold</code>. <code>Fold</code> says <em>if you give me a way to combine a node with the results of folding its children, I can recursively fold the entire tree to produce a single summary value</em>.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">public</span> <span class="kw">static</span> U Fold&lt;T, U&gt;(</span>
@@ -2439,9 +2450,10 @@ p r o <b>g</b> r a m m i n g
     <id>http://www.benjamin.pizza/posts/2017-12-15-functor-functors.html</id>
     <published>2017-12-15T00:00:00Z</published>
     <updated>2017-12-15T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>You can teach a new dog old tricks.</p>
+    <summary type="html"><![CDATA[
+<p>You can teach a new dog old tricks.</p>
 <p>One of the fun things about category theory is that once you’ve learned an idea in one context it’s easy to apply it to another one. Of the numerous categories available to Haskell programmers, <strong>Hask</strong>, the category of Haskell types and functions, gets the lion’s share of the attention. Working with standard abstractions in more overlooked categories is a great way to reuse ideas: it makes you look clever, like you’ve invented something new, but actually all you’ve done is put the building blocks together differently. I won’t tell if you don’t.</p>
-<h2 id="templates-reusable-records">Templates: Reusable Records</h2>
+<h2 id="templates-reusable-records"><a href="#templates-reusable-records">Templates: Reusable Records</a></h2>
 <p>Every now and then I’ll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and “draft” checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">data</span> <span class="dt">CardType</span> <span class="ot">=</span> <span class="dt">Visa</span> <span class="op">|</span> <span class="dt">AmEx</span> <span class="op">|</span> <span class="dt">Mastercard</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a></span>
@@ -2484,7 +2496,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb3-4"><a href="#cb3-4"></a><span class="kw">type</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">FormTemplate</span></span>
 <span id="cb3-5"><a href="#cb3-5"></a><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">Partial</span> <span class="dt">FormTemplate</span></span></code></pre></div>
 <p>The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I’ll be taking familiar tools for working with containers of <em>values</em> - <code>Functor</code>, <code>Traversable</code>, <code>Representable</code> - and applying them to the context of containers of <em>functors</em>.</p>
-<h2 id="functors-from-the-category-of-endofunctors">Functors from the Category of Endofunctors</h2>
+<h2 id="functors-from-the-category-of-endofunctors"><a href="#functors-from-the-category-of-endofunctors">Functors from the Category of Endofunctors</a></h2>
 <p>In Haskell, categories are represented as a <em>kind</em> <code>k</code> of objects and a <em>type constructor</em> <code>c :: k -&gt; k -&gt; *</code> of morphisms between those objects. If the category <code>C</code> has objects in <code>k1</code> and morphisms in <code>c</code>, and <code>D</code> has objects in <code>k2</code> and morphisms in <code>d</code>, then a functor from <code>C</code> to <code>D</code> is a type constructor <code>f :: k1 -&gt; k2</code> mapping objects paired with an operation <code>fmap :: c a b -&gt; d (f a) (f b)</code> mapping the morphisms. The standard <code>Functor</code> class is for <em>endofunctors on <strong>Hask</strong></em> - the special case in which <code>k1 ~ k2 ~ *</code> and <code>c ~ d ~ (-&gt;)</code>.</p>
 <p><img src="/images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" /></p>
 <p>Given two categories <code>C</code> and <code>D</code>, you can construct the category of functors between <code>C</code> and <code>D</code>, written as <code>[C, D]</code>. Objects in this category are functors from <code>C</code> to <code>D</code>, and morphisms are natural transformations between those functors. Since <code>[C, D]</code> is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that’d be a type of kind <code>(k1 -&gt; k2) -&gt; k3</code>. I’ll call such types <em>functor functors</em>.</p>
@@ -2516,7 +2528,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb6-3"><a href="#cb6-3"></a></span>
 <span id="cb6-4"><a href="#cb6-4"></a><span class="ot">toPartial ::</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t</span>
 <span id="cb6-5"><a href="#cb6-5"></a>toPartial <span class="ot">=</span> ffmap generalise</span></code></pre></div>
-<h2 id="traversing-records">Traversing Records</h2>
+<h2 id="traversing-records"><a href="#traversing-records">Traversing Records</a></h2>
 <p>Now that we have a new dog, it’s natural to ask which old tricks we can teach it. With the intuition that a template <code>t f</code> is like a container of <code>f</code>s, what does it mean to traverse such a container? <code>sequenceA :: Applicative f =&gt; t (f a) -&gt; f (t a)</code> takes a container of strategies to produce values and sequences them to get a strategy to produce a container of values. Replacing <em>value</em> with <em>functor</em> in the above sentence, it’s clear that we need to decide on a notion of “strategy to produce a functor”. <a href="https://stackoverflow.com/questions/44187945/what-should-a-higher-order-traversable-class-look-like">With thanks to Li-yao Xia</a>, the simplest of such notions is a regular applicative functor <code>a</code> returning a functorial value <code>g x</code> - that is, <code>Compose a g</code>.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FTraversable</span> t <span class="kw">where</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a><span class="ot">    ftraverse ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">Applicative</span> a)</span>
@@ -2531,8 +2543,8 @@ p r o <b>g</b> r a m m i n g
 <span id="cb7-11"><a href="#cb7-11"></a>ffmapDefault eta <span class="ot">=</span></span>
 <span id="cb7-12"><a href="#cb7-12"></a>    runIdentity <span class="op">.</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span> <span class="op">.</span> eta)</span>
 <span id="cb7-13"><a href="#cb7-13"></a></span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="ot">fsequence&#39; ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</span>
-<span id="cb7-15"><a href="#cb7-15"></a>fsequence&#39; <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span></code></pre></div>
+<span id="cb7-14"><a href="#cb7-14"></a><span class="ot">fsequence' ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</span>
+<span id="cb7-15"><a href="#cb7-15"></a>fsequence' <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span></code></pre></div>
 <p>The <code>FTraversable</code> laws come about by adjusting the <code>Traversable</code> laws to add some <code>Compose</code>-bookkeeping.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">-- naturality</span></span>
 <span id="cb8-2"><a href="#cb8-2"></a>nu <span class="op">.</span> ftraverse eta <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> nu <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
@@ -2568,7 +2580,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb11-7"><a href="#cb11-7"></a>        <span class="co">-- using ScopedTypeVariables to bind f</span></span>
 <span id="cb11-8"><a href="#cb11-8"></a><span class="ot">        mkConst ::</span> f x <span class="ot">-&gt;</span> <span class="dt">Compose</span> (<span class="dt">Const</span> m) <span class="dt">Empty</span> x</span>
 <span id="cb11-9"><a href="#cb11-9"></a>        mkConst <span class="ot">=</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Const</span> <span class="op">.</span> f <span class="op">.</span> (<span class="op">$&gt;</span> ())</span></code></pre></div>
-<h2 id="zipping-templates">Zipping templates</h2>
+<h2 id="zipping-templates"><a href="#zipping-templates">Zipping templates</a></h2>
 <p>Given a pair of records of the same shape <code>t</code>, we should be able to combine them point-wise, matching up the fields of each: <code>fzip :: t f -&gt; t g -&gt; t (Product f g)</code>. In <strong>Hask</strong>, “combining point-wise” is exactly what the “reader” applicative <code>(-&gt;) r</code> does, so any functor which enjoys an isomorphism to <code>(-&gt;) r</code> for some <code>r</code> has at least a zippy <code>Applicative</code> instance. Such functors are called <em>representable functors</em> and they are members of the class <a href="https://hackage.haskell.org/package/adjunctions-4.3/docs/Data-Functor-Rep.html#t:Representable"><code>Representable</code></a>.</p>
 <p>Of course, we’re working with functors from the functor category, so the relevant notion of <code>Representable</code> will need a little adjustment. Instead of an isomorphism to a function <code>(-&gt;) r</code> we’ll use an isomorphism to a natural transformation <code>(~&gt;) r</code>.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FRepresentable</span> t <span class="kw">where</span></span>
@@ -2622,21 +2634,21 @@ p r o <b>g</b> r a m m i n g
 <span id="cb15-7"><a href="#cb15-7"></a>fillInDefaults t defaults <span class="ot">=</span> defaults <span class="ot">`with`</span> t</span></code></pre></div>
 <p>You can also make a record of <code>Monoid</code> values into a <code>Monoid</code>, once again by zipping.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">newtype</span> <span class="dt">Wrap</span> t f <span class="ot">=</span> <span class="dt">Wrap</span> {<span class="ot"> unWrap ::</span> t f }</span>
-<span id="cb16-2"><a href="#cb16-2"></a>makeWrapped &#39;<span class="dt">&#39;Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a>makeWrapped '<span class="dt">'Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></span>
 <span id="cb16-3"><a href="#cb16-3"></a></span>
 <span id="cb16-4"><a href="#cb16-4"></a><span class="kw">instance</span> (<span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> c) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Wrap</span> t (<span class="dt">Const</span> c)) <span class="kw">where</span></span>
 <span id="cb16-5"><a href="#cb16-5"></a>    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> ftabulate (<span class="fu">const</span> (<span class="dt">Const</span> <span class="fu">mempty</span>))</span>
 <span id="cb16-6"><a href="#cb16-6"></a>    <span class="dt">Wrap</span> t <span class="ot">`mappend`</span> <span class="dt">Wrap</span> u <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> fzipWith <span class="fu">mappend</span> t u</span></code></pre></div>
-<h2 id="lenses">Lenses</h2>
+<h2 id="lenses"><a href="#lenses">Lenses</a></h2>
 <p>Rather than come up with a new notion of <code>Lens</code> formulated in terms of <code>FFunctor</code>, we can reuse the standard <code>Lens</code> type as long as we’re careful about how polymorphic lenses should be. Specifically, a lens into a record template should express no opinion as to which functor the template should be instantiated with.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="ot">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="op">.</span> <span class="dt">Lens&#39;</span> (t f) (f a))</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="ot">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="op">.</span> <span class="dt">Lens'</span> (t f) (f a))</span></code></pre></div>
 <p>We can store a template’s lenses in an instance of the template itself!</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1"></a><span class="kw">type</span> <span class="dt">Lenses</span> t <span class="ot">=</span> t (<span class="dt">FLens</span> t)</span>
 <span id="cb18-2"><a href="#cb18-2"></a></span>
 <span id="cb18-3"><a href="#cb18-3"></a><span class="kw">class</span> <span class="dt">HasLenses</span> t <span class="kw">where</span></span>
 <span id="cb18-4"><a href="#cb18-4"></a><span class="ot">    lenses ::</span> <span class="dt">Lenses</span> t</span>
 <span id="cb18-5"><a href="#cb18-5"></a></span>
-<span id="cb18-6"><a href="#cb18-6"></a>makeLenses &#39;<span class="dt">&#39;FormTemplate</span></span>
+<span id="cb18-6"><a href="#cb18-6"></a>makeLenses '<span class="dt">'FormTemplate</span></span>
 <span id="cb18-7"><a href="#cb18-7"></a><span class="kw">instance</span> <span class="dt">HasLenses</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
 <span id="cb18-8"><a href="#cb18-8"></a>    lenses <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
 <span id="cb18-9"><a href="#cb18-9"></a>        _email <span class="ot">=</span> <span class="dt">FLens</span> email,</span>
@@ -2644,7 +2656,7 @@ p r o <b>g</b> r a m m i n g
 <span id="cb18-11"><a href="#cb18-11"></a>        _cardNumber <span class="ot">=</span> <span class="dt">FLens</span> cardNumber,</span>
 <span id="cb18-12"><a href="#cb18-12"></a>        _cardExpiry <span class="ot">=</span> <span class="dt">FLens</span> cardExpiry</span>
 <span id="cb18-13"><a href="#cb18-13"></a>    }</span></code></pre></div>
-<h2 id="compositional-validation">Compositional Validation</h2>
+<h2 id="compositional-validation"><a href="#compositional-validation">Compositional Validation</a></h2>
 <p>Now for an extended example: form validation. We’ll be making use of all of the tools from above - zipping, traversing, and mapping - to design a typed API for validating individual fields of a form.</p>
 <p><code>Either</code> isn’t a great choice for a validation monad, because <code>Either</code> aborts the computation at the first failure. You typically want to report all the errors in a form. Instead, we’ll be working with the following type, which is isomorphic to <code>Either</code> but with an <code>Applicative</code> instance which returns <em>all</em> of the failures in a given computation, combining the values using a <code>Monoid</code>. So it’s kind of a Frankensteinian mishmash of the <code>Either</code> and <code>Writer</code> applicatives.</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1"></a><span class="kw">data</span> <span class="dt">Validation</span> e a <span class="ot">=</span> <span class="dt">Failure</span> e <span class="op">|</span> <span class="dt">Success</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></span>
@@ -2693,14 +2705,14 @@ p r o <b>g</b> r a m m i n g
 <span id="cb22-7"><a href="#cb22-7"></a>         <span class="ot">-&gt;</span> <span class="dt">Validator</span> (<span class="dt">Errors</span> e t) (<span class="dt">Record</span> t)</span>
 <span id="cb22-8"><a href="#cb22-8"></a>validate validators <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \record <span class="ot">-&gt;</span></span>
 <span id="cb22-9"><a href="#cb22-9"></a>    first unWrap <span class="op">$</span></span>
-<span id="cb22-10"><a href="#cb22-10"></a>    fsequence&#39; <span class="op">$</span></span>
+<span id="cb22-10"><a href="#cb22-10"></a>    fsequence' <span class="op">$</span></span>
 <span id="cb22-11"><a href="#cb22-11"></a>    fzipWith3 applyValidator lenses validators record</span>
 <span id="cb22-12"><a href="#cb22-12"></a>    <span class="kw">where</span></span>
 <span id="cb22-13"><a href="#cb22-13"></a>        applyValidator</span>
 <span id="cb22-14"><a href="#cb22-14"></a>            (<span class="dt">FLens</span> lens)</span>
 <span id="cb22-15"><a href="#cb22-15"></a>            (<span class="dt">Validator</span> validator)</span>
 <span id="cb22-16"><a href="#cb22-16"></a>            (<span class="dt">Identity</span> value) <span class="ot">=</span></span>
-<span id="cb22-17"><a href="#cb22-17"></a>                <span class="kw">let</span> setError e <span class="ot">=</span> <span class="fu">mempty</span> <span class="op">&amp;</span> _Wrapped&#39;<span class="op">.</span>lens<span class="op">.</span>_Wrapped&#39; <span class="op">.~</span> e</span>
+<span id="cb22-17"><a href="#cb22-17"></a>                <span class="kw">let</span> setError e <span class="ot">=</span> <span class="fu">mempty</span> <span class="op">&amp;</span> _Wrapped'<span class="op">.</span>lens<span class="op">.</span>_Wrapped' <span class="op">.~</span> e</span>
 <span id="cb22-18"><a href="#cb22-18"></a>                <span class="kw">in</span> first setError <span class="op">$</span> validator value</span></code></pre></div>
 <p><code>applyValidator</code> takes a lens into a record field, a validator for that field and the value in that field. It applies the validator to the value; upon failure it stores the error message (<code>e</code>) in the correct field of the <code>Errors</code> record using the lens. <code>fzipWith3</code> handles the logic of running <code>applyValidator</code> for each field of the record, then <code>fsequence'</code> combines the resulting <code>Validation</code> applicative actions into a single one. So all of the errors from all of the fields are eventually collected into the matching fields of the <code>Errors</code> record and combined monoidally.</p>
 <p>A quick test, wherein I test validation on the email field:</p>
@@ -2733,7 +2745,7 @@ Failure (FormTemplate {
     _cardNumber = Const [],
     _cardExpiry = Const []
     })</code></pre>
-<h2 id="code-review">Code review</h2>
+<h2 id="code-review"><a href="#code-review">Code review</a></h2>
 <p>So we have a categorical framework for working with records and templates. Other things fit into this framework, more or less neatly:</p>
 <ul>
 <li>Monad transformers are often functorial in their <code>m</code> argument.</li>
@@ -2782,11 +2794,12 @@ Failure (FormTemplate {
     <id>http://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html</id>
     <published>2017-11-13T00:00:00Z</published>
     <updated>2017-11-13T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p>If you visit <a href="https://www.stackoverflow.com/jobs">Stack Overflow Jobs</a> you’ll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type <a href="https://stackoverflow.com/jobs?sort=i&amp;q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)"><code>[c#] and (not [javascript] or salary:50000gbp)</code></a> into the search box. This advanced search syntax is called JQL, for <em>Jobs Query Language</em>.</p>
+    <summary type="html"><![CDATA[
+<p>If you visit <a href="https://www.stackoverflow.com/jobs">Stack Overflow Jobs</a> you’ll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type <a href="https://stackoverflow.com/jobs?sort=i&amp;q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)"><code>[c#] and (not [javascript] or salary:50000gbp)</code></a> into the search box. This advanced search syntax is called JQL, for <em>Jobs Query Language</em>.</p>
 <p>It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there’s a parser which produces an abstract syntax tree (hereafter <em>AST</em>), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)</p>
 <p><img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <p>In this post I’m going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.</p>
-<h2 id="asts-and-operations">ASTs and operations</h2>
+<h2 id="asts-and-operations"><a href="#asts-and-operations">ASTs and operations</a></h2>
 <p>The JQL AST looks roughly like this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">abstract</span> <span class="kw">class</span> JqlNode {}</span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="kw">class</span> AndNode : JqlNode</span>
@@ -2872,7 +2885,7 @@ Failure (FormTemplate {
 <span id="cb4-28"><a href="#cb4-28"></a>    }</span>
 <span id="cb4-29"><a href="#cb4-29"></a>}</span></code></pre></div>
 <p>This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the <code>case</code>s was interesting (<code>case TagNode t</code> in <code>ExtractTags</code> and <code>case NotNode n1 when n1.Operand is NotNode n2</code> in <code>SimplifyDoubleNegatives</code>); the rest of each function was just boilerplate to recursively operate on nodes’ children. You’re interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of <code>JqlNode</code>, so around 90% of the code in each operation is boilerplate!</p>
-<h2 id="easier-querying">Easier Querying</h2>
+<h2 id="easier-querying"><a href="#easier-querying">Easier Querying</a></h2>
 <p>Here’s the first insight that’ll help us improve on this situation. In <code>ExtractTags</code> we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you’re looking for. We’ll call the function which extracts the list of subtrees <code>SelfAndDescendants</code>.</p>
 <p>Given a tree like the example from above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>), <code>SelfAndDescendants</code> will yield every subtree in a depth-first, left-to-right manner:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">new</span> JqlNode[]</span>
@@ -2928,7 +2941,7 @@ Failure (FormTemplate {
 <span id="cb7-25"><a href="#cb7-25"></a>    }</span>
 <span id="cb7-26"><a href="#cb7-26"></a>}</span></code></pre></div>
 <p>Google crawls links between pages for you, so you can search the Web for a specific piece of information; <code>SelfAndDescendants</code> crawls pointers between nodes for you, so you can search a tree for a specific piece of information. Programming tree traversals by hand is like manually clicking every link on the Web!</p>
-<h2 id="a-reusable-transformer">A Reusable Transformer</h2>
+<h2 id="a-reusable-transformer"><a href="#a-reusable-transformer">A Reusable Transformer</a></h2>
 <p>How about transforming a JQL AST? <code>SimplifyDoubleNegatives</code> searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?</p>
 <p>To rewrite a tree, you search the tree for nodes satisfying the pattern you’re looking for and replace them. As with <code>SelfAndDescendants</code>, the trick is to separate the responsibilities of <em>looking at every node in the tree</em> and <em>deciding whether to replace a given node</em>. You can write a higher-order function - let’s call it <code>Rewrite</code> - which applies a <code>Func</code> to every node in a JQL tree from bottom to top; then it’s the <code>Func</code>’s job to decide what to do with each node.</p>
 <p>For example, <code>Rewrite</code> will take the query above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>) and a function <code>transformer</code>, and compute the expression:</p>
@@ -2977,7 +2990,7 @@ Failure (FormTemplate {
 <span id="cb10-5"><a href="#cb10-5"></a>            : n</span>
 <span id="cb10-6"><a href="#cb10-6"></a>    );</span></code></pre></div>
 <p>Once again, this code is a huge improvement over the verbose version which used <code>switch</code> and recursion. <code>Rewrite</code> allows us to get straight to the point and only think about the parts of the tree we’re interested in.</p>
-<h2 id="from-pattern-to-library">From Pattern to Library</h2>
+<h2 id="from-pattern-to-library"><a href="#from-pattern-to-library">From Pattern to Library</a></h2>
 <p><code>Rewrite</code> and <code>SelfAndDescendants</code> wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don’t constitute a library. <code>SelfAndDescendants</code> and <code>Rewrite</code>, as written above, have knowledge of <code>JqlNode</code> baked in to them; you have to hand-write equivalent functions to work on your own datatypes.</p>
 <p>We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has <em>children</em> which are also nodes.</p>
 <p><img src="/images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" /></p>
@@ -3055,7 +3068,7 @@ Failure (FormTemplate {
 <span id="cb13-47"><a href="#cb13-47"></a>}</span></code></pre></div>
 <p>Note that there isn’t a single line of recursion in the JQL-specific code. It’s all wrapped up in the <code>SelfAndDescendants</code> and <code>Rewrite</code> functions, which are totally generic and reusable for any type of tree.</p>
 <p>The old-fashioned way of writing reusable tree traversals is the Visitor pattern: you put the recursive traversal code in a base class, with virtual methods for each type of node that can be overridden to carry out specific operations. (This is how the Roslyn API works, for example.) <code>IRewritable</code> is a clear improvement over the Visitor pattern. Being designed around base classes and overriding, the Visitor pattern is far clunkier to use than the functional API I outlined above; and <code>IRewritable</code> allows operations like <code>Rewrite</code> can be written totally generically, whereas with the Visitor pattern every type of tree has its own Visitor base class.</p>
-<h2 id="sawmill">Sawmill</h2>
+<h2 id="sawmill"><a href="#sawmill">Sawmill</a></h2>
 <p>I’ve named this generic tree-processing library Sawmill - because it’s all about taking trees apart! - and it’s available on <a href="https://www.nuget.org/packages/Sawmill">NuGet</a> and <a href="https://github.com/benjamin-hodgson/Sawmill">GitHub</a>. I’ll outline some improvements on the design I demonstrated above, which you’ll find in Sawmill.</p>
 <p>First, what I find remarkable about this design is its power-to-weight ratio. <code>IRewritable</code> is a very simple interface with an easily-grasped meaning, but you can build a load of rich, generic tools on top of it. Sawmill contains versions of <code>SelfAndDescendants</code> and <code>Rewrite</code>, but also a bunch of other extension methods at varying levels of nicheness, all getting squeezed through the <code>IRewritable</code> interface:</p>
 <ul>

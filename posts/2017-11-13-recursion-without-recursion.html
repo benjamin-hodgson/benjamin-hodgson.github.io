@@ -46,11 +46,12 @@
                 
             </header>
 
-            <p>If you visit <a href="https://www.stackoverflow.com/jobs">Stack Overflow Jobs</a> you’ll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type <a href="https://stackoverflow.com/jobs?sort=i&amp;q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)"><code>[c#] and (not [javascript] or salary:50000gbp)</code></a> into the search box. This advanced search syntax is called JQL, for <em>Jobs Query Language</em>.</p>
+            
+<p>If you visit <a href="https://www.stackoverflow.com/jobs">Stack Overflow Jobs</a> you’ll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type <a href="https://stackoverflow.com/jobs?sort=i&amp;q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)"><code>[c#] and (not [javascript] or salary:50000gbp)</code></a> into the search box. This advanced search syntax is called JQL, for <em>Jobs Query Language</em>.</p>
 <p>It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there’s a parser which produces an abstract syntax tree (hereafter <em>AST</em>), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)</p>
 <p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <p>In this post I’m going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.</p>
-<h2 id="asts-and-operations">ASTs and operations</h2>
+<h2 id="asts-and-operations"><a href="#asts-and-operations">ASTs and operations</a></h2>
 <p>The JQL AST looks roughly like this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">abstract</span> <span class="kw">class</span> JqlNode {}</span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="kw">class</span> AndNode : JqlNode</span>
@@ -136,7 +137,7 @@
 <span id="cb4-28"><a href="#cb4-28"></a>    }</span>
 <span id="cb4-29"><a href="#cb4-29"></a>}</span></code></pre></div>
 <p>This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the <code>case</code>s was interesting (<code>case TagNode t</code> in <code>ExtractTags</code> and <code>case NotNode n1 when n1.Operand is NotNode n2</code> in <code>SimplifyDoubleNegatives</code>); the rest of each function was just boilerplate to recursively operate on nodes’ children. You’re interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of <code>JqlNode</code>, so around 90% of the code in each operation is boilerplate!</p>
-<h2 id="easier-querying">Easier Querying</h2>
+<h2 id="easier-querying"><a href="#easier-querying">Easier Querying</a></h2>
 <p>Here’s the first insight that’ll help us improve on this situation. In <code>ExtractTags</code> we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you’re looking for. We’ll call the function which extracts the list of subtrees <code>SelfAndDescendants</code>.</p>
 <p>Given a tree like the example from above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>), <code>SelfAndDescendants</code> will yield every subtree in a depth-first, left-to-right manner:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">new</span> JqlNode[]</span>
@@ -192,7 +193,7 @@
 <span id="cb7-25"><a href="#cb7-25"></a>    }</span>
 <span id="cb7-26"><a href="#cb7-26"></a>}</span></code></pre></div>
 <p>Google crawls links between pages for you, so you can search the Web for a specific piece of information; <code>SelfAndDescendants</code> crawls pointers between nodes for you, so you can search a tree for a specific piece of information. Programming tree traversals by hand is like manually clicking every link on the Web!</p>
-<h2 id="a-reusable-transformer">A Reusable Transformer</h2>
+<h2 id="a-reusable-transformer"><a href="#a-reusable-transformer">A Reusable Transformer</a></h2>
 <p>How about transforming a JQL AST? <code>SimplifyDoubleNegatives</code> searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?</p>
 <p>To rewrite a tree, you search the tree for nodes satisfying the pattern you’re looking for and replace them. As with <code>SelfAndDescendants</code>, the trick is to separate the responsibilities of <em>looking at every node in the tree</em> and <em>deciding whether to replace a given node</em>. You can write a higher-order function - let’s call it <code>Rewrite</code> - which applies a <code>Func</code> to every node in a JQL tree from bottom to top; then it’s the <code>Func</code>’s job to decide what to do with each node.</p>
 <p>For example, <code>Rewrite</code> will take the query above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>) and a function <code>transformer</code>, and compute the expression:</p>
@@ -241,7 +242,7 @@
 <span id="cb10-5"><a href="#cb10-5"></a>            : n</span>
 <span id="cb10-6"><a href="#cb10-6"></a>    );</span></code></pre></div>
 <p>Once again, this code is a huge improvement over the verbose version which used <code>switch</code> and recursion. <code>Rewrite</code> allows us to get straight to the point and only think about the parts of the tree we’re interested in.</p>
-<h2 id="from-pattern-to-library">From Pattern to Library</h2>
+<h2 id="from-pattern-to-library"><a href="#from-pattern-to-library">From Pattern to Library</a></h2>
 <p><code>Rewrite</code> and <code>SelfAndDescendants</code> wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don’t constitute a library. <code>SelfAndDescendants</code> and <code>Rewrite</code>, as written above, have knowledge of <code>JqlNode</code> baked in to them; you have to hand-write equivalent functions to work on your own datatypes.</p>
 <p>We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has <em>children</em> which are also nodes.</p>
 <p><img src="../images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" /></p>
@@ -319,7 +320,7 @@
 <span id="cb13-47"><a href="#cb13-47"></a>}</span></code></pre></div>
 <p>Note that there isn’t a single line of recursion in the JQL-specific code. It’s all wrapped up in the <code>SelfAndDescendants</code> and <code>Rewrite</code> functions, which are totally generic and reusable for any type of tree.</p>
 <p>The old-fashioned way of writing reusable tree traversals is the Visitor pattern: you put the recursive traversal code in a base class, with virtual methods for each type of node that can be overridden to carry out specific operations. (This is how the Roslyn API works, for example.) <code>IRewritable</code> is a clear improvement over the Visitor pattern. Being designed around base classes and overriding, the Visitor pattern is far clunkier to use than the functional API I outlined above; and <code>IRewritable</code> allows operations like <code>Rewrite</code> can be written totally generically, whereas with the Visitor pattern every type of tree has its own Visitor base class.</p>
-<h2 id="sawmill">Sawmill</h2>
+<h2 id="sawmill"><a href="#sawmill">Sawmill</a></h2>
 <p>I’ve named this generic tree-processing library Sawmill - because it’s all about taking trees apart! - and it’s available on <a href="https://www.nuget.org/packages/Sawmill">NuGet</a> and <a href="https://github.com/benjamin-hodgson/Sawmill">GitHub</a>. I’ll outline some improvements on the design I demonstrated above, which you’ll find in Sawmill.</p>
 <p>First, what I find remarkable about this design is its power-to-weight ratio. <code>IRewritable</code> is a very simple interface with an easily-grasped meaning, but you can build a load of rich, generic tools on top of it. Sawmill contains versions of <code>SelfAndDescendants</code> and <code>Rewrite</code>, but also a bunch of other extension methods at varying levels of nicheness, all getting squeezed through the <code>IRewritable</code> interface:</p>
 <ul>

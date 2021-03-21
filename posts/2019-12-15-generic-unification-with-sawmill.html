@@ -44,7 +44,8 @@
                 
             </header>
 
-            <p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
+            
+<p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
 <nav>
 <ol>
 <li>
@@ -63,7 +64,7 @@
 <p></nav></p>
 <p>We’re getting on to the fun part of writing an interpreter: actually <em>interpreting</em> the input code. In this post we’re going to implement a <em>unification</em> algorithm using my generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Unification slots somewhere in the middle or bottom-right of this diagram:</p>
 <p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
-<h2 id="unification">Unification</h2>
+<h2 id="unification"><a href="#unification">Unification</a></h2>
 <p>Unification is a process for solving equations, much like the equations you’d solve in algebra at school. It’s all about plugging holes — given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a <em>substitution</em> — a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.</p>
 <p>The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term’s syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process — you can’t apply domain-specific rules such as “add a number to both sides” like you can in algebra.</p>
 <p>Let’s work through some examples to get a feel for it.</p>
@@ -117,7 +118,7 @@
 <li>Otherwise, the terms don’t match and we should abort unification.</li>
 </ol>
 <p>Hopefully you can see how I’ve applied these steps in the examples above. I’ve glossed over some important details here (particularly regarding what happens in step 1 when a variable is already in the substitution) but I’ll be sure to fill them in when we get to writing code. (In fact we’re going to design our code so that a variable will never already be in the substitution.)</p>
-<h2 id="iunifiable"><code>IUnifiable</code></h2>
+<h2 id="iunifiable"><a href="#iunifiable"><code>IUnifiable</code></a></h2>
 <p>Unification is a central part of Prolog’s programming model, but it has applications outside of Prolog as well (type inference, for example). Any time you have a syntactic structure with placeholder variables, the question “what can I plug in for these variables?” makes sense.</p>
 <p>Let’s quantify that. Reading back over the description of the algorithm, it seems to build on a few core concepts:</p>
 <ul>
@@ -174,7 +175,7 @@
 <span id="cb3-5"><a href="#cb3-5"></a>        .<span class="fu">Where</span>(name =&gt; name != <span class="kw">null</span>)</span>
 <span id="cb3-6"><a href="#cb3-6"></a>        .<span class="fu">Distinct</span>()</span>
 <span id="cb3-7"><a href="#cb3-7"></a>        .<span class="fu">ToImmutableHashSet</span>();</span></code></pre></div>
-<h2 id="substitutions">Substitutions</h2>
+<h2 id="substitutions"><a href="#substitutions">Substitutions</a></h2>
 <p>I mentioned that the output of unification is a <em>substitution</em> — a mapping from variable names to terms. We’ll model that using an ordinary dictionary of strings and <code>T</code>s. Our signature for <code>Unify</code> is going to look like this:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span></code></pre></div>
 <p>The main thing you can do with a substitution is <em>apply</em> it to a term. That means replacing all the variables in the term with the sub-terms they’re mapped to by the substitution. This should eliminate any variables in the term which are bound by the substitution.</p>
@@ -191,7 +192,7 @@
 <span id="cb5-11"><a href="#cb5-11"></a>        }</span>
 <span id="cb5-12"><a href="#cb5-12"></a>    );</span></code></pre></div>
 <p>We’re going to maintain the invariant that the terms in a substitution are never going to contain any variables which are bound by the substitution. (It’s possible, and indeed desirable for efficiency, to relax this invariant, but today we’re going to focus on simplicity.)</p>
-<h2 id="binding-single-variables-the-occurs-check">Binding Single Variables &amp; the Occurs Check</h2>
+<h2 id="binding-single-variables-the-occurs-check"><a href="#binding-single-variables-the-occurs-check">Binding Single Variables &amp; the Occurs Check</a></h2>
 <p>Time to fill in the body of <code>Unify</code>. Let’s start with step 2 of the algorithm: what to do when either of the input terms is a variable.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
 <span id="cb6-2"><a href="#cb6-2"></a>{</span>
@@ -225,7 +226,7 @@
 <span id="cb7-11"><a href="#cb7-11"></a>    }</span>
 <span id="cb7-12"><a href="#cb7-12"></a>    <span class="kw">return</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>.<span class="fu">Add</span>(name, value);</span>
 <span id="cb7-13"><a href="#cb7-13"></a>}</span></code></pre></div>
-<h2 id="handling-non-variables">Handling Non-Variables</h2>
+<h2 id="handling-non-variables"><a href="#handling-non-variables">Handling Non-Variables</a></h2>
 <p>Let’s continue implementing <code>Unify</code>. At this point we know that neither <code>left</code> nor <code>right</code> are variables, so they must be either composite terms or leaf nodes. In either case, we need to check whether they match.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
 <span id="cb8-2"><a href="#cb8-2"></a>{</span>
@@ -244,7 +245,7 @@
 <span id="cb9-5"><a href="#cb9-5"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
 <span id="cb9-6"><a href="#cb9-6"></a>    <span class="kw">return</span> <span class="fu">Solve</span>(leftChildren, rightChildren);</span>
 <span id="cb9-7"><a href="#cb9-7"></a>}</span></code></pre></div>
-<h2 id="unifying-children-systems-of-equations">Unifying Children — Systems of Equations</h2>
+<h2 id="unifying-children-systems-of-equations"><a href="#unifying-children-systems-of-equations">Unifying Children — Systems of Equations</a></h2>
 <p>Unifying the children means solving a <em>system</em> of equations. If more than one equation mentions the same variable, they have to agree on what that variable should be.</p>
 <p>The plain is to pair up the children in the two lists and try to unify each with their partner, building up a substitution as we go.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
