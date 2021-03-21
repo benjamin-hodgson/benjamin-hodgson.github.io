@@ -1,20 +1,12 @@
---------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-import Control.Monad ((>=>))
-import Data.Char (isSpace, isDigit, toLower)
-import Data.List (sortBy)
-import Data.Maybe (fromJust, fromMaybe, listToMaybe)
+
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (mappend)
-import Data.Ord (comparing)
-import qualified Data.Set as S
 import qualified Data.Time as Time
-import Data.Traversable (for)
 import System.Environment (getArgs)
-import System.FilePath (takeBaseName)
 import Text.Pandoc
 import Text.Pandoc.Shared (stringify)
-import Text.Read (readMaybe)
-import Text.HTML.TagSoup (Tag(TagOpen, TagClose))
+import Text.Pandoc.Walk (walk)
 import qualified Data.HashMap.Strict as H
 import qualified Data.Aeson as Aeson
 import Hakyll
@@ -54,9 +46,8 @@ main = do
         matchMetadata postsPattern metadataMatcher $ do
             route $ setExtension "html"
             compile $ do
-                pandocCompiler
+                pandocCompilerWithTransform defaultHakyllReaderOptions defaultHakyllWriterOptions linkifyHeaders
                     >>= loadAndApplyTemplate "templates/post.html" postCtx
-                    >>= linkifyHeaders
                     >>= saveSnapshot "content"
                     >>= loadAndApplyTemplate "templates/default.html" postCtx
                     >>= relativizeUrls
@@ -171,11 +162,8 @@ makeTOC (Pandoc _ blocks) = [
         | Header 2 (hash, _, _) content <- blocks
     ]
 
-linkifyHeaders :: Item String -> Compiler (Item String)
-linkifyHeaders = return . fmap (withTagList (concatMap linkify))
+linkifyHeaders :: Pandoc -> Pandoc
+linkifyHeaders pandoc = walk linkify pandoc
     where
-        linkify t@(TagOpen ('h':[_]) attrs) =
-            let href = "#" ++ (fromMaybe "" $ lookup "id" attrs)
-            in [t, TagOpen "a" [("href", href)]]
-        linkify t@(TagClose ('h':[_])) = [TagClose "a", t]
-        linkify t = [t]
+        linkify (Header lvl attr@(ident, _, _) is) = Header lvl attr [Link nullAttr is ("#" <> ident, "")]
+        linkify i = i
