@@ -22,4 +22,7 @@ executable benjamin-pizza
                        hakyll,
                        pandoc,
                        filepath,
-                       time
+                       time,
+                       unordered-containers,
+                       aeson,
+                       tagsoup

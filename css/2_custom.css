@@ -84,3 +84,35 @@ aside {
     padding: 0.5em 1em;
     font-style: italic;
 }
+
+.toc {
+    background-color: #efefef;
+    background-color: var(--background);
+    border-radius: 6px;
+    float: right;
+    padding: 0px 12px;
+    max-width: 40%
+}
+.toc h2 {
+    margin-top: 12px;
+}
+.toc ol, .toc ul {
+    padding-left: 2em;
+}
+
+
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    color: var(--text-bright);
+}
+h1 a::after, h2 a::after, h3 a::after, h4 a::after, h5 a::after, h6 a::after {
+    content: " §";
+    display: none;
+    font-weight: normal;
+    color: var(--text-muted);
+}
+h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
+    text-decoration: none;
+}
+h1 a:hover::after, h2 a:hover::after, h3 a:hover::after, h4 a:hover::after, h5 a:hover::after, h6 a:hover::after {
+    display: inline;
+}

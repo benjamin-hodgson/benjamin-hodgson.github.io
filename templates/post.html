@@ -1,1 +1,11 @@
+$if(toc)$
+    <nav id="toc" class="toc">
+        <h2>Table of contents</h2>
+        <ol>
+            $for(tocItems)$
+                <li><a href="#$sectionHash$">$sectionTitle$</a></li>
+            $endfor$
+        </ol>
+    </nav>
+$endif$
 $body$

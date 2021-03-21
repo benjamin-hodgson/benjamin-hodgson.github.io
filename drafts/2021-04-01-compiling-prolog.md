@@ -1,5 +1,6 @@
 ---
 title: Compiling Prolog
+toc: true
 ---
 
 > **Work in progress**: This article is gonna be lo-o-ong. I initially thought about splitting it into separate posts, but instead I decided to write a single article and post it section by section.
@@ -28,7 +29,7 @@ It’s important when designing an abstract machine to make something which look
 
 Why use an abstract machine at all? In the previous post series, I described Prolog’s semantics in terms of high-level C# constructs like dictionaries, enumerables, `from...select`... That’s all very well if you already have access to those language features, but it doesn’t really suffice as a recipe for getting a machine to run Prolog. I want to generate x64 assembly, so my abstract machine will serve as an intermediate step --- a thinking tool to help go from high-level Prolog to low-level x64.
 
-Many production compilers have a similar design: source code is converted into an *intermediate representation* which is then optimised and eventually translated into assembly. LLVM, for example, is an off-the-shelf intermediate representation meant to serve as a stable compilation target for all sorts of language implementations. (I initially wanted to use LLVM in this project, but Prolog’s backtracking system doesn’t map cleanly onto LLVM, so it was easier for me to cut out the middle man.)
+Many production compilers have a similar design: source code is converted into an *intermediate representation* which is then optimised and eventually translated into assembly. LLVM, for example, is an off-the-shelf intermediate representation meant to serve as a stable compilation target for all sorts of language implementations. (I initially thought of using LLVM in this project, but Prolog’s unusual control flow doesn’t map cleanly onto LLVM, so it was easier for me to cut out the middle man.)
 
 
 ## Anatomy of a Heap Object
