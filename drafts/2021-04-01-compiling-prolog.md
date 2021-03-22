@@ -55,8 +55,7 @@ Let's start simple. How would we represent a structure term with no arguments su
 
 ```
 quux()
-|
-V
+↓
 0     1
 -------
 | 789 |
@@ -64,15 +63,18 @@ V
   ID
 ```
 
-Simple enough! How about a term with arguments like `foo(bar(), quux())`? We'll want to store the number of arguments; we can put it right after the structure ID. The arguments will each themselves be objects stored elsewhere on the heap. We'll store the address of each of `foo`'s arguments immediately after the `length` field. I'll also update `quux()`'s representation to match this format.
+Simple enough! How about a structure with arguments like `foo(bar(), quux())`? We'll want to store the number of arguments; we can put it right after the structure ID. The arguments will each themselves be objects stored elsewhere on the heap. We'll store the address of each of `foo`'s arguments immediately after the `length` field. (I'll also update `quux()`'s representation to match this format.)
 
 ```
-foo(..., ...)             bar()       quux()
-|                         |           |
-V                         V           V
-0     1       2     3     4     5     6     7     8
----------------------------------------------------
-| 123 |   2   |  4  |  6  | 456 |  0  | 789 |  0  |
----------------------------------------------------
-  ID   length   arg1  arg2   ID  length  ID  length
+foo(..., ...)           bar()       quux()
+↓                       ↓           ↓
+0     1     2     3     4     5     6     7     8
+-------------------------------------------------
+| 123 |  2  |  4  |  6  | 456 |  0  | 789 |  0  |
+-------------------------------------------------
+  ID    len   arg1  arg2   ID   len    ID   len
+               ↑     ↑
+ address of bar()  address of quux()
 ```
+
+Finally, let's think about variables like `X`. However we decide to represent variables, we need them to support _binding_ --- the act of setting a variable equal to another term (either another variable or a structure) during unification.
