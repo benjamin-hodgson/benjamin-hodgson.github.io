@@ -79,16 +79,55 @@ address of wobble()  address of wubble()
 
 Finally, let's think about **variables** like `X` and `Y`. We need to choose a representation which supports *binding* --- the act of setting a variable equal to another term during unification. One simple way of binding a variable to a term is with a pointer. Our variables will contain a pointer to another heap object; *unbound* variables will point to themselves by convention.
 
-We also need a way to tell variables apart from structures, so all of our heap objects will start with a *tag* word - `0` for variables and `1` for structures. I’m also going to gratuitously, unnecessarily and inefficiently sprinkle tag words over structures’ fields too, just because it’ll make some tasks simpler down the line.
+We also need a way to tell variables apart from structures, so all of our heap objects will start with a *tag* word - `0` for variables and `1` for structures. I’m also going to gratuitously, unnecessarily and inefficiently sprinkle tag words over structures’ fields too, just because it’ll make some tasks simpler down the line. (Specifically, it's convenient for structure fields to have the same representation as bound variables.)
 
-**DIAGRAM**
+```
+wibble(..., ...)        
+↓
+0     1     2     3     4     5     6      7
+--------------------------------------------
+|  1  | 123 |  2  |  0  |  7  |  0  |  12  | ...
+--------------------------------------------
+ tag   ID    len   tag  arg1   tag   arg2
+
+    wobble(...)
+    ↓
+    7     8     9     10    11    12
+    --------------------------------
+... |  1  | 456 |  1  |  0  |  19  | ...
+    --------------------------------
+      tag   ID    len   tag   arg1
+                               ↑
+                         address of X
+
+    wubble(..., ...)
+    ↓
+    12    13    14    15    16     17    18     19
+    ---------------------------------------------
+... |  1  | 789 |  2  |  0  |  19  |  0  |  21  | ...
+    ---------------------------------------------
+      tag   ID    len   tag   arg1   tag   arg2
+
+    X            Y
+    ↓            ↓
+    19    20     21    22     23
+    ---------------------------
+... |  0  |  19  |  0  |  21  |
+    ---------------------------
+      tag   ptr    tag   ptr
+             ↑            ↑
+    X and Y are both unbound variables
+    (they contain their own addresses)
+```
 
 So in the end a structure has a three-word header consisting of a tag, an ID for the name of the structure, and its length. Then come the fields, each of which consists of a `0` tag followed by the address of a child object. Variables have a one-word header --- just the tag --- and a single field.
 
-Overall this design for heap objects is not so different than that of many industrial-strength languages. In .NET, for example, objects consist of a two-word header followed by a sequence of fields. The header contains information about the object’s type, its virtual methods, and other .NET runtime features like locking. My system is much simpler (and less efficient) in the details, though --- the data cells take up a whole word each (I didn’t want to worry about alignment) and I’m not doing any bit-packing tricks to save space.
+Overall this design for heap objects is not so different than that of many industrial-strength languages. In .NET, for example, objects consist of a two-word header followed by a sequence of fields. The header contains information about the object’s type, its virtual methods, and other .NET runtime features like locking. My system is much simpler (and less efficient) in the details, though --- my data cells take up a whole word each (I didn’t want to worry about alignment) and I’m not doing any bit-packing tricks to save space.
 
 
 ## Traversing the Heap
+
+words go here
 
 ```csharp
 private void Bind(int addr1, int addr2)
