@@ -117,7 +117,7 @@
 <li>If both are composite terms, check that they match and that they have the same number of children. If so, repeat steps 1-3 for each pair of children.</li>
 <li>Otherwise, the terms don’t match and we should abort unification.</li>
 </ol>
-<p>Hopefully you can see how I’ve applied these steps in the examples above. I’ve glossed over some important details here (particularly regarding what happens in step 1 when a variable is already in the substitution) but I’ll be sure to fill them in when we get to writing code. (In fact we’re going to design our code so that a variable will never already be in the substitution.)</p>
+<p>Hopefully you can see how I’ve applied these steps in the examples above. I’ve glossed over some important details here (particularly regarding what happens in step 2 when a variable is already in the substitution) but I’ll be sure to fill them in when we get to writing code. (In fact we’re going to design our code so that a variable will never already be in the substitution.)</p>
 <h2 id="iunifiable"><a href="#iunifiable"><code>IUnifiable</code></a></h2>
 <p>Unification is a central part of Prolog’s programming model, but it has applications outside of Prolog as well (type inference, for example). Any time you have a syntactic structure with placeholder variables, the question “what can I plug in for these variables?” makes sense.</p>
 <p>Let’s quantify that. Reading back over the description of the algorithm, it seems to build on a few core concepts:</p>
