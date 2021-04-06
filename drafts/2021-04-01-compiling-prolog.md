@@ -83,6 +83,8 @@ Variables in this system are mutable. We bind a variable to a term by updating i
 
 We also need a way to tell variables apart from structures, so all of our heap objects will start with a *tag* word --- `0` for variables and `1` for structures. I’m going to sprinkle tag words over structures’ fields too, needlessly and wastefully, because it’ll make some tasks simpler down the line. (Specifically, it's convenient for structure fields to have the same representation as bound variables.)
 
+Here's how the `wibble(wobble(X), wubble(X, Y))` example looks in the finalised version of its heap representation.
+
 ```
 wibble(..., ...)        
 ↓
@@ -90,7 +92,7 @@ wibble(..., ...)
 --------------------------------------------
 |  1  | 123 |  2  |  0  |  7  |  0  |  12  | ...
 --------------------------------------------
- tag   ID    len   tag  arg1   tag   arg2
+ tag    ID    len   tag  arg1   tag   arg2
 
     wobble(...)
     ↓
@@ -198,6 +200,8 @@ class Machine
 
 I have it in mind to use the stack for other things, so `Unify` can’t simply keep going until the stack is empty --- it needs to remember how tall it was previously. That’s what the (suggestively-named) `_frameBase` field is for.
 
+As far as `Unify` is concerned, the stack will contain (the addresses of) pairs of terms to be unified.
+
 ```csharp
 private bool Unify(int left, int right)
 {
@@ -241,6 +245,8 @@ private bool Unify(int left, int right)
             // repeat with each pair of children
             for (var i = 0; i < length1; i++)
             {
+                // Push the address of each pair of fields.
+                // The data at this address has the form of a variable
                 Push(address1 + 3 + i * 2);
                 Push(address2 + 3 + i * 2);
             }
@@ -257,56 +263,6 @@ The code is complicated by the explicit stack and the index arithmetic for acces
 2. If neither is, compare the structures’ heads and fail if they don’t match.
 3. Pair up the children and repeat.
 
-```csharp
-public void Dump(int address)
-{
-    Push(_frameBase);
-    _frameBase = _topOfStack;
+The code also features [a function named `Dump`](https://github.com/benjamin-hodgson/Amateurlog/blob/55f3a5b9eda9f6e889d0cb55d1e12de644317a84/Machine/Machine.cs#L366) which writes a string representation of a term out to the console. In the interest of space I won't go into detail about its implementation, except to mention that it uses a _symbol table_ to look up structures' names. I'll describe the symbol table when we get on to talking about the compiler.
 
-    Push(address);
-    Push(0);
-
-    while (_topOfStack > _frameBase)
-    {
-        var control = Pop();
-        switch (control)
-        {
-            case 0:
-                address = Deref(Pop());
-                if (_heap[address] == 0)
-                {
-                    Console.Write("X");
-                    Console.Write(address);
-                    continue;
-                }
-                var name = _program.Symbols[_heap[address + 1]];
-                Console.Write(name);
-                var length = _heap[address + 2];
-                if (length == 0)
-                {
-                    continue;
-                }
-                Console.Write("(");
-                Push(1);  // ")"
-                while (length > 0)
-                {
-                    length--;
-                    Push(address + 3 + (length * 2));
-                    Push(0);
-                    Push(2);  // ", "
-                }
-                Pop();  // don't print the last comma
-                continue;
-            case 1:
-                Console.Write(")");
-                continue;
-            case 2:
-                Console.Write(", ");
-                continue;
-        }
-    }
-
-    _topOfStack = _frameBase;
-    _frameBase = Pop();
-}
-```
+That's everything about the representation of terms on the heap. In the next part, I'll introduce the instructions which build heap objects, and the compiler which generates those instructions from high-level Prolog.
