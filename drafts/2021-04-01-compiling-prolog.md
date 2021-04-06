@@ -11,7 +11,7 @@ Why write another introductory build-a-compiler guide? There are lots of example
 
 This article leads on from [my earlier series of four posts](/posts/2019-12-01-write-you-a-prolog.html) about modelling Prolog in C#. I'd recommend reading those before you read this so as not to get lost. In order to get the code working, though, you'll only need [the AST](https://github.com/benjamin-hodgson/Amateurlog/blob/master/Syntax.cs) from [the first post](/posts/2019-12-01-write-you-a-prolog.html) and [the parser](https://github.com/benjamin-hodgson/Amateurlog/blob/master/Parser.cs) from [the second one](/posts/2019-12-08-parsing-prolog-with-pidgin.html).
 
-I did a lot of reading while working on this code, especially [_Warren's Abstract Machine: A Tutorial Reconstruction_](http://wambook.sourceforge.net/). I'll be covering topics in a similar order to that book, but my design is a bit different than Warren's. I was trying to write simple code which fits the way I think, not efficient code suitable for a real language implementation. Throughout this article I’ll point out times when I chose a simple-and-inefficient option over a cleverer design.
+I did a lot of reading while working on this code, especially [_Warren's Abstract Machine: A Tutorial Reconstruction_](http://wambook.sourceforge.net/). I'll be covering topics in a similar order to that book, but my design is a bit different than Warren's. I was trying to write simple code which fits the way I think, not efficient code suitable for a real language implementation. Throughout this article I’ll point out times when I chose a simple-and-inefficient option over a more sophisticated design.
 
 
 ## Abstract Machines
