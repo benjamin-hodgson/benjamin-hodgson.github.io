@@ -104,8 +104,9 @@ metadataMatcherForCommand "watch" = return (const True)
 metadataMatcherForCommand _ = do
     time <- Time.getCurrentTime
     return $ \metadata ->
-        let Just date = parseDate <$> lookupString "date" metadata
-        in date < time
+        case parseDate <$> lookupString "date" metadata of
+            Just date -> date < time
+            _ -> False
 
 parseDate = Time.parseTimeOrError True Time.defaultTimeLocale "%Y-%m-%d"
 
