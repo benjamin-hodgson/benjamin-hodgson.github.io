@@ -65,7 +65,7 @@ Let's sketch out an algorithm for unification.
 4. If both are composite terms, check that they match and that they have the same number of children. If so, repeat steps 1-3 for each pair of children.
 5. Otherwise, the terms don't match and we should abort unification.
 
-Hopefully you can see how I've applied these steps in the examples above. I've glossed over some important details here (particularly regarding what happens in step 1 when a variable is already in the substitution) but I'll be sure to fill them in when we get to writing code. (In fact we're going to design our code so that a variable will never already be in the substitution.)
+Hopefully you can see how I've applied these steps in the examples above. I've glossed over some important details here (particularly regarding what happens in step 2 when a variable is already in the substitution) but I'll be sure to fill them in when we get to writing code. (In fact we're going to design our code so that a variable will never already be in the substitution.)
 
 
 `IUnifiable`
