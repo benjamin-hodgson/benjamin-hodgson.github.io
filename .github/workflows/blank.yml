@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [ live ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v1
+
+      - name: Create test file
+        run: echo 'main = putStrLn "hello"' > test.hs
+      - name: Run test file
+        run: runhaskell test.hs
