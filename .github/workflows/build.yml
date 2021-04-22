@@ -1,4 +1,4 @@
-name: CI
+name: Build
 
 on:
   push:
@@ -14,6 +14,12 @@ jobs:
       - uses: haskell/actions/setup@v1
         with:
           enable-stack: true
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: cache
 
       - name: Install dependencies
         run: stack --no-terminal --install-ghc build --ghc-options -O2 --only-dependencies
