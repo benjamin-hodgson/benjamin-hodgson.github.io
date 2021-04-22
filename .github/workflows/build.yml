@@ -23,3 +23,8 @@ jobs:
       
       - name: Generate website
         run: stack exec benjamin-pizza build
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: site
+          path: _site
