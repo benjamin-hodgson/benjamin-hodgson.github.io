@@ -12,8 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1
+        with:
+          enable-stack: true
 
-      - name: Create test file
-        run: echo 'main = putStrLn "hello"' > test.hs
-      - name: Run test file
-        run: runhaskell test.hs
+      - name: Install dependencies
+        run: stack --no-terminal --install-ghc build --ghc-options -O2 --only-dependencies
+
+      - name: Build executable
+        run: stack --no-terminal build --ghc-options -O2 --copy-bins --local-bin-path ./bin
+      
+      - name: Generate website
+        run: stack exec benjamin-pizza build
