@@ -30,6 +30,12 @@ jobs:
       - name: Generate website
         run: stack exec benjamin-pizza build
 
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@4.1.1
+        with:
+          branch: master
+          folder: _site
+
       - uses: actions/upload-artifact@v2
         with:
           name: site
