@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ live ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
-          branch: master
+          branch: gh-pages
           folder: _site
 
       - uses: actions/upload-artifact@v2
