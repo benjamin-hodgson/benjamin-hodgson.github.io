@@ -28,6 +28,10 @@ main = do
             route   idRoute
             compile copyFileCompiler
 
+        match "Benjamin Hodgson CV.pdf" $ do
+            route   idRoute
+            compile copyFileCompiler
+
         match "css/*" $ do
             compile getResourceBody
 
@@ -37,7 +41,7 @@ main = do
                 items <- loadAll "css/*"
                 makeItem $ compressCss $ concatMap itemBody items
 
-        match (fromList ["about.md", "contact.md"]) $ do
+        match "contact.md" $ do
             route   $ setExtension "html"
             compile $ pandocCompiler
                 >>= loadAndApplyTemplate "templates/default.html" defaultContext
