@@ -28,7 +28,7 @@ main = do
             route   idRoute
             compile copyFileCompiler
 
-        match "Benjamin Hodgson CV.pdf" $ do
+        match "Benjamin_Hodgson_CV.pdf" $ do
             route   idRoute
             compile copyFileCompiler
 
