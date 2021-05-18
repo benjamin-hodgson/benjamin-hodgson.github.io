@@ -5,7 +5,7 @@ date: 2021-05-18
 
 I've been thinking a bit about how to build a library of tools to handle variables, capture-avoiding substitution, etc, on top of [Sawmill](https://github.com/benjamin-hodgson/Sawmill). Pretty much every compiler needs to deal with variables, and they're notoriously tricky to handle correctly.
 
-I'm a long way off having a final design, but I thought I'd publish my unfinished notes, hastily written in an afternoon. You'll see a few Thinking Emojis throughout this article, indicating things I haven't figured out yet. Please do get in touch if any of this gives you ideas.
+I'm a way off having a final design, but I thought I'd publish my unfinished notes, hastily written in an afternoon. You'll see a few Thinking Emojis throughout this article, indicating things I haven't figured out yet. Please do get in touch if any of this gives you ideas.
 
 
 A quick look at some prior art
