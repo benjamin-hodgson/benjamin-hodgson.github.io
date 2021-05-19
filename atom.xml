@@ -160,7 +160,11 @@
 <span id="cb7-10"><a href="#cb7-10"></a>            .<span class="fu">Where</span>(v =&gt; v.<span class="fu">Name</span>.<span class="fu">IsFree</span>)</span>
 <span id="cb7-11"><a href="#cb7-11"></a>            .<span class="fu">Select</span>(x =&gt; x.<span class="fu">Name</span>.<span class="fu">Free</span>);</span>
 <span id="cb7-12"><a href="#cb7-12"></a>}</span></code></pre></div>
-<p>Ways this doesn’t scale: * If your language has multiple types of patterns (eg, type variables and value variables) you can’t statically distinguish them. * The structure of the pattern lives only at runtime — it all gets stuffed into a <code>Pattern</code>-typed variable. You can’t <em>statically</em> encode the syntactic structure of the binding site (at which point it’s not a whole lot better than Idea 2).</p>
+<p>Ways this doesn’t scale:</p>
+<ul>
+<li>If your language has multiple types of patterns (eg, type variables and value variables) you can’t statically distinguish them.</li>
+<li>The structure of the pattern lives only at runtime — it all gets stuffed into a <code>Pattern</code>-typed variable. You can’t <em>statically</em> encode the syntactic structure of the binding site (at which point it’s not a whole lot better than Idea 2).</li>
+</ul>
 <p>What should be the advice for implementing <code>IRewritable</code> on objects containing a binding site? Should you traverse to the body? (Problematic because de Bruijn indexes from different scopes are not comparable.) Are you meant to unbind the body? That would mean you can’t use <code>IRewritable</code> as is, because <code>IRewritable</code> doesn’t have a parameter for a source of fresh names. Perhaps we should be using <code>IRewriter</code> and not <code>IRewritable</code>, although that’s a messier API. 🤔</p>
 <blockquote>
 <p>This ☝🏻 is a pressing concern because <code>Telescope</code> features a <code>BindingSite</code>!</p>
