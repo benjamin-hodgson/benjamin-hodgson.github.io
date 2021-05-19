@@ -214,6 +214,7 @@
 <span id="cb10-6"><a href="#cb10-6"></a>    <span class="dt">bool</span> <span class="fu">TryGetBindingSite</span>(<span class="kw">out</span> BindingSite&lt;T&gt; bindingSite);</span>
 <span id="cb10-7"><a href="#cb10-7"></a>    T <span class="fu">SetBindingSite</span>(BindingSite&lt;T&gt; newBindingSite);</span>
 <span id="cb10-8"><a href="#cb10-8"></a>}</span></code></pre></div>
+<p>Not so different than <a href="/posts/2019-12-15-generic-unification-with-sawmill.html"><code>IUnifiable</code></a></p>
 <h2 id="freshening"><a href="#freshening">Freshening</a></h2>
 <p>When you go under a binder you (usually) want to replace the de Bruijn indexes in there with named variables. Those variables need to be <em>fresh</em>, that is, they need to not clash with (or <em>capture</em>) any other variables in scope. As a UX concern, you probably want the fresh name to be somewhat similar to the name the programmer typed.</p>
 <p>So we have <code>IFreshener</code>:</p>
