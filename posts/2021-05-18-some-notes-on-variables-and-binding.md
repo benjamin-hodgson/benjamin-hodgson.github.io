@@ -42,7 +42,7 @@ A quick look at some prior art
 ### [`moniker`](https://github.com/brendanzab/moniker)
 
 * More or less a port of `unbound`.
-* Choose your own name (`Free<N>`/`Bound<N>`; `trait BoundTerm<N>` 
+* Choose your own name (`Free<N>`/`Bound<N>`; `trait BoundTerm<N>`).
 * Library defines a couple of traits (`BoundTerm`/`BoundPattern`) to locate variables, do substitution, etc. `unbound` uses generics for this.
 * Traverse your own terms, but `derive` magic assists with implementing the library's traits.
 
