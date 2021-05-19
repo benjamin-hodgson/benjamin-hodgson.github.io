@@ -11,37 +11,40 @@ I'm a way off having a final design, but I thought I'd publish my unfinished not
 A quick look at some prior art
 ------------------------------
 
-* [`unbound`](https://hackage.haskell.org/package/unbound)/[`unbound-generics`](https://hackage.haskell.org/package/unbound-generics)
-    * `Name` is an ADT with fixed representation.
-        * `Bound` is a depth and an index. Requires patterns to have a canonical ordering, and bind each name only once
-        * `Bound` discards the original name, but library API expects patterns to contain `Name`s
-    * Statically encoded patterns with built in type combinators.
-        * I like:
-            * Statically declare structure of binders
-            * Embed your own datatypes as required by language syntax --- method header can be `[(Name, Type)]`
-        * I don't like:
-            * Generics magic to find/traverse patterns
-            * Type constructor soup, eg `| LetRec (Bind (Rec [(Name, Embed Expr)]) Expr)`. Would be even noisier in C#.
-    * Traverse your own terms
-        * Most users will be using `RepLib`/`GHC.Generics`
-        * Lib uses `RepLib`/`GHC.Generics` internally to traverse patterns
+### [`unbound`](https://hackage.haskell.org/package/unbound)/[`unbound-generics`](https://hackage.haskell.org/package/unbound-generics)
 
-* [`bound`](https://www.schoolofhaskell.com/user/edwardk/bound)
-    * Choose your own name (`data Expr a = Var a | ...`).
-    * Choose your own pattern/index.
-        * Library explicitly doesn't manage patterns or names. It just does substitution using your monad. `Scope` doesn't contain a "pattern" object.
-        * Me gusta
-    * Nested datatype manages de Bruijn depth statically.
-        * Nested datatype is quite awkward in practice --- doesn't play nicely with mutual recursion or Plated.
-        * Clever trick in `Scope` to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees --- but also, not super costly complexity-wise.
-    * Works very nicely with standard classes: `Foldable`/`Traversable` to look at FVs, `Functor` for renaming, `Monad` for substitution. `Eq1` for alpha equivalence, etc.
-    * Overall, probably not such a good fit for C# since we don't have `Monad` etc.
+* `Name` is an abstract data type with fixed representation.
+    * `Bound` is a depth and an index. Requires patterns to have a canonical ordering, and bind each name only once
+    * `Bound` discards the original name, but library API expects patterns to contain `Name`s
+* Statically encoded patterns with built in type combinators.
+    * I like:
+        * Statically declare structure of binders
+        * Embed your own datatypes as required by language syntax --- method header can be `[(Name, Type)]`
+    * I don't like:
+        * Generics magic to find/traverse patterns
+        * Type constructor soup, eg `| LetRec (Bind (Rec [(Name, Embed Expr)]) Expr)`. Would be even noisier in C#.
+* Quite closely integrated with generics libs
+    * Most users will be using `RepLib`/`GHC.Generics`
+    * Lib uses `RepLib`/`GHC.Generics` internally to traverse patterns
 
-* [`moniker`](https://github.com/brendanzab/moniker)
-    * More or less a port of `unbound`.
-    * Choose your own name (`Free<N>`/`Bound<N>`; `trait BoundTerm<N>` etc).
-    * Library defines a couple of traits (`BoundTerm`/`BoundPattern`) to locate variables, do substitution, etc.
-    * Traverse your own terms, but `derive` magic assists with implementing the library's traits.
+### [`bound`](https://www.schoolofhaskell.com/user/edwardk/bound)
+
+* Choose your own name (`data Expr a = Var a | ...`).
+* Choose your own pattern/index.
+    * Library explicitly doesn't manage patterns or names. It just does substitution using your monad. `Scope` doesn't contain a "pattern" object.
+    * Me gusta
+* Nested datatype manages de Bruijn depth statically.
+    * Nested datatype is quite awkward in practice --- doesn't play nicely with mutual recursion or Plated.
+    * Clever trick in `Scope` to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees --- but also, not super costly complexity-wise.
+* Works really nicely with standard classes: `Foldable`/`Traversable` to look at FVs, `Functor` for renaming, `Monad` for substitution. `Eq1` for alpha equivalence, etc. Very pleasing.
+* Overall, probably not such a good fit for C# since we don't have `Monad` etc.
+
+### [`moniker`](https://github.com/brendanzab/moniker)
+
+* More or less a port of `unbound`.
+* Choose your own name (`Free<N>`/`Bound<N>`; `trait BoundTerm<N>` 
+* Library defines a couple of traits (`BoundTerm`/`BoundPattern`) to locate variables, do substitution, etc. `unbound` uses generics for this.
+* Traverse your own terms, but `derive` magic assists with implementing the library's traits.
 
 
 Representing Names
