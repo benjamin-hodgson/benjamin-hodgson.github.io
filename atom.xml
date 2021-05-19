@@ -64,7 +64,7 @@
 <h3 id="moniker"><a href="#moniker"><a href="https://github.com/brendanzab/moniker"><code>moniker</code></a></a></h3>
 <ul>
 <li>More or less a port of <code>unbound</code>.</li>
-<li>Choose your own name (<code>Free&lt;N&gt;</code>/<code>Bound&lt;N&gt;</code>; <code>trait BoundTerm&lt;N&gt;</code></li>
+<li>Choose your own name (<code>Free&lt;N&gt;</code>/<code>Bound&lt;N&gt;</code>; <code>trait BoundTerm&lt;N&gt;</code>).</li>
 <li>Library defines a couple of traits (<code>BoundTerm</code>/<code>BoundPattern</code>) to locate variables, do substitution, etc. <code>unbound</code> uses generics for this.</li>
 <li>Traverse your own terms, but <code>derive</code> magic assists with implementing the library’s traits.</li>
 </ul>
