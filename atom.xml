@@ -46,7 +46,7 @@
 <li>Lib uses <code>RepLib</code>/<code>GHC.Generics</code> internally to traverse patterns</li>
 </ul></li>
 </ul></li>
-<li><a href="https://www.schoolofhaskell.com/user/edwardk/bound"><code>bound</code></a>.
+<li><a href="https://www.schoolofhaskell.com/user/edwardk/bound"><code>bound</code></a>
 <ul>
 <li>Choose your own name (<code>data Expr a = Var a | ...</code>).</li>
 <li>Choose your own pattern/index.
@@ -62,7 +62,7 @@
 <li>Works very nicely with standard classes: <code>Foldable</code>/<code>Traversable</code> to look at FVs, <code>Functor</code> for renaming, <code>Monad</code> for substitution. <code>Eq1</code> for alpha equivalence, etc.</li>
 <li>Overall, probably not such a good fit for C# since we don’t have <code>Monad</code> etc.</li>
 </ul></li>
-<li><code>moniker</code>
+<li><a href="https://github.com/brendanzab/moniker"><code>moniker</code></a>
 <ul>
 <li>More or less a port of <code>unbound</code>.</li>
 <li>Choose your own name (<code>Free&lt;N&gt;</code>/<code>Bound&lt;N&gt;</code>; <code>trait BoundTerm&lt;N&gt;</code> etc).</li>
