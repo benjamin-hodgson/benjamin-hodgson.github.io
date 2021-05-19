@@ -47,10 +47,9 @@
 <p>I’ve been thinking a bit about how to build a library of tools to handle variables, capture-avoiding substitution, etc, on top of <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Pretty much every compiler needs to deal with variables, and they’re notoriously tricky to handle correctly.</p>
 <p>I’m a way off having a final design, but I thought I’d publish my unfinished notes, hastily written in an afternoon. You’ll see a few Thinking Emojis throughout this article, indicating things I haven’t figured out yet. Please do get in touch if any of this gives you ideas.</p>
 <h2 id="a-quick-look-at-some-prior-art"><a href="#a-quick-look-at-some-prior-art">A quick look at some prior art</a></h2>
+<h3 id="unboundunbound-generics"><a href="#unboundunbound-generics"><a href="https://hackage.haskell.org/package/unbound"><code>unbound</code></a>/<a href="https://hackage.haskell.org/package/unbound-generics"><code>unbound-generics</code></a></a></h3>
 <ul>
-<li><a href="https://hackage.haskell.org/package/unbound"><code>unbound</code></a>/<a href="https://hackage.haskell.org/package/unbound-generics"><code>unbound-generics</code></a>
-<ul>
-<li><code>Name</code> is an ADT with fixed representation.
+<li><code>Name</code> is an abstract data type with fixed representation.
 <ul>
 <li><code>Bound</code> is a depth and an index. Requires patterns to have a canonical ordering, and bind each name only once</li>
 <li><code>Bound</code> discards the original name, but library API expects patterns to contain <code>Name</code>s</li>
@@ -68,13 +67,13 @@
 <li>Type constructor soup, eg <code>| LetRec (Bind (Rec [(Name, Embed Expr)]) Expr)</code>. Would be even noisier in C#.</li>
 </ul></li>
 </ul></li>
-<li>Traverse your own terms
+<li>Quite closely integrated with generics libs
 <ul>
 <li>Most users will be using <code>RepLib</code>/<code>GHC.Generics</code></li>
 <li>Lib uses <code>RepLib</code>/<code>GHC.Generics</code> internally to traverse patterns</li>
 </ul></li>
-</ul></li>
-<li><a href="https://www.schoolofhaskell.com/user/edwardk/bound"><code>bound</code></a>
+</ul>
+<h3 id="bound"><a href="#bound"><a href="https://www.schoolofhaskell.com/user/edwardk/bound"><code>bound</code></a></a></h3>
 <ul>
 <li>Choose your own name (<code>data Expr a = Var a | ...</code>).</li>
 <li>Choose your own pattern/index.
@@ -87,16 +86,15 @@
 <li>Nested datatype is quite awkward in practice — doesn’t play nicely with mutual recursion or Plated.</li>
 <li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you’re dealing with huge trees — but also, not super costly complexity-wise.</li>
 </ul></li>
-<li>Works very nicely with standard classes: <code>Foldable</code>/<code>Traversable</code> to look at FVs, <code>Functor</code> for renaming, <code>Monad</code> for substitution. <code>Eq1</code> for alpha equivalence, etc.</li>
+<li>Works really nicely with standard classes: <code>Foldable</code>/<code>Traversable</code> to look at FVs, <code>Functor</code> for renaming, <code>Monad</code> for substitution. <code>Eq1</code> for alpha equivalence, etc. Very pleasing.</li>
 <li>Overall, probably not such a good fit for C# since we don’t have <code>Monad</code> etc.</li>
-</ul></li>
-<li><a href="https://github.com/brendanzab/moniker"><code>moniker</code></a>
+</ul>
+<h3 id="moniker"><a href="#moniker"><a href="https://github.com/brendanzab/moniker"><code>moniker</code></a></a></h3>
 <ul>
 <li>More or less a port of <code>unbound</code>.</li>
-<li>Choose your own name (<code>Free&lt;N&gt;</code>/<code>Bound&lt;N&gt;</code>; <code>trait BoundTerm&lt;N&gt;</code> etc).</li>
-<li>Library defines a couple of traits (<code>BoundTerm</code>/<code>BoundPattern</code>) to locate variables, do substitution, etc.</li>
+<li>Choose your own name (<code>Free&lt;N&gt;</code>/<code>Bound&lt;N&gt;</code>; <code>trait BoundTerm&lt;N&gt;</code></li>
+<li>Library defines a couple of traits (<code>BoundTerm</code>/<code>BoundPattern</code>) to locate variables, do substitution, etc. <code>unbound</code> uses generics for this.</li>
 <li>Traverse your own terms, but <code>derive</code> magic assists with implementing the library’s traits.</li>
-</ul></li>
 </ul>
 <h2 id="representing-names"><a href="#representing-names">Representing Names</a></h2>
 <p>I definitely want to use de Bruijn indexes (managed by the library) for bound variables.</p>
