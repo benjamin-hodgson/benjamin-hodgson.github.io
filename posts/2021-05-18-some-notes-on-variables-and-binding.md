@@ -184,7 +184,7 @@ What should be the advice for implementing `IRewritable` on objects containing a
 > This ☝🏻 is a pressing concern because `Telescope` features a `BindingSite`!
 
 
-**Idea 3.1**: Statically type the `Pattern`.
+**Idea 3.1**: Statically type the `Pattern` using generics.
 
 ```csharp
 readonly struct BindingSite<TPattern, T> where TPattern : Pattern
@@ -245,7 +245,7 @@ interface IBindable<T> : IRewritable<T> where T : IBindable<T>
 }
 ```
 
-Not so different than [`IUnifiable`](/posts/2019-12-15-generic-unification-with-sawmill.html)
+Not so different than [`IUnifiable`](/posts/2019-12-15-generic-unification-with-sawmill.html).
 
 
 Freshening
