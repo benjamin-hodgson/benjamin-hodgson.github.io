@@ -26,7 +26,7 @@ A quick look at some prior art
         * Most users will be using `RepLib`/`GHC.Generics`
         * Lib uses `RepLib`/`GHC.Generics` internally to traverse patterns
 
-* [`bound`](https://www.schoolofhaskell.com/user/edwardk/bound).
+* [`bound`](https://www.schoolofhaskell.com/user/edwardk/bound)
     * Choose your own name (`data Expr a = Var a | ...`).
     * Choose your own pattern/index.
         * Library explicitly doesn't manage patterns or names. It just does substitution using your monad. `Scope` doesn't contain a "pattern" object.
@@ -37,7 +37,7 @@ A quick look at some prior art
     * Works very nicely with standard classes: `Foldable`/`Traversable` to look at FVs, `Functor` for renaming, `Monad` for substitution. `Eq1` for alpha equivalence, etc.
     * Overall, probably not such a good fit for C# since we don't have `Monad` etc.
 
-* `moniker`
+* [`moniker`](https://github.com/brendanzab/moniker)
     * More or less a port of `unbound`.
     * Choose your own name (`Free<N>`/`Bound<N>`; `trait BoundTerm<N>` etc).
     * Library defines a couple of traits (`BoundTerm`/`BoundPattern`) to locate variables, do substitution, etc.
