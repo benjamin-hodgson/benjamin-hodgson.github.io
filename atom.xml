@@ -102,7 +102,7 @@
 <span id="cb3-15"><a href="#cb3-15"></a>    <span class="kw">public</span> <span class="dt">bool</span> IsBound =&gt; free.<span class="fu">OriginalName</span> == <span class="kw">null</span>;</span>
 <span id="cb3-16"><a href="#cb3-16"></a>    <span class="kw">public</span> <span class="dt">bool</span> IsFree =&gt; free.<span class="fu">OriginalName</span> != <span class="kw">null</span>;</span>
 <span id="cb3-17"><a href="#cb3-17"></a>}</span></code></pre></div>
-<p>How much of this should be public? Should these be structs or classes? (<code>Name</code> is fairly large, 3 or 4 words.) 🤔</p>
+<p>How much of this should be public? Should these be structs or classes? (<code>Name</code> is like 4 words.) 🤔</p>
 <h2 id="representing-scopes"><a href="#representing-scopes">Representing Scopes</a></h2>
 <p>I definitely want an explicit type to represent a scope. I personally think <code>BindingSite</code> is a slightly better name, although perhaps that should be reserved for names inside patterns? 🤔</p>
 <p>The idea is to treat <code>BindingSite</code> as an abstract data type. To create a <code>BindingSite</code> (such as when parsing a lambda expression), you call <code>Binder.Bind(variables, body)</code>. The binder traverses the <code>body</code> AST, looking for variables which are bound by the lambda and converting them to <code>Bound</code> de Bruijn indexes. Likewise, when you need to go inside a <code>BindingSite</code>, you have to explicitly unbind it.</p>
