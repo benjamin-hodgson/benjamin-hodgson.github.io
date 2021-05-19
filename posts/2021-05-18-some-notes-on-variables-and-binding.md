@@ -91,7 +91,7 @@ readonly struct Name
 }
 ```
 
-How much of this should be public? Should these be structs or classes? (`Name` is fairly large, 3 or 4 words.) 🤔
+How much of this should be public? Should these be structs or classes? (`Name` is like 4 words.) 🤔
 
 
 Representing Scopes
