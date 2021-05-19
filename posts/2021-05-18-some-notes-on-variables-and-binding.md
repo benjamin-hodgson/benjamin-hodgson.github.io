@@ -245,6 +245,8 @@ interface IBindable<T> : IRewritable<T> where T : IBindable<T>
 }
 ```
 
+Not so different than [`IUnifiable`](/posts/2019-12-15-generic-unification-with-sawmill.html)
+
 
 Freshening
 ----------
