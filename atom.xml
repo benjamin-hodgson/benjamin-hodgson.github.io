@@ -169,7 +169,7 @@
 <blockquote>
 <p>This ☝🏻 is a pressing concern because <code>Telescope</code> features a <code>BindingSite</code>!</p>
 </blockquote>
-<p><strong>Idea 3.1</strong>: Statically type the <code>Pattern</code>.</p>
+<p><strong>Idea 3.1</strong>: Statically type the <code>Pattern</code> using generics.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> BindingSite&lt;TPattern, T&gt; where TPattern : Pattern</span>
 <span id="cb8-2"><a href="#cb8-2"></a>{</span>
 <span id="cb8-3"><a href="#cb8-3"></a>    <span class="kw">public</span> TPattern Pattern { <span class="kw">get</span>; }</span>
@@ -214,7 +214,7 @@
 <span id="cb10-6"><a href="#cb10-6"></a>    <span class="dt">bool</span> <span class="fu">TryGetBindingSite</span>(<span class="kw">out</span> BindingSite&lt;T&gt; bindingSite);</span>
 <span id="cb10-7"><a href="#cb10-7"></a>    T <span class="fu">SetBindingSite</span>(BindingSite&lt;T&gt; newBindingSite);</span>
 <span id="cb10-8"><a href="#cb10-8"></a>}</span></code></pre></div>
-<p>Not so different than <a href="/posts/2019-12-15-generic-unification-with-sawmill.html"><code>IUnifiable</code></a></p>
+<p>Not so different than <a href="/posts/2019-12-15-generic-unification-with-sawmill.html"><code>IUnifiable</code></a>.</p>
 <h2 id="freshening"><a href="#freshening">Freshening</a></h2>
 <p>When you go under a binder you (usually) want to replace the de Bruijn indexes in there with named variables. Those variables need to be <em>fresh</em>, that is, they need to not clash with (or <em>capture</em>) any other variables in scope. As a UX concern, you probably want the fresh name to be somewhat similar to the name the programmer typed.</p>
 <p>So we have <code>IFreshener</code>:</p>
