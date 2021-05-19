@@ -190,6 +190,7 @@
 <ul>
 <li>If your language has multiple types of patterns (eg, type variables and value variables) you can’t statically distinguish them.</li>
 <li>The structure of the pattern lives only at runtime — it all gets stuffed into a <code>Pattern</code>-typed variable. You can’t <em>statically</em> encode the syntactic structure of the binding site (at which point it’s not a whole lot better than Idea 2).</li>
+<li>“Rewrite all the embedded terms” is an ad-hoc affair. Long-standing shortcoming of <code>IRewritable</code>, for which I haven’t come up with a satisfactorily simple solution.</li>
 </ul>
 <p>What should be the advice for implementing <code>IRewritable</code> on objects containing a binding site? Should you traverse to the body? (Problematic because de Bruijn indexes from different scopes are not comparable.) Are you meant to unbind the body? That would mean you can’t use <code>IRewritable</code> as is, because <code>IRewritable</code> doesn’t have a parameter for a source of fresh names. Perhaps we should be using <code>IRewriter</code> and not <code>IRewritable</code>, although that’s a messier API. 🤔</p>
 <blockquote>
