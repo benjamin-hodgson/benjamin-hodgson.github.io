@@ -175,6 +175,7 @@ abstract class Pattern : IRewritable<Pattern>
 ```
 
 Ways this doesn't scale:
+
 * If your language has multiple types of patterns (eg, type variables and value variables) you can't statically distinguish them.
 * The structure of the pattern lives only at runtime --- it all gets stuffed into a `Pattern`-typed variable. You can't _statically_ encode the syntactic structure of the binding site (at which point it's not a whole lot better than Idea 2).
 
