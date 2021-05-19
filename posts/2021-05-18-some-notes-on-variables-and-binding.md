@@ -37,7 +37,7 @@ A quick look at some prior art
     * Nested datatype is quite awkward in practice --- doesn't play nicely with mutual recursion or Plated.
     * Clever trick in `Scope` to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees --- but also, not super costly complexity-wise.
 * Works really nicely with standard classes: `Foldable`/`Traversable` to look at FVs, `Functor` for renaming, `Monad` for substitution. `Eq1` for alpha equivalence, etc. Very pleasing.
-* Overall, probably not such a good fit for C# since we don't have `Monad` etc.
+* Overall, probably not such a good fit for C# since we don't have HKTs, `Monad` etc. Not very library-able.
 
 ### [`moniker`](https://github.com/brendanzab/moniker)
 
