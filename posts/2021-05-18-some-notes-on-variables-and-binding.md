@@ -11,7 +11,7 @@ I'm a way off having a final design, but I thought I'd publish my unfinished not
 A quick look at some prior art
 ------------------------------
 
-### [`unbound`](https://hackage.haskell.org/package/unbound)/[`unbound-generics`](https://hackage.haskell.org/package/unbound-generics)
+[**`unbound`**](https://hackage.haskell.org/package/unbound)/[**`unbound-generics`**](https://hackage.haskell.org/package/unbound-generics)
 
 * `Name` is an abstract data type with fixed representation.
     * `Bound` is a depth and an index. Requires patterns to have a canonical ordering, and bind each name only once
@@ -27,7 +27,7 @@ A quick look at some prior art
     * Most users will be using `RepLib`/`GHC.Generics`
     * Lib uses `RepLib`/`GHC.Generics` internally to traverse patterns
 
-### [`bound`](https://www.schoolofhaskell.com/user/edwardk/bound)
+[**`bound`**](https://www.schoolofhaskell.com/user/edwardk/bound)
 
 * Choose your own name (`data Expr a = Var a | ...`).
 * Choose your own pattern/index.
@@ -39,7 +39,7 @@ A quick look at some prior art
 * Works really nicely with standard classes: `Foldable`/`Traversable` to look at FVs, `Functor` for renaming, `Monad` for substitution. `Eq1` for alpha equivalence, etc. Very pleasing.
 * Overall, probably not such a good fit for C# since we don't have HKTs, `Monad` etc. Not very library-able.
 
-### [`moniker`](https://github.com/brendanzab/moniker)
+[**`moniker`**](https://github.com/brendanzab/moniker)
 
 * More or less a port of `unbound`.
 * Choose your own name (`Free<N>`/`Bound<N>`; `trait BoundTerm<N>`).
