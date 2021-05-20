@@ -231,6 +231,7 @@
 <span id="cb9-14"><a href="#cb9-14"></a>        <span class="co">//                      ^ damn!</span></span>
 <span id="cb9-15"><a href="#cb9-15"></a>}</span></code></pre></div>
 <p>That unsafe cast really is unsafe, because a <code>Rewrite</code> operation is liable to change the type of the pattern. Maybe patterns should be read-only? Do I need to split the read/write parts of <code>IRewritable</code>? 🤔</p>
+<p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful — they’re hard to reason about and hard to program with. (It’s much easier to manipulate values than code.) I’d prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
 <h2 id="asts-with-binding-structure"><a href="#asts-with-binding-structure">ASTs with Binding Structure</a></h2>
 <p>This part is fairly worked out I think. I’m assuming that your syntax tree has a case for variables, containing a <code>Name</code> (and no children) and a case for binding sites, containing a <code>BindingSite</code> (and no children). So all we need to add to <code>IRewritable</code> is a way to identify those nodes:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">interface</span> IBindable&lt;T&gt; : IRewritable&lt;T&gt; where T : IBindable&lt;T&gt;</span>
