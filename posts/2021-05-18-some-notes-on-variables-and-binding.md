@@ -232,6 +232,7 @@ class Telescope<L, R>
 
 That unsafe cast really is unsafe, because a `Rewrite` operation is liable to change the type of the pattern. Maybe patterns should be read-only? Do I need to split the read/write parts of `IRewritable`? 🤔
 
+**Idea 4**: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful --- they're hard to reason about and hard to program with. (It's much easier to manipulate values than code.) I'd prefer to come up with a _model_, which you can manipulate directly, and then layer a reflection API on top.
 
 ASTs with Binding Structure
 ---------------------------
