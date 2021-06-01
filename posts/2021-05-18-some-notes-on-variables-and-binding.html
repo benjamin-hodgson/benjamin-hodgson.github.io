@@ -86,7 +86,10 @@
 <li>Nested datatype is quite awkward in practice — doesn’t play nicely with mutual recursion or Plated.</li>
 <li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you’re dealing with huge trees — but also, not super costly complexity-wise.</li>
 </ul></li>
-<li>Works really nicely with standard classes: <code>Foldable</code>/<code>Traversable</code> to look at FVs, <code>Functor</code> for renaming, <code>Monad</code> for substitution. <code>Eq1</code> for alpha equivalence, etc. Very pleasing.</li>
+<li>Works really nicely with standard classes: <code>Foldable</code>/<code>Traversable</code> to look at FVs, <code>Functor</code> for renaming, <code>Monad</code> for substitution. <code>Eq1</code> for alpha equivalence, etc. Very pleasing.
+<ul>
+<li>OTOH, <a href="https://stackoverflow.com/questions/39057576/mutually-recursive-syntaxes-with-bound">doesn’t work with a non-monadic AST</a>.</li>
+</ul></li>
 <li>Overall, probably not such a good fit for C# since we don’t have HKTs, <code>Monad</code> etc. Not very library-able.</li>
 </ul>
 <p><a href="https://github.com/brendanzab/moniker"><strong><code>moniker</code></strong></a></p>
