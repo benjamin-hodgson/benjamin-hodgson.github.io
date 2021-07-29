@@ -149,7 +149,7 @@ This design is almost identical to the one I outlined earlier --- it uses [`Span
 
 Here's the important difference. Unlike an array, a `Span` _can't be stored on the heap_. `Span` is defined using [the `ref` keyword](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref?view=netcore-3.0#ref-struct-types), which tells the compiler to check that `Span`s are confined to the stack. If you pass a `Span` into a method as an argument, you can be confident that the `Span` won't leave the scope of that method's stack frame (just like `ref`).
 
-So `Span` thoroughly solves the safety issue with the array-oriented API. I don't have to worry about mutating a `Span` which got stored inside a client object, because the `Span` can't be stored! This allows Sawmill to safely reuse `Span`s, rather than allocating a new array for each `GetChildren`/`SetChildren` call.
+So `Span` thoroughly solves the safety issue with the array-oriented API. I don't have to worry about mutating a `Span` which got stored inside a client object, because the `Span` can't be stored! This allows Sawmill to safely reuse the memory behind a `Span`, rather than allocating a new array for each `GetChildren`/`SetChildren` call.
 
 So Sawmill's methods like `RewriteChildren` can be implemented without allocating memory. In this example I'm using [`ArrayPool`](https://docs.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1?view=netcore-3.0) to avoid creating a new array for every `RewriteChildren` call.
 
@@ -190,7 +190,7 @@ public static T Rewrite(this T value, Func<T, T> transformer) where T : IRewrita
 The lambda which is passed to `RewriteChildren` contains a recursive call to `Rewrite`. Let's think through the operational behaviour of `Rewrite`:
 
 1. `Rewrite` calls `RewriteChildren`
-2. `RewriteChildren` rents an array from the array pool
+2. `RewriteChildren` rents an array from the array pool and calls `GetChildren`
 3. `RewriteChildren` calls the `child => child.Rewrite(transformer)` lambda function for each child
 4. The lambda function recursively calls `Rewrite`; steps 1-3 are repeated until you encounter a node with no children
 5. `RewriteChildren` calls `SetChildren` and returns its array to the array pool
@@ -286,7 +286,7 @@ I mentioned earlier that a `Span` is not necessarily backed by an array. `Span` 
 In fact, C# has built in support for that last case. The `stackalloc` keyword works like C's `alloca`: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, `stackalloc` was only available in an `unsafe` context, but today it's available in safe code thanks to `Span`.
 
 ```csharp
-public void Foo()
+public void StackallocExample()
 {
     // allocate space for three ints in the current stack frame
     Span<int> myInts = stackalloc int[3];
