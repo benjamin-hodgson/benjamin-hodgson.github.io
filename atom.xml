@@ -1472,7 +1472,7 @@ p r o <b>g</b> r a m m i n g
 <li><code>SetChildren</code> creates a copy of the current object with its immediate children replaced.</li>
 </ul>
 <p>Here’s the important difference. Unlike an array, a <code>Span</code> <em>can’t be stored on the heap</em>. <code>Span</code> is defined using <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref?view=netcore-3.0#ref-struct-types">the <code>ref</code> keyword</a>, which tells the compiler to check that <code>Span</code>s are confined to the stack. If you pass a <code>Span</code> into a method as an argument, you can be confident that the <code>Span</code> won’t leave the scope of that method’s stack frame (just like <code>ref</code>).</p>
-<p>So <code>Span</code> thoroughly solves the safety issue with the array-oriented API. I don’t have to worry about mutating a <code>Span</code> which got stored inside a client object, because the <code>Span</code> can’t be stored! This allows Sawmill to safely reuse <code>Span</code>s, rather than allocating a new array for each <code>GetChildren</code>/<code>SetChildren</code> call.</p>
+<p>So <code>Span</code> thoroughly solves the safety issue with the array-oriented API. I don’t have to worry about mutating a <code>Span</code> which got stored inside a client object, because the <code>Span</code> can’t be stored! This allows Sawmill to safely reuse the memory behind a <code>Span</code>, rather than allocating a new array for each <code>GetChildren</code>/<code>SetChildren</code> call.</p>
 <p>So Sawmill’s methods like <code>RewriteChildren</code> can be implemented without allocating memory. In this example I’m using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1?view=netcore-3.0"><code>ArrayPool</code></a> to avoid creating a new array for every <code>RewriteChildren</code> call.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">public</span> <span class="kw">static</span> T RewriteChildren&lt;T&gt;(<span class="kw">this</span> T value, Func&lt;T, T&gt; transformer)</span>
 <span id="cb9-2"><a href="#cb9-2"></a>    where T : IRewritable&lt;T&gt;</span>
@@ -1501,7 +1501,7 @@ p r o <b>g</b> r a m m i n g
 <p>The lambda which is passed to <code>RewriteChildren</code> contains a recursive call to <code>Rewrite</code>. Let’s think through the operational behaviour of <code>Rewrite</code>:</p>
 <ol type="1">
 <li><code>Rewrite</code> calls <code>RewriteChildren</code></li>
-<li><code>RewriteChildren</code> rents an array from the array pool</li>
+<li><code>RewriteChildren</code> rents an array from the array pool and calls <code>GetChildren</code></li>
 <li><code>RewriteChildren</code> calls the <code>child =&gt; child.Rewrite(transformer)</code> lambda function for each child</li>
 <li>The lambda function recursively calls <code>Rewrite</code>; steps 1-3 are repeated until you encounter a node with no children</li>
 <li><code>RewriteChildren</code> calls <code>SetChildren</code> and returns its array to the array pool</li>
@@ -1580,7 +1580,7 @@ p r o <b>g</b> r a m m i n g
 <h2 id="hackalloc"><a href="#hackalloc">Hackalloc</a></h2>
 <p>I mentioned earlier that a <code>Span</code> is not necessarily backed by an array. <code>Span</code> represents <em>a contiguous block of memory</em>, with no assumptions about where that memory is or how it’s managed. A <code>Span</code> could be a slice of an array, or it could be a chunk of unmanaged memory, or it could be an area of the stack. Under the hood it’s <em>just a pointer</em>; <code>Span</code> doesn’t care exactly where the pointer points.</p>
 <p>In fact, C# has built in support for that last case. The <code>stackalloc</code> keyword works like C’s <code>alloca</code>: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, <code>stackalloc</code> was only available in an <code>unsafe</code> context, but today it’s available in safe code thanks to <code>Span</code>.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">Foo</span>()</span>
+<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">StackallocExample</span>()</span>
 <span id="cb13-2"><a href="#cb13-2"></a>{</span>
 <span id="cb13-3"><a href="#cb13-3"></a>    <span class="co">// allocate space for three ints in the current stack frame</span></span>
 <span id="cb13-4"><a href="#cb13-4"></a>    Span&lt;<span class="dt">int</span>&gt; myInts = <span class="kw">stackalloc</span> <span class="dt">int</span>[<span class="dv">3</span>];</span>
