@@ -1,0 +1,23 @@
+{
+  "name": "benjamin.pizza",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      // Update 'VARIANT' to pick a Haskell version: 9, 8
+			"VARIANT": "9",
+			"UPGRADE_PACKAGES": "true"
+    }
+  },
+
+  "settings": {},
+
+  "extensions": [
+    "haskell.haskell"
+  ],
+
+  "forwardPorts": [8888],
+  "postCreateCommand": "stack build",
+  "postStartCommand": "nohup zsh -c 'stack run -- watch --port=8888 &'",
+  "remoteUser": "vscode"
+}
