@@ -11,15 +11,17 @@ The Roadmap
 
 One of Homotopy Type Theory's shortcomings was that it didn't make a good basis for a programming language --- you couldn't build a theorem prover out of it. Cubical Type Theory is an attempt to solve that.
 
-Homotopy Type Theory is built on the intuition that types behave like topological _spaces_. Members of a type correspond to (0-dimensional) points in a space. If two values are equal, we say that those points are connected: identifications (aka propositional equalities) between values in a type correspond to (1-dimensional) lines between points in a space. Since identifications are themselves members of a type, you can have identifications between them --- 2-dimensional surfaces between lines, 3-dimensional volumes between surfaces, and so on. (Algebraically, this structure is called an _∞_-groupoid --- see [the second half of this lecture](https://youtu.be/ow91cvfR-VY?t=2329) from Robert Harper for a detailed and amusing explanation.) Types in type theory behaved like spaces all along, but for a long time the correspondence wasn't very interesting because there was only one variety of path (namely `refl`). Eventually folks realised that we could make the structure more interesting by adding new paths, and HoTT was born.
+Homotopy Type Theory is built on the intuition that types behave like topological _spaces_. Members of a type correspond to (0-dimensional) points in a space. If two values are equal, we say that those points are connected: equalities between values in a type correspond to (1-dimensional) lines between points in a space. Since equalities are themselves elements of a type, you can have identifications between them --- 2-dimensional surfaces between lines, 3-dimensional volumes between surfaces, and so on. (Algebraically, this structure is called an _∞_-groupoid --- see [the second half of this lecture](https://youtu.be/ow91cvfR-VY?t=2329) from Robert Harper for a detailed and amusing explanation.) Types in type theory behaved like spaces all along, but for a long time the correspondence wasn't very interesting because there was only one variety of path (namely `refl`). Eventually folks realised that we could make the structure more interesting by adding new paths, and HoTT was born.
 
-Cubical Type Theory takes the types-as-multidimensional-spaces interpretation literally. In HoTT, the spatial interpretation was an emergent phenomenon --- equalities happen to _behave_ like paths and so we say they _are_ paths. CuTT flips that on its head; we're going to take the notion of a path as a primitive and bolt behaviours on to allow us to use paths as equalities. The way we bolt behaviours on is by adding additional structure to the types; if all of the types in the system are sufficiently well-behaved we can make paths work like equalities and use them to implement HoTT.
+Cubical Type Theory takes the types-as-multidimensional-spaces interpretation literally. In HoTT, the spatial interpretation was an emergent phenomenon --- equalities happen to _behave_ like paths and so we say they _are_ paths. CuTT flips that on its head; we're going to take the notion of a path as a primitive and bolt behaviours on to allow us to use paths as equalities.
 
-Concretely, the main innovation of CuTT is to start with a new type `I` (for _interval_) representing the (continuous) set of real numbers between 0 and 1. We can then represent a line in a type `A` as a (continuous) function `I -> A`. A line between lines would be a function `I -> (I -> A)`, but if you uncurry that you'll find that we're talking about a 2-dimensional square `(I, I) -> A`. 3-dimensional cubes are 3-argument functions `I -> I -> I -> A`. Everything in CuTT is a cube! We call a variable `i` of type `I` a _dimension variable_; a value mentioning _n_ dimension variables represents an _n_-dimensional cube.
+Concretely, the main innovation of CuTT is to start with a new type `I` (for _interval_) representing the (continuous) set of real numbers between 0 and 1. We can then represent a line in a type `A` as a (continuous) function `I -> A`. A line between lines would be a function `I -> (I -> A)`, but if you uncurry that you'll find that we're talking about a 2-dimensional square `(I, I) -> A`. 3-dimensional cubes are 3-argument functions `I -> I -> I -> A`. Everything in CuTT is a cube! Variables of type `I` are called _dimension variables_; a value mentioning _n_ dimension variables represents an _n_-dimensional cube.
 
 PICTURE - mapping out of the interval
 
 Well, we call them cubes, but you shouldn't necessarily visualise them as ordinary cubes in Euclidean space like dice. In general these cubes might be folded up and twisted around in an interesting way, depending on the topology of the type they live in. You can stitch cubes together to get a higher-dimensional cube; you can pinch two corners of a cube together; you can stretch a cube out and loop it around on itself.
+
+I mentioned bolting behaviours on to paths. The bolted-on behaviours are called the _Kan operations_, and they allow us to treat paths like equalities: you can coerce a value from one end of a line to the other, and you can compose lines end-on-end to get a longer line. Every type in CuTT is required to support the Kan operations; as long as all the types in the system are sufficiently well-behaved then we can treat these `I -> A` paths as if they were equalities and use them to implement HoTT.
 
 The notion of a _continuous_ interval made me nervous at first. Computers are digital and aren't naturally given to representing continuous data! For example, it wouldn't be right to use a `float` to represent a point in the interval --- floating point numbers aren't continuous, they're just very close together.
 
@@ -48,11 +50,11 @@ OK. When you're implementing a term rewriting system such as lambda calculus, yo
 
 (I'm not going to bother with concrete syntax or parsing.) Let's start by answering those questions for a simple dependently typed language. The syntax of our lambda calculus is going to consist of:
 
-    * Variables,
-    * Pi types, lambda abstractions, and applications like `f x`,
-    * Sigma types, pairs, and projections,
-    * The Universe type (the type of types), and
-    * User-supplied type annotations.
+* Variables,
+* Pi types, lambda abstractions, and applications like `f x`,
+* Sigma types, pairs, and projections,
+* The Universe type (the type of types), and
+* User-supplied type annotations.
 
 ```haskell
 -- I'm using the `bound` library to manage variables and scopes for me
@@ -62,10 +64,10 @@ import Bound
 
 type Type = Term
 data Term n
-    = U
+    = U  -- for Universe
     | Var n
-    | Ann (Term n) (Type n)
-    | Term n :$ Term n
+    | Ann (Term n) (Type n)  -- type annotation
+    | Term n :$ Term n  -- function application
     | Lam (Type n) (Scope () Term n)
     | Pi (Type n) (Scope () Type n)
     | Pair (Term n) (Term n)
@@ -94,8 +96,9 @@ whnf v@(Var _) = return v  -- free variables are stuck
 whnf (Ann x _) = whnf x  -- discard annotations when evaluating
 whnf a@(f :$ x) =
     asum [
+        -- if f is a lambda term, we can reduce it
         handleLam =<< assert #_Lam =<< whnf f,
-        return a  -- stuck
+        return a  -- otherwise, it’s stuck
         ]
     where
         handleLam (_, b) = whnf $ instantiate1 x b
@@ -118,7 +121,7 @@ assert l x = case x^?l of
     Nothing -> throwError "mismatched type"
 ```
 
-Standard lambda calculus stuff. When you see a lambda function applied to an argument, you can reduce it by ripping the lambda off and substituting the argument into the body.
+You'll notice that `whnf` runs in the type checker monad `Tc`, even though it doesn’t presently access the typing context. Later on we’re going to want to give certain types extra definitional equality rules, so `whnf` will need to know the terms' types in order to know when to apply those rules.
 
 Finally, how can we type check these terms? Let's start with definitional equality. 
 
@@ -172,13 +175,9 @@ bind2 m x y = do
     m x' y'
 ```
 
-Note that `assertEqual` performs some evaluation, including evaluation inside lambdas. When it encounters two terms which aren't immediately alpha-equivalent (via `==`), it reduces them to weak head normal form before doing any further comparison. This is to make expressions in types work the way you expect --- `Vec (1+2) a` should be definitionally equal to `Vec 3 a`. I've also built-in the eta rule for `Lam`s, to make `\x -> f x` definitionally equal to `f`.
+Note that `assertEqual` performs some evaluation, including evaluation inside lambdas. When it encounters two terms which aren't immediately alpha-equivalent (via `==`), it reduces them to weak head normal form before doing any further comparison. This is to make expressions in types work the way you expect --- `Vec (1+2) a` should be definitionally equal to `Vec 3 a`. I've also written down the eta rules: `\x -> f x` is definitionally equal to `f` and `(fst p, snd p)` is definitionally equal to `p`.
 
-You'll also notice that `assertEqual` has access to a typing context, even though it's not used presently. Later on we're going to want to give certain types extra definitional equality rules, so `assertEqual` will need to know the terms' types in order to know when to apply those rules.
-
-Finally, here's the type checker. As usual, type information about the variables in scope flows downwards through the typing context, and type information about terms flows upwards when `infer` returns.
-
-**SOMETHING ABOUT BIDIRECTIONALITY**
+Finally, here's the type checker. It’s written in a _bidirectional_ style, meaning we have pair of functions `check` and `infer`. `check` takes a type as an input and checks a term against it, whereas `infer` takes a term and synthesises its type from the context. Some terms are only `check`able (like `Pair`s), and some terms must be `infer`red (such as the left hand side of a function application).
 
 ```haskell
 check :: (Show n, Eq n) => Term n -> Type n -> Tc n ()
@@ -241,8 +240,6 @@ infer (Snd p) = do
     (_, b) <- assert #_Sig =<< whnf =<< infer p
     return $ instantiate1 (Fst p) b
 ```
-
-The thing which makes this a dependent type system is the rule for checking `App`. The return type of the `Pi` depends on the value of its argument, so the type of an application `f x` is the return type of the `Pi` with the value of `x` substituted into it.
 
 
 The Interval
