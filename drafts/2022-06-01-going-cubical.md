@@ -9,19 +9,21 @@ I wanted to understand Cubical Type Theory a little better. For me, two of the b
 The Roadmap
 -----------
 
-One of Homotopy Type Theory's shortcomings was that it didn't make a good basis for a programming language --- you couldn't build a theorem prover out of it. Cubical Type Theory is an attempt to solve that.
-
 Homotopy Type Theory is built on the intuition that types behave like topological _spaces_. Members of a type correspond to (0-dimensional) points in a space. If two values are equal, we say that those points are connected: equalities between values in a type correspond to (1-dimensional) lines between points in a space. Since equalities are themselves elements of a type, you can have identifications between them --- 2-dimensional surfaces between lines, 3-dimensional volumes between surfaces, and so on. (Algebraically, this structure is called an _∞_-groupoid --- see [the second half of this lecture](https://youtu.be/ow91cvfR-VY?t=2329) from Robert Harper for a detailed and amusing explanation.) Types in type theory behaved like spaces all along, but for a long time the correspondence wasn't very interesting because there was only one variety of path (namely `refl`). Eventually folks realised that we could make the structure more interesting by adding new paths, and HoTT was born.
+
+One of Homotopy Type Theory's shortcomings was that it didn't make a good basis for a programming language --- you couldn't build a theorem prover out of it. Cubical Type Theory is an attempt to solve that.
 
 Cubical Type Theory takes the types-as-multidimensional-spaces interpretation literally. In HoTT, the spatial interpretation was an emergent phenomenon --- equalities happen to _behave_ like paths and so we say they _are_ paths. CuTT flips that on its head; we're going to take the notion of a path as a primitive and bolt behaviours on to allow us to use paths as equalities.
 
-Concretely, the main innovation of CuTT is to start with a new type `I` (for _interval_) representing the (continuous) set of real numbers between 0 and 1. We can then represent a line in a type `A` as a (continuous) function `I -> A`. A line between lines would be a function `I -> (I -> A)`, but if you uncurry that you'll find that we're talking about a 2-dimensional square `(I, I) -> A`. 3-dimensional cubes are 3-argument functions `I -> I -> I -> A`. Everything in CuTT is a cube! Variables of type `I` are called _dimension variables_; a value mentioning _n_ dimension variables represents an _n_-dimensional cube.
+Concretely, the main innovation of CuTT is to start with a new type `I` (for _interval_) representing the (continuous) set of real numbers between 0 and 1. We can then represent a line in a type `A` as a (continuous) function `I -> A`. A line between lines would be a function `I -> (I -> A)`, but if you uncurry that you'll find that we're talking about a 2-dimensional square `(I, I) -> A`. 3-dimensional cubes are 3-argument functions `I -> I -> I -> A`. Everything in CuTT is a cube! Variables of type `I` are called _dimension variables_; a term mentioning _n_ dimension variables represents an _n_-dimensional cube.[^1]
+
+[^1]: I was playing fast and loose with the terminology above, so let me clean up my mess in this footnote. A term of type `A` mentioning a free dimension variable represents a 1-dimensional line in `A`. If you lambda-abstract that free dimension varible, you'll get a (closed) term of type `I -> A` --- a 0-dimensional point in `A`'s path space. It corresponds to the original line in `A` but it's not strictly the same thing. The type of paths `I -> A` lets us talk about terms with free dimension variables as first-class things, just as the type of functions `A -> B` lets us talk directly about terms with free `A`-variables.
 
 PICTURE - mapping out of the interval
 
-Well, we call them cubes, but you shouldn't necessarily visualise them as ordinary cubes in Euclidean space like dice. In general these cubes might be folded up and twisted around in an interesting way, depending on the topology of the type they live in. You can stitch cubes together to get a higher-dimensional cube; you can pinch two corners of a cube together; you can stretch a cube out and loop it around on itself.
+Well, we call them cubes, but you shouldn't necessarily visualise them as ordinary cubes in Euclidean space like dice. In general these cubes might be folded up and twisted around in an interesting way. You can stitch cubes together to get a higher-dimensional cube; you can pinch two corners of a cube together into one; you can stretch a cube out and loop it around on itself.
 
-I mentioned bolting behaviours on to paths. The bolted-on behaviours are called the _Kan operations_, and they allow us to treat paths like equalities: you can coerce a value from one end of a line to the other, and you can compose lines end-on-end to get a longer line. Every type in CuTT is required to support the Kan operations; as long as all the types in the system are sufficiently well-behaved then we can treat these `I -> A` paths as if they were equalities and use them to implement HoTT.
+I mentioned bolting behaviours on to paths. The bolted-on behaviours are called the _Kan operations_, and they allow us to treat paths like equalities: there's a Kan operation to coerce a value from one end of a line to the other, and another to compose lines end-on-end to get a longer line. Every type in CuTT is required to support the Kan operations; as long as all the types in the system are sufficiently well-behaved then we can treat these `I -> A` paths as if they were equalities and use them to implement HoTT.
 
 The notion of a _continuous_ interval made me nervous at first. Computers are digital and aren't naturally given to representing continuous data! For example, it wouldn't be right to use a `float` to represent a point in the interval --- floating point numbers aren't continuous, they're just very close together.
 
@@ -98,7 +100,7 @@ whnf a@(f :$ x) =
     asum [
         -- if f is a lambda term, we can reduce it
         handleLam =<< assert #_Lam =<< whnf f,
-        return a  -- otherwise, it’s stuck
+        return a  -- otherwise, it's stuck
         ]
     where
         handleLam (_, b) = whnf $ instantiate1 x b
@@ -121,7 +123,7 @@ assert l x = case x^?l of
     Nothing -> throwError "mismatched type"
 ```
 
-You'll notice that `whnf` runs in the type checker monad `Tc`, even though it doesn’t presently access the typing context. Later on we’re going to want to give certain types extra definitional equality rules, so `whnf` will need to know the terms' types in order to know when to apply those rules.
+You'll notice that `whnf` runs in the type checker monad `Tc`, even though it doesn't presently access the typing context. Later on we're going to want to give certain types extra definitional equality rules, so `whnf` will need to know the terms' types in order to know when to apply those rules.
 
 Finally, how can we type check these terms? Let's start with definitional equality. 
 
@@ -177,7 +179,7 @@ bind2 m x y = do
 
 Note that `assertEqual` performs some evaluation, including evaluation inside lambdas. When it encounters two terms which aren't immediately alpha-equivalent (via `==`), it reduces them to weak head normal form before doing any further comparison. This is to make expressions in types work the way you expect --- `Vec (1+2) a` should be definitionally equal to `Vec 3 a`. I've also written down the eta rules: `\x -> f x` is definitionally equal to `f` and `(fst p, snd p)` is definitionally equal to `p`.
 
-Finally, here's the type checker. It’s written in a _bidirectional_ style, meaning we have pair of functions `check` and `infer`. `check` takes a type as an input and checks a term against it, whereas `infer` takes a term and synthesises its type from the context. Some terms are only `check`able (like `Pair`s), and some terms must be `infer`red (such as the left hand side of a function application).
+Finally, here's the type checker. It's written in a _bidirectional_ style, meaning we have pair of functions `check` and `infer`. `check` takes a type as an input and checks a term against it, whereas `infer` takes a term and synthesises its type from the context. Some terms are only `check`able (like `Pair`s), and some terms must be `infer`red (such as the left hand side of a function application).
 
 ```haskell
 check :: (Show n, Eq n) => Term n -> Type n -> Tc n ()
