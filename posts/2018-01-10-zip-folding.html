@@ -45,11 +45,11 @@
 
             
 <p>One of my favourite little gems of functional programming is the following implementation of the dot product:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="ot">dot ::</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> <span class="dt">Double</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> <span class="fu">sum</span> (<span class="fu">zipWith</span> (<span class="op">*</span>) xs ys)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ot">dot ::</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> [<span class="dt">Double</span>] <span class="ot">-&gt;</span> <span class="dt">Double</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> <span class="fu">sum</span> (<span class="fu">zipWith</span> (<span class="op">*</span>) xs ys)</span></code></pre></div>
 <p><code>dot</code> zips two lists of numbers, multiplying each pair of elements using <code>(*)</code>, and then aggregates the results with <code>sum</code>. It’s like a <em>map-reduce</em> program, but it processes two collections, not one. It generalises rather beautifully to any zippily <code>Applicative</code> <code>Foldable</code> container whose elements form a <code>Semiring</code>:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">dot ::</span> (<span class="dt">Semiring</span> a, <span class="dt">Applicative</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
-<span id="cb2-2"><a href="#cb2-2"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> foldl' (<span class="op">&lt;+&gt;</span>) zero (liftA2 (<span class="op">&lt;.&gt;</span>) xs ys)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">dot ::</span> (<span class="dt">Semiring</span> a, <span class="dt">Applicative</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>xs <span class="ot">`dot`</span> ys <span class="ot">=</span> foldl' (<span class="op">&lt;+&gt;</span>) zero (liftA2 (<span class="op">&lt;.&gt;</span>) xs ys)</span></code></pre></div>
 <p>I think I’m particularly taken with this example because it combines three different abstractions in a totally natural way to produce a concise and generic implementation of a well-known program. It’s a beautiful demonstration of how these mathematical tools fit together. It also happens to be an example of a programming pattern that I call <em>zip-folding</em>.</p>
 <hr />
 <p>Until recently I felt rather embarrassed that my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> didn’t have a good story for consuming more than one tree at a time. I had lots of tools for <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.SelfAndDescendants.cs">querying</a>, <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Rewrite.cs">editing</a>, and <a href="https://github.com/benjamin-hodgson/Sawmill/blob/b87687e67185ddc299ad67455bd7c79f97e066b2/Sawmill/Rewriter.Fold.cs">tearing down</a> single trees, but nothing that could help you process two trees at once. This is a very common requirement - for example, if you’re unit testing a parser or a transformation pass, you need to compare the output tree to the one that you expected.</p>
@@ -60,128 +60,128 @@
 <hr />
 <p>Guess where this is going: you can’t <em>zip</em> trees to produce a new tree, but you can <em>zip-fold</em> trees to produce a value. The idea is to take pairs of nodes in a tree and combine them with the results of zipping their children.</p>
 <p>Let’s start by looking at (an abbreviated version of) Sawmill’s existing <code>Fold</code>. <code>Fold</code> says <em>if you give me a way to combine a node with the results of folding its children, I can recursively fold the entire tree to produce a single summary value</em>.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">public</span> <span class="kw">static</span> U Fold&lt;T, U&gt;(</span>
-<span id="cb3-2"><a href="#cb3-2"></a>    <span class="kw">this</span> T value,</span>
-<span id="cb3-3"><a href="#cb3-3"></a>    Func&lt;T, Children&lt;U&gt;, U&gt; func,</span>
-<span id="cb3-4"><a href="#cb3-4"></a>) where T : IRewritable&lt;T&gt;</span>
-<span id="cb3-5"><a href="#cb3-5"></a>    =&gt; <span class="fu">func</span>(</span>
-<span id="cb3-6"><a href="#cb3-6"></a>        value,</span>
-<span id="cb3-7"><a href="#cb3-7"></a>        value.<span class="fu">GetChildren</span>()</span>
-<span id="cb3-8"><a href="#cb3-8"></a>            .<span class="fu">Select</span>(child =&gt; child.<span class="fu">Fold</span>(func))</span>
-<span id="cb3-9"><a href="#cb3-9"></a>    );</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> U Fold<span class="op">&lt;</span>T<span class="op">,</span> U<span class="op">&gt;(</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T value<span class="op">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">,</span> Children<span class="op">&lt;</span>U<span class="op">&gt;,</span> U<span class="op">&gt;</span> func<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">func</span><span class="op">(</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        value<span class="op">,</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        value<span class="op">.</span><span class="fu">GetChildren</span><span class="op">()</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>child <span class="op">=&gt;</span> child<span class="op">.</span><span class="fu">Fold</span><span class="op">(</span>func<span class="op">))</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div>
 <p>Revisiting <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">the JQL example</a>, <code>Fold</code> will take an input tree like <code>[c#] and (not [javascript] or salary:50000gbp)</code> and compute the expression:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">func</span>(</span>
-<span id="cb4-2"><a href="#cb4-2"></a>    <span class="kw">new</span> <span class="fu">AndNode</span>(<span class="co">/* ... */</span>),</span>
-<span id="cb4-3"><a href="#cb4-3"></a>    Children.<span class="fu">Two</span>(</span>
-<span id="cb4-4"><a href="#cb4-4"></a>        <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;c#&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;()),</span>
-<span id="cb4-5"><a href="#cb4-5"></a>        <span class="fu">func</span>(</span>
-<span id="cb4-6"><a href="#cb4-6"></a>            <span class="kw">new</span> <span class="fu">OrNode</span>(<span class="co">/* ... */</span>),</span>
-<span id="cb4-7"><a href="#cb4-7"></a>            Children.<span class="fu">Two</span>(</span>
-<span id="cb4-8"><a href="#cb4-8"></a>                <span class="fu">func</span>(</span>
-<span id="cb4-9"><a href="#cb4-9"></a>                    <span class="kw">new</span> <span class="fu">NotNode</span>(<span class="co">/* ... */</span>),</span>
-<span id="cb4-10"><a href="#cb4-10"></a>                    Children.<span class="fu">One</span>(</span>
-<span id="cb4-11"><a href="#cb4-11"></a>                        <span class="fu">func</span>(</span>
-<span id="cb4-12"><a href="#cb4-12"></a>                            <span class="kw">new</span> <span class="fu">TagNode</span>(<span class="st">&quot;javascript&quot;</span>),</span>
-<span id="cb4-13"><a href="#cb4-13"></a>                            Children.<span class="fu">None</span>&lt;U&gt;()</span>
-<span id="cb4-14"><a href="#cb4-14"></a>                        )</span>
-<span id="cb4-15"><a href="#cb4-15"></a>                    )</span>
-<span id="cb4-16"><a href="#cb4-16"></a>                ),</span>
-<span id="cb4-17"><a href="#cb4-17"></a>                <span class="fu">func</span>(<span class="kw">new</span> <span class="fu">SalaryNode</span>(<span class="dv">50000</span>, <span class="st">&quot;gbp&quot;</span>), Children.<span class="fu">None</span>&lt;U&gt;())</span>
-<span id="cb4-18"><a href="#cb4-18"></a>            )</span>
-<span id="cb4-19"><a href="#cb4-19"></a>        )</span>
-<span id="cb4-20"><a href="#cb4-20"></a>    )</span>
-<span id="cb4-21"><a href="#cb4-21"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">func</span><span class="op">(</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">AndNode</span><span class="op">(</span><span class="co">/* ... */</span><span class="op">),</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    Children<span class="op">.</span><span class="fu">Two</span><span class="op">(</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">func</span><span class="op">(</span><span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;c#&quot;</span><span class="op">),</span> Children<span class="op">.</span><span class="fu">None</span><span class="op">&lt;</span>U<span class="op">&gt;()),</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">func</span><span class="op">(</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span><span class="co">/* ... */</span><span class="op">),</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>            Children<span class="op">.</span><span class="fu">Two</span><span class="op">(</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>                <span class="fu">func</span><span class="op">(</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span><span class="co">/* ... */</span><span class="op">),</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                    Children<span class="op">.</span><span class="fu">One</span><span class="op">(</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                        <span class="fu">func</span><span class="op">(</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                            <span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;javascript&quot;</span><span class="op">),</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                            Children<span class="op">.</span><span class="fu">None</span><span class="op">&lt;</span>U<span class="op">&gt;()</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                        <span class="op">)</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                    <span class="op">)</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                <span class="op">),</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                <span class="fu">func</span><span class="op">(</span><span class="kw">new</span> <span class="fu">SalaryNode</span><span class="op">(</span><span class="dv">50000</span><span class="op">,</span> <span class="st">&quot;gbp&quot;</span><span class="op">),</span> Children<span class="op">.</span><span class="fu">None</span><span class="op">&lt;</span>U<span class="op">&gt;())</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>            <span class="op">)</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">)</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
 <p><code>Fold</code> traverses a tree from bottom to top, applying <code>func</code> to each subtree and the current set of intermediate results.</p>
 <p><code>ZipFold</code> works by analogy to <code>Fold</code>. It says <em>if you give me a way to combine two nodes with the results of zip-folding their children, I can recursively zip the two entire trees to produce a single summary value</em>. <code>ZipFold</code> pairs up the children of the two input nodes using the standard <code>Enumerable.Zip</code>, recursively zip-folds each pair, and then feeds the results to <code>func</code>. Note that the length of the <code>IEnumerable</code> that’s passed to <code>func</code> is the length of the smaller of the two nodes’ collections of children.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(</span>
-<span id="cb5-2"><a href="#cb5-2"></a>    <span class="kw">this</span> T value1,</span>
-<span id="cb5-3"><a href="#cb5-3"></a>    T value2</span>
-<span id="cb5-4"><a href="#cb5-4"></a>    Func&lt;T, T, IEnumerable&lt;U&gt;, U&gt; zipFunc,</span>
-<span id="cb5-5"><a href="#cb5-5"></a>) where T : IRewritable&lt;T&gt;</span>
-<span id="cb5-6"><a href="#cb5-6"></a>    =&gt; <span class="fu">zipFunc</span>(</span>
-<span id="cb5-7"><a href="#cb5-7"></a>        value1,</span>
-<span id="cb5-8"><a href="#cb5-8"></a>        value2,</span>
-<span id="cb5-9"><a href="#cb5-9"></a>        value1.<span class="fu">GetChildren</span>().<span class="fu">Zip</span>(</span>
-<span id="cb5-10"><a href="#cb5-10"></a>            value2.<span class="fu">GetChildren</span>(),</span>
-<span id="cb5-11"><a href="#cb5-11"></a>            (child1, child2) =&gt; child1.<span class="fu">ZipFold</span>(child2, zipFunc)</span>
-<span id="cb5-12"><a href="#cb5-12"></a>        )</span>
-<span id="cb5-13"><a href="#cb5-13"></a>    );</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> U ZipFold<span class="op">&lt;</span>T<span class="op">,</span> U<span class="op">&gt;(</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T value1<span class="op">,</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    T value2</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">,</span> IEnumerable<span class="op">&lt;</span>U<span class="op">&gt;,</span> U<span class="op">&gt;</span> zipFunc<span class="op">,</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">zipFunc</span><span class="op">(</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        value1<span class="op">,</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        value2<span class="op">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        value1<span class="op">.</span><span class="fu">GetChildren</span><span class="op">().</span><span class="fu">Zip</span><span class="op">(</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>            value2<span class="op">.</span><span class="fu">GetChildren</span><span class="op">(),</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>            <span class="op">(</span>child1<span class="op">,</span> child2<span class="op">)</span> <span class="op">=&gt;</span> child1<span class="op">.</span><span class="fu">ZipFold</span><span class="op">(</span>child2<span class="op">,</span> zipFunc<span class="op">)</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">)</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div>
 <p>The two trees are zipped together and torn down in a single pass.</p>
 <p>Here’s how it looks in Haskell, using the <a href="https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html"><code>Control.Lens.Plated</code></a> API. Haskellers like to use tongue-in-cheek Greek names for recursion schemes. Apparently the Greek word for “zip” is “fermouár”, so I’m calling this a <em>fermomorphism</em>.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> r</span>
-<span id="cb6-2"><a href="#cb6-2"></a>fermo f x y <span class="ot">=</span> f x y <span class="op">$</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a>    <span class="fu">zipWith</span> (fermo f) (toListOf plate x) (toListOf plate y)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> r</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>fermo f x y <span class="ot">=</span> f x y <span class="op">$</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">zipWith</span> (fermo f) (toListOf plate x) (toListOf plate y)</span></code></pre></div>
 <p>As an example: <code>ZipFold</code> allows you to concisely test a pair of trees for equality, by looking only at one pair of nodes at a time.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)</span>
-<span id="cb7-2"><a href="#cb7-2"></a>    =&gt; j1.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(</span>
-<span id="cb7-3"><a href="#cb7-3"></a>        j2,</span>
-<span id="cb7-4"><a href="#cb7-4"></a>        (n1, n2, childrenEqual) =&gt;</span>
-<span id="cb7-5"><a href="#cb7-5"></a>        {</span>
-<span id="cb7-6"><a href="#cb7-6"></a>            <span class="kw">switch</span> (n1)</span>
-<span id="cb7-7"><a href="#cb7-7"></a>            {</span>
-<span id="cb7-8"><a href="#cb7-8"></a>                <span class="kw">case</span> SalaryNode s1 when n2 <span class="kw">is</span> SalaryNode s2:</span>
-<span id="cb7-9"><a href="#cb7-9"></a>                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span></span>
-<span id="cb7-10"><a href="#cb7-10"></a>                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;</span>
-<span id="cb7-11"><a href="#cb7-11"></a>                <span class="kw">case</span> TagNode t1 when n2 <span class="kw">is</span> TagNode t2:</span>
-<span id="cb7-12"><a href="#cb7-12"></a>                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;</span>
-<span id="cb7-13"><a href="#cb7-13"></a>                <span class="kw">case</span> AndNode a1 when n2 <span class="kw">is</span> AndNode a2:</span>
-<span id="cb7-14"><a href="#cb7-14"></a>                <span class="kw">case</span> OrNode o1 when n2 <span class="kw">is</span> OrNode o2:</span>
-<span id="cb7-15"><a href="#cb7-15"></a>                <span class="kw">case</span> NotNode a1 when n2 <span class="kw">is</span> NotNode a2:</span>
-<span id="cb7-16"><a href="#cb7-16"></a>                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);</span>
-<span id="cb7-17"><a href="#cb7-17"></a>                <span class="kw">default</span>:</span>
-<span id="cb7-18"><a href="#cb7-18"></a>                    <span class="kw">return</span> <span class="kw">false</span>;</span>
-<span id="cb7-19"><a href="#cb7-19"></a>            }</span>
-<span id="cb7-20"><a href="#cb7-20"></a>        }</span>
-<span id="cb7-21"><a href="#cb7-21"></a>    );</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span><span class="op">(</span>JqlNode j1<span class="op">,</span> JqlNode j2<span class="op">)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> j1<span class="op">.</span><span class="fu">ZipFold</span><span class="op">&lt;</span>JqlNode<span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;(</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        j2<span class="op">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">(</span>n1<span class="op">,</span> n2<span class="op">,</span> childrenEqual<span class="op">)</span> <span class="op">=&gt;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">switch</span> <span class="op">(</span>n1<span class="op">)</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> SalaryNode s1 when n2 <span class="kw">is</span> SalaryNode s2<span class="op">:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> s1<span class="op">.</span><span class="fu">Currency</span> <span class="op">==</span> s2<span class="op">.</span><span class="fu">Currency</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                        <span class="op">&amp;&amp;</span> s1<span class="op">.</span><span class="fu">Amount</span> <span class="op">==</span> s2<span class="op">.</span><span class="fu">Amount</span><span class="op">;</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> TagNode t1 when n2 <span class="kw">is</span> TagNode t2<span class="op">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> t1<span class="op">.</span><span class="fu">Tag</span> <span class="op">==</span> t2<span class="op">.</span><span class="fu">Tag</span><span class="op">;</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> AndNode a1 when n2 <span class="kw">is</span> AndNode a2<span class="op">:</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> OrNode o1 when n2 <span class="kw">is</span> OrNode o2<span class="op">:</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> NotNode a1 when n2 <span class="kw">is</span> NotNode a2<span class="op">:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> childrenEqual<span class="op">.</span><span class="fu">All</span><span class="op">(</span>c <span class="op">=&gt;</span> c<span class="op">);</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>                <span class="kw">default</span><span class="op">:</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div>
 <p>The <code>ZipFold</code> that you’ll find in Sawmill is actually an <em>n</em>-ary zip-fold. Instead of taking two <code>T</code>s, and passing two <code>T</code>s to <code>func</code>, it works with an arbitrary number of <code>T</code>s. Here’s the code:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">public</span> <span class="kw">static</span> U ZipFold&lt;T, U&gt;(</span>
-<span id="cb8-2"><a href="#cb8-2"></a>    <span class="kw">this</span> T[] values,</span>
-<span id="cb8-3"><a href="#cb8-3"></a>    Func&lt;T[], IEnumerable&lt;U&gt;, U&gt; func,</span>
-<span id="cb8-4"><a href="#cb8-4"></a>) where T : IRewritable&lt;T&gt;</span>
-<span id="cb8-5"><a href="#cb8-5"></a>    =&gt; <span class="fu">func</span>(values, xs.<span class="fu">ZipChildren</span>(children =&gt; children.<span class="fu">ZipFold</span>(func)));</span>
-<span id="cb8-6"><a href="#cb8-6"></a></span>
-<span id="cb8-7"><a href="#cb8-7"></a><span class="kw">private</span> <span class="kw">static</span> IEnumerable&lt;U&gt; ZipChildren&lt;T, U&gt;(</span>
-<span id="cb8-8"><a href="#cb8-8"></a>    <span class="kw">this</span> T[] input,</span>
-<span id="cb8-9"><a href="#cb8-9"></a>    Func&lt;T[], U&gt; zipFunc</span>
-<span id="cb8-10"><a href="#cb8-10"></a>) where T : IRewritable&lt;T&gt;</span>
-<span id="cb8-11"><a href="#cb8-11"></a>{</span>
-<span id="cb8-12"><a href="#cb8-12"></a>    <span class="dt">var</span> enumerators = input</span>
-<span id="cb8-13"><a href="#cb8-13"></a>        .<span class="fu">Select</span>(x =&gt; x.<span class="fu">GetChildren</span>().<span class="fu">GetEnumerator</span>())</span>
-<span id="cb8-14"><a href="#cb8-14"></a>        .<span class="fu">ToArray</span>();</span>
-<span id="cb8-15"><a href="#cb8-15"></a></span>
-<span id="cb8-16"><a href="#cb8-16"></a>    <span class="kw">while</span> (enumerators.<span class="fu">All</span>(e =&gt; e.<span class="fu">MoveNext</span>()))</span>
-<span id="cb8-17"><a href="#cb8-17"></a>    {</span>
-<span id="cb8-18"><a href="#cb8-18"></a>        <span class="kw">yield</span> <span class="kw">return</span> <span class="fu">zipFunc</span>(</span>
-<span id="cb8-19"><a href="#cb8-19"></a>            enumerators.<span class="fu">Select</span>(e =&gt; e.<span class="fu">Current</span>).<span class="fu">ToArray</span>()</span>
-<span id="cb8-20"><a href="#cb8-20"></a>        );</span>
-<span id="cb8-21"><a href="#cb8-21"></a>    }</span>
-<span id="cb8-22"><a href="#cb8-22"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> U ZipFold<span class="op">&lt;</span>T<span class="op">,</span> U<span class="op">&gt;(</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T<span class="op">[]</span> values<span class="op">,</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">[],</span> IEnumerable<span class="op">&lt;</span>U<span class="op">&gt;,</span> U<span class="op">&gt;</span> func<span class="op">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">func</span><span class="op">(</span>values<span class="op">,</span> xs<span class="op">.</span><span class="fu">ZipChildren</span><span class="op">(</span>children <span class="op">=&gt;</span> children<span class="op">.</span><span class="fu">ZipFold</span><span class="op">(</span>func<span class="op">)));</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> IEnumerable<span class="op">&lt;</span>U<span class="op">&gt;</span> ZipChildren<span class="op">&lt;</span>T<span class="op">,</span> U<span class="op">&gt;(</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T<span class="op">[]</span> input<span class="op">,</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">[],</span> U<span class="op">&gt;</span> zipFunc</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> enumerators <span class="op">=</span> input</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>x <span class="op">=&gt;</span> x<span class="op">.</span><span class="fu">GetChildren</span><span class="op">().</span><span class="fu">GetEnumerator</span><span class="op">())</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">ToArray</span><span class="op">();</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> <span class="op">(</span>enumerators<span class="op">.</span><span class="fu">All</span><span class="op">(</span>e <span class="op">=&gt;</span> e<span class="op">.</span><span class="fu">MoveNext</span><span class="op">()))</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">yield</span> <span class="kw">return</span> <span class="fu">zipFunc</span><span class="op">(</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>            enumerators<span class="op">.</span><span class="fu">Select</span><span class="op">(</span>e <span class="op">=&gt;</span> e<span class="op">.</span><span class="fu">Current</span><span class="op">).</span><span class="fu">ToArray</span><span class="op">()</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">);</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Sadly, the invariant that <code>zipFunc</code> receives the same number of <code>T</code>s as were passed to <code>ZipFold</code> is not expressible in C#’s type system. So as a consumer of <code>ZipFold</code>, you just have to trust that <code>zipFunc</code>’s argument is of a certain size. In the <code>Equal</code> example, that size is two, because we’re consuming two trees:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span>(JqlNode j1, JqlNode j2)</span>
-<span id="cb9-2"><a href="#cb9-2"></a>    =&gt; <span class="kw">new</span>[] { j1, j2 }.<span class="fu">ZipFold</span>&lt;JqlNode, <span class="dt">bool</span>&gt;(</span>
-<span id="cb9-3"><a href="#cb9-3"></a>        (ns, childrenEqual) =&gt;</span>
-<span id="cb9-4"><a href="#cb9-4"></a>        {</span>
-<span id="cb9-5"><a href="#cb9-5"></a>            <span class="kw">switch</span> (ns[<span class="dv">0</span>])</span>
-<span id="cb9-6"><a href="#cb9-6"></a>            {</span>
-<span id="cb9-7"><a href="#cb9-7"></a>                <span class="kw">case</span> SalaryNode s1 when ns[<span class="dv">1</span>] <span class="kw">is</span> SalaryNode s2:</span>
-<span id="cb9-8"><a href="#cb9-8"></a>                    <span class="kw">return</span> s1.<span class="fu">Currency</span> == s2.<span class="fu">Currency</span></span>
-<span id="cb9-9"><a href="#cb9-9"></a>                        &amp;&amp; s1.<span class="fu">Amount</span> == s2.<span class="fu">Amount</span>;</span>
-<span id="cb9-10"><a href="#cb9-10"></a>                <span class="kw">case</span> TagNode t1 when ns[<span class="dv">1</span>] <span class="kw">is</span> TagNode t2:</span>
-<span id="cb9-11"><a href="#cb9-11"></a>                    <span class="kw">return</span> t1.<span class="fu">Tag</span> == t2.<span class="fu">Tag</span>;</span>
-<span id="cb9-12"><a href="#cb9-12"></a>                <span class="kw">case</span> AndNode a1 when ns[<span class="dv">1</span>] <span class="kw">is</span> AndNode a2:</span>
-<span id="cb9-13"><a href="#cb9-13"></a>                <span class="kw">case</span> OrNode o1 when ns[<span class="dv">1</span>] <span class="kw">is</span> OrNode o2:</span>
-<span id="cb9-14"><a href="#cb9-14"></a>                <span class="kw">case</span> NotNode n1 when ns[<span class="dv">1</span>] <span class="kw">is</span> NotNode n2:</span>
-<span id="cb9-15"><a href="#cb9-15"></a>                    <span class="kw">return</span> childrenEqual.<span class="fu">All</span>(c =&gt; c);</span>
-<span id="cb9-16"><a href="#cb9-16"></a>                <span class="kw">default</span>:</span>
-<span id="cb9-17"><a href="#cb9-17"></a>                    <span class="kw">return</span> <span class="kw">false</span>;</span>
-<span id="cb9-18"><a href="#cb9-18"></a>            }</span>
-<span id="cb9-19"><a href="#cb9-19"></a>        }</span>
-<span id="cb9-20"><a href="#cb9-20"></a>    );</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> <span class="dt">bool</span> <span class="fu">Equal</span><span class="op">(</span>JqlNode j1<span class="op">,</span> JqlNode j2<span class="op">)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> j1<span class="op">,</span> j2 <span class="op">}.</span><span class="fu">ZipFold</span><span class="op">&lt;</span>JqlNode<span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;(</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>        <span class="op">(</span>ns<span class="op">,</span> childrenEqual<span class="op">)</span> <span class="op">=&gt;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">switch</span> <span class="op">(</span>ns<span class="op">[</span><span class="dv">0</span><span class="op">])</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> SalaryNode s1 when ns<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="kw">is</span> SalaryNode s2<span class="op">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> s1<span class="op">.</span><span class="fu">Currency</span> <span class="op">==</span> s2<span class="op">.</span><span class="fu">Currency</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                        <span class="op">&amp;&amp;</span> s1<span class="op">.</span><span class="fu">Amount</span> <span class="op">==</span> s2<span class="op">.</span><span class="fu">Amount</span><span class="op">;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> TagNode t1 when ns<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="kw">is</span> TagNode t2<span class="op">:</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> t1<span class="op">.</span><span class="fu">Tag</span> <span class="op">==</span> t2<span class="op">.</span><span class="fu">Tag</span><span class="op">;</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> AndNode a1 when ns<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="kw">is</span> AndNode a2<span class="op">:</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> OrNode o1 when ns<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="kw">is</span> OrNode o2<span class="op">:</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> NotNode n1 when ns<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="kw">is</span> NotNode n2<span class="op">:</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> childrenEqual<span class="op">.</span><span class="fu">All</span><span class="op">(</span>c <span class="op">=&gt;</span> c<span class="op">);</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>                <span class="kw">default</span><span class="op">:</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div>
 <p>Here’s the Haskell transliteration of this <em>n</em>-ary zip-fold function, which <code>traverse</code>s in the <code>ZipList</code> <code>Applicative</code> to concisely zip <em>n</em> lists of children:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> r</span>
-<span id="cb10-2"><a href="#cb10-2"></a>fermo f xs <span class="ot">=</span> f xs (</span>
-<span id="cb10-3"><a href="#cb10-3"></a>    <span class="fu">map</span> (fermo f) <span class="op">$</span> getZipList <span class="op">$</span> <span class="fu">traverse</span> (<span class="dt">ZipList</span> <span class="op">.</span> toListOf plate) xs</span>
-<span id="cb10-4"><a href="#cb10-4"></a>    )</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">fermo ::</span> <span class="dt">Plated</span> a <span class="ot">=&gt;</span> ([a] <span class="ot">-&gt;</span> [r] <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> r</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>fermo f xs <span class="ot">=</span> f xs (</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">map</span> (fermo f) <span class="op">$</span> getZipList <span class="op">$</span> <span class="fu">traverse</span> (<span class="dt">ZipList</span> <span class="op">.</span> toListOf plate) xs</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div>
 <p><code>ZipFold</code> is available in <a href="https://www.nuget.org/packages/Sawmill/">version 1.3.0 of Sawmill</a>.</p>
 
         </article>

@@ -60,7 +60,7 @@
 <a href="../posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a>
 </li>
 </ol>
-<p></nav></p>
+</nav>
 <p>We’re getting on to the fun part of writing an interpreter: actually <em>interpreting</em> the input code. In this post we’re going to implement a <em>unification</em> algorithm using my generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Unification slots somewhere in the middle or bottom-right of this diagram:</p>
 <p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <h2 id="unification"><a href="#unification">Unification</a></h2>
@@ -129,228 +129,228 @@
 </ul>
 <p>Abstracting over these concepts should allow us to implement unification once and for all, without depending on the specifics of Prolog’s terms. Don’t solve one problem. Solve them all!</p>
 <p>Sawmill’s core <code>IRewritable</code> interface is a generic way of looking at tree-shaped terms with children. The only concepts we need to add on top of <code>IRewritable</code> are <em>variables</em> and <em>matching</em>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">interface</span> IUnifiable&lt;T&gt; : IRewritable&lt;T&gt; where T : IUnifiable&lt;T&gt;</span>
-<span id="cb1-2"><a href="#cb1-2"></a>{</span>
-<span id="cb1-3"><a href="#cb1-3"></a>    <span class="dt">bool</span> <span class="fu">Match</span>(T other);</span>
-<span id="cb1-4"><a href="#cb1-4"></a>    <span class="dt">string</span> <span class="fu">AsVariable</span>();</span>
-<span id="cb1-5"><a href="#cb1-5"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span> <span class="fu">Match</span><span class="op">(</span>T other<span class="op">);</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">string</span> <span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p><code>Match</code> tells you whether the current node matches another node. In Prolog’s case, it tests whether the two nodes have the same name and number of children. <code>AsVariable</code> checks whether the current node is a variable, returning its name as a string (or <code>null</code> if it’s not). Here’s what it looks like implemented on <a href="../posts/2019-12-01-write-you-a-prolog.html">the <code>Term</code> syntax tree</a>:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term : IUnifiable&lt;Term&gt;</span>
-<span id="cb2-2"><a href="#cb2-2"></a>{</span>
-<span id="cb2-3"><a href="#cb2-3"></a>    <span class="co">// ...</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other);</span>
-<span id="cb2-5"><a href="#cb2-5"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">string</span> <span class="fu">AsVariable</span>();</span>
-<span id="cb2-6"><a href="#cb2-6"></a>}</span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">class</span> Predicate : Term</span>
-<span id="cb2-8"><a href="#cb2-8"></a>{</span>
-<span id="cb2-9"><a href="#cb2-9"></a>    <span class="co">// ...</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other)</span>
-<span id="cb2-11"><a href="#cb2-11"></a>        =&gt; other <span class="kw">is</span> Predicate p</span>
-<span id="cb2-12"><a href="#cb2-12"></a>        &amp;&amp; p.<span class="fu">Name</span> == Name</span>
-<span id="cb2-13"><a href="#cb2-13"></a>        &amp;&amp; p.<span class="fu">Args</span>.<span class="fu">Length</span> == Args.<span class="fu">Length</span>;</span>
-<span id="cb2-14"><a href="#cb2-14"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span>() =&gt; <span class="kw">null</span>;</span>
-<span id="cb2-15"><a href="#cb2-15"></a>}</span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">class</span> Variable : Term</span>
-<span id="cb2-17"><a href="#cb2-17"></a>{</span>
-<span id="cb2-18"><a href="#cb2-18"></a>    <span class="co">// ...</span></span>
-<span id="cb2-19"><a href="#cb2-19"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other)</span>
-<span id="cb2-20"><a href="#cb2-20"></a>        =&gt; other <span class="kw">is</span> Variable v</span>
-<span id="cb2-21"><a href="#cb2-21"></a>        &amp;&amp; v.<span class="fu">Name</span> == Name;</span>
-<span id="cb2-22"><a href="#cb2-22"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span>() =&gt; Name;</span>
-<span id="cb2-23"><a href="#cb2-23"></a>}</span>
-<span id="cb2-24"><a href="#cb2-24"></a><span class="kw">class</span> Atom : Term</span>
-<span id="cb2-25"><a href="#cb2-25"></a>{</span>
-<span id="cb2-26"><a href="#cb2-26"></a>    <span class="co">// ...</span></span>
-<span id="cb2-27"><a href="#cb2-27"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span>(Term other)</span>
-<span id="cb2-28"><a href="#cb2-28"></a>        =&gt; other <span class="kw">is</span> Atom a</span>
-<span id="cb2-29"><a href="#cb2-29"></a>        &amp;&amp; a.<span class="fu">Value</span> == Value;</span>
-<span id="cb2-30"><a href="#cb2-30"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span>() =&gt; <span class="kw">null</span>;</span>
-<span id="cb2-31"><a href="#cb2-31"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term <span class="op">:</span> IUnifiable<span class="op">&lt;</span>Term<span class="op">&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">bool</span> <span class="fu">Match</span><span class="op">(</span>Term other<span class="op">);</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">string</span> <span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Predicate <span class="op">:</span> Term</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span><span class="op">(</span>Term other<span class="op">)</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> other <span class="kw">is</span> Predicate p</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> p<span class="op">.</span><span class="fu">Name</span> <span class="op">==</span> Name</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> p<span class="op">.</span><span class="fu">Args</span><span class="op">.</span><span class="fu">Length</span> <span class="op">==</span> Args<span class="op">.</span><span class="fu">Length</span><span class="op">;</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span><span class="op">()</span> <span class="op">=&gt;</span> <span class="kw">null</span><span class="op">;</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Variable <span class="op">:</span> Term</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span><span class="op">(</span>Term other<span class="op">)</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> other <span class="kw">is</span> Variable v</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> v<span class="op">.</span><span class="fu">Name</span> <span class="op">==</span> Name<span class="op">;</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span><span class="op">()</span> <span class="op">=&gt;</span> Name<span class="op">;</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Atom <span class="op">:</span> Term</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">bool</span> <span class="fu">Match</span><span class="op">(</span>Term other<span class="op">)</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> other <span class="kw">is</span> Atom a</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> a<span class="op">.</span><span class="fu">Value</span> <span class="op">==</span> Value<span class="op">;</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">AsVariable</span><span class="op">()</span> <span class="op">=&gt;</span> <span class="kw">null</span><span class="op">;</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>For example, here’s a LINQ query which finds all of the variables mentioned anywhere in a term. It uses <code>SelfAndDescendants</code> together with <code>AsVariable</code> to find the nodes which were in fact variables.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableHashSet&lt;<span class="dt">string</span>&gt; Variables&lt;T&gt;(<span class="kw">this</span> T value) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb3-2"><a href="#cb3-2"></a>    =&gt; value</span>
-<span id="cb3-3"><a href="#cb3-3"></a>        .<span class="fu">SelfAndDescendants</span>()</span>
-<span id="cb3-4"><a href="#cb3-4"></a>        .<span class="fu">Select</span>(x =&gt; x.<span class="fu">AsVariable</span>())</span>
-<span id="cb3-5"><a href="#cb3-5"></a>        .<span class="fu">Where</span>(name =&gt; name != <span class="kw">null</span>)</span>
-<span id="cb3-6"><a href="#cb3-6"></a>        .<span class="fu">Distinct</span>()</span>
-<span id="cb3-7"><a href="#cb3-7"></a>        .<span class="fu">ToImmutableHashSet</span>();</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableHashSet<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> Variables<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T value<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> value</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">SelfAndDescendants</span><span class="op">()</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>x <span class="op">=&gt;</span> x<span class="op">.</span><span class="fu">AsVariable</span><span class="op">())</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Where</span><span class="op">(</span>name <span class="op">=&gt;</span> name <span class="op">!=</span> <span class="kw">null</span><span class="op">)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Distinct</span><span class="op">()</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">ToImmutableHashSet</span><span class="op">();</span></span></code></pre></div>
 <h2 id="substitutions"><a href="#substitutions">Substitutions</a></h2>
 <p>I mentioned that the output of unification is a <em>substitution</em> — a mapping from variable names to terms. We’ll model that using an ordinary dictionary of strings and <code>T</code>s. Our signature for <code>Unify</code> is going to look like this:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Unify<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T left<span class="op">,</span> T right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span></code></pre></div>
 <p>The main thing you can do with a substitution is <em>apply</em> it to a term. That means replacing all the variables in the term with the sub-terms they’re mapped to by the substitution. This should eliminate any variables in the term which are bound by the substitution.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">public</span> <span class="kw">static</span> T Apply&lt;T&gt;(<span class="kw">this</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; subst, T value) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb5-2"><a href="#cb5-2"></a>    =&gt; value.<span class="fu">Rewrite</span>(</span>
-<span id="cb5-3"><a href="#cb5-3"></a>        x =&gt;</span>
-<span id="cb5-4"><a href="#cb5-4"></a>        {</span>
-<span id="cb5-5"><a href="#cb5-5"></a>            <span class="dt">var</span> name = x.<span class="fu">AsVariable</span>();</span>
-<span id="cb5-6"><a href="#cb5-6"></a>            <span class="kw">if</span> (name != <span class="kw">null</span>)</span>
-<span id="cb5-7"><a href="#cb5-7"></a>            {</span>
-<span id="cb5-8"><a href="#cb5-8"></a>                <span class="kw">return</span> subst.<span class="fu">GetValueOrDefault</span>(name, x);</span>
-<span id="cb5-9"><a href="#cb5-9"></a>            }</span>
-<span id="cb5-10"><a href="#cb5-10"></a>            <span class="kw">return</span> x;</span>
-<span id="cb5-11"><a href="#cb5-11"></a>        }</span>
-<span id="cb5-12"><a href="#cb5-12"></a>    );</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> T Apply<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> subst<span class="op">,</span> T value<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> value<span class="op">.</span><span class="fu">Rewrite</span><span class="op">(</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        x <span class="op">=&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>            <span class="dt">var</span> name <span class="op">=</span> x<span class="op">.</span><span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> <span class="op">(</span>name <span class="op">!=</span> <span class="kw">null</span><span class="op">)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                <span class="kw">return</span> subst<span class="op">.</span><span class="fu">GetValueOrDefault</span><span class="op">(</span>name<span class="op">,</span> x<span class="op">);</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> x<span class="op">;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div>
 <p>We’re going to maintain the invariant that the terms in a substitution are never going to contain any variables which are bound by the substitution. (It’s possible, and indeed desirable for efficiency, to relax this invariant, but today we’re going to focus on simplicity.)</p>
 <h2 id="binding-single-variables-the-occurs-check"><a href="#binding-single-variables-the-occurs-check">Binding Single Variables &amp; the Occurs Check</a></h2>
 <p>Time to fill in the body of <code>Unify</code>. Let’s start with step 2 of the algorithm: what to do when either of the input terms is a variable.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb6-2"><a href="#cb6-2"></a>{</span>
-<span id="cb6-3"><a href="#cb6-3"></a>    <span class="dt">var</span> leftName = left.<span class="fu">AsVariable</span>();</span>
-<span id="cb6-4"><a href="#cb6-4"></a>    <span class="kw">if</span> (leftName != <span class="kw">null</span>)  <span class="co">// then the left term was a variable</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>    {</span>
-<span id="cb6-6"><a href="#cb6-6"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(leftName, right);</span>
-<span id="cb6-7"><a href="#cb6-7"></a>    }</span>
-<span id="cb6-8"><a href="#cb6-8"></a>    <span class="dt">var</span> rightName = right.<span class="fu">AsVariable</span>();</span>
-<span id="cb6-9"><a href="#cb6-9"></a>    <span class="kw">if</span> (rightName != <span class="kw">null</span>)  <span class="co">// then the right term was a variable</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a>    {</span>
-<span id="cb6-11"><a href="#cb6-11"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(rightName, left);</span>
-<span id="cb6-12"><a href="#cb6-12"></a>    }</span>
-<span id="cb6-13"><a href="#cb6-13"></a>    <span class="co">// ...</span></span>
-<span id="cb6-14"><a href="#cb6-14"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Unify<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T left<span class="op">,</span> T right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> leftName <span class="op">=</span> left<span class="op">.</span><span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>leftName <span class="op">!=</span> <span class="kw">null</span><span class="op">)</span>  <span class="co">// then the left term was a variable</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="fu">Bind</span><span class="op">(</span>leftName<span class="op">,</span> right<span class="op">);</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> rightName <span class="op">=</span> right<span class="op">.</span><span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>rightName <span class="op">!=</span> <span class="kw">null</span><span class="op">)</span>  <span class="co">// then the right term was a variable</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="fu">Bind</span><span class="op">(</span>rightName<span class="op">,</span> left<span class="op">);</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p><code>Bind(name, value)</code> returns a substitution with the variable <code>name</code> bound to the term <code>value</code>. However! There are some important edge cases to watch out for which could result in breaking the invariant I mentioned above.</p>
 <ol type="1">
 <li>The term <code>value</code> could be the <em>same</em> variable as <code>name</code>. This would produce a substitution like <code>X := X</code> (that is, a do-nothing substitution), so we’ll just return an empty substitution in that case.</li>
 <li>The term <code>value</code> could mention the variable <code>name</code> somewhere inside it. This would produce a substitution like <code>X := foo(X)</code>. If you try and find a concrete value for <code>X</code> you’d end up with an infinitely long chain of <code>foo</code>s! Some systems allow infinite terms like this, but others disallow it by checking whether a variable occurs in the term it’s being bound to. This check is suitably called the <em>occurs check</em>.</li>
 </ol>
-<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">private</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Bind&lt;T&gt;(<span class="dt">string</span> name, T value) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb7-2"><a href="#cb7-2"></a>{</span>
-<span id="cb7-3"><a href="#cb7-3"></a>    <span class="dt">var</span> valueName = value.<span class="fu">AsVariable</span>();</span>
-<span id="cb7-4"><a href="#cb7-4"></a>    <span class="kw">if</span> (valueName != <span class="kw">null</span> &amp;&amp; name == valueName)</span>
-<span id="cb7-5"><a href="#cb7-5"></a>    {</span>
-<span id="cb7-6"><a href="#cb7-6"></a>        <span class="kw">return</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
-<span id="cb7-7"><a href="#cb7-7"></a>    }</span>
-<span id="cb7-8"><a href="#cb7-8"></a>    <span class="kw">if</span> (value.<span class="fu">Variables</span>().<span class="fu">Contains</span>(name))</span>
-<span id="cb7-9"><a href="#cb7-9"></a>    {</span>
-<span id="cb7-10"><a href="#cb7-10"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;occurs check&quot;</span>);</span>
-<span id="cb7-11"><a href="#cb7-11"></a>    }</span>
-<span id="cb7-12"><a href="#cb7-12"></a>    <span class="kw">return</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>.<span class="fu">Add</span>(name, value);</span>
-<span id="cb7-13"><a href="#cb7-13"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Bind<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="dt">string</span> name<span class="op">,</span> T value<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> valueName <span class="op">=</span> value<span class="op">.</span><span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>valueName <span class="op">!=</span> <span class="kw">null</span> <span class="op">&amp;&amp;</span> name <span class="op">==</span> valueName<span class="op">)</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;.</span><span class="fu">Empty</span><span class="op">;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>value<span class="op">.</span><span class="fu">Variables</span><span class="op">().</span><span class="fu">Contains</span><span class="op">(</span>name<span class="op">))</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span><span class="op">(</span><span class="st">&quot;occurs check&quot;</span><span class="op">);</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;.</span><span class="fu">Empty</span><span class="op">.</span><span class="fu">Add</span><span class="op">(</span>name<span class="op">,</span> value<span class="op">);</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <h2 id="handling-non-variables"><a href="#handling-non-variables">Handling Non-Variables</a></h2>
 <p>Let’s continue implementing <code>Unify</code>. At this point we know that neither <code>left</code> nor <code>right</code> are variables, so they must be either composite terms or leaf nodes. In either case, we need to check whether they match.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb8-2"><a href="#cb8-2"></a>{</span>
-<span id="cb8-3"><a href="#cb8-3"></a>    <span class="co">// ...</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
-<span id="cb8-5"><a href="#cb8-5"></a>    {</span>
-<span id="cb8-6"><a href="#cb8-6"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
-<span id="cb8-7"><a href="#cb8-7"></a>    }</span>
-<span id="cb8-8"><a href="#cb8-8"></a>    <span class="co">// ...</span></span>
-<span id="cb8-9"><a href="#cb8-9"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Unify<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T left<span class="op">,</span> T right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(!</span>left<span class="op">.</span><span class="fu">Match</span><span class="op">(</span>right<span class="op">))</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span><span class="op">(</span><span class="st">&quot;values didn't match&quot;</span><span class="op">);</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>If they did match, it’s time to try matching up their children. (If the two nodes were leaf nodes, their list of children is empty, so the following code does nothing.)</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb9-2"><a href="#cb9-2"></a>{</span>
-<span id="cb9-3"><a href="#cb9-3"></a>    <span class="co">// ...</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a>    <span class="dt">var</span> leftChildren = left.<span class="fu">GetChildren</span>();</span>
-<span id="cb9-5"><a href="#cb9-5"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
-<span id="cb9-6"><a href="#cb9-6"></a>    <span class="kw">return</span> <span class="fu">Solve</span>(leftChildren, rightChildren);</span>
-<span id="cb9-7"><a href="#cb9-7"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Unify<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T left<span class="op">,</span> T right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> leftChildren <span class="op">=</span> left<span class="op">.</span><span class="fu">GetChildren</span><span class="op">();</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> rightChildren <span class="op">=</span> right<span class="op">.</span><span class="fu">GetChildren</span><span class="op">();</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="fu">Solve</span><span class="op">(</span>leftChildren<span class="op">,</span> rightChildren<span class="op">);</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <h2 id="unifying-children-systems-of-equations"><a href="#unifying-children-systems-of-equations">Unifying Children — Systems of Equations</a></h2>
 <p>Unifying the children means solving a <em>system</em> of equations. If more than one equation mentions the same variable, they have to agree on what that variable should be.</p>
 <p>The plain is to pair up the children in the two lists and try to unify each with their partner, building up a substitution as we go.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb10-2"><a href="#cb10-2"></a>{</span>
-<span id="cb10-3"><a href="#cb10-3"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
-<span id="cb10-4"><a href="#cb10-4"></a>    {</span>
-<span id="cb10-5"><a href="#cb10-5"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
-<span id="cb10-6"><a href="#cb10-6"></a>    }</span>
-<span id="cb10-7"><a href="#cb10-7"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
-<span id="cb10-8"><a href="#cb10-8"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
-<span id="cb10-9"><a href="#cb10-9"></a>    {</span>
-<span id="cb10-10"><a href="#cb10-10"></a>        <span class="co">// ...</span></span>
-<span id="cb10-11"><a href="#cb10-11"></a>    }</span>
-<span id="cb10-12"><a href="#cb10-12"></a>    <span class="kw">return</span> subst;</span>
-<span id="cb10-13"><a href="#cb10-13"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Solve<span class="op">&lt;</span>T<span class="op">&gt;(</span>T<span class="op">[]</span> left<span class="op">,</span> T<span class="op">[]</span> right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>left<span class="op">.</span><span class="fu">Length</span> <span class="op">!=</span> right<span class="op">.</span><span class="fu">Length</span><span class="op">)</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span><span class="op">(</span><span class="st">&quot;values didn't match&quot;</span><span class="op">);</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> subst <span class="op">=</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;.</span><span class="fu">Empty</span><span class="op">;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">foreach</span> <span class="op">(</span><span class="fu">var</span> <span class="op">(</span>l<span class="op">,</span> r<span class="op">)</span> <span class="kw">in</span> left<span class="op">.</span><span class="fu">Zip</span><span class="op">(</span>right<span class="op">))</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        <span class="co">// ...</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> subst<span class="op">;</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>This loop requires some thinking. As you unify each pair of children, you learn something about the variables in the system of equations. These learnings need to be propagated to the other equations. So as we build our substitution we need to make sure to apply it to the remaining equations in the system. This propagates information from left to right, ensuring that you don’t encounter variables which have already been bound by earlier equations.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb11-2"><a href="#cb11-2"></a>{</span>
-<span id="cb11-3"><a href="#cb11-3"></a>    <span class="co">// ...</span></span>
-<span id="cb11-4"><a href="#cb11-4"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
-<span id="cb11-5"><a href="#cb11-5"></a>    {</span>
-<span id="cb11-6"><a href="#cb11-6"></a>        <span class="dt">var</span> newL = subst.<span class="fu">Apply</span>(l);</span>
-<span id="cb11-7"><a href="#cb11-7"></a>        <span class="dt">var</span> newR = subst.<span class="fu">Apply</span>(r);</span>
-<span id="cb11-8"><a href="#cb11-8"></a>        <span class="dt">var</span> newSubst = newL.<span class="fu">Unify</span>(newR);</span>
-<span id="cb11-9"><a href="#cb11-9"></a>        <span class="co">// ...</span></span>
-<span id="cb11-10"><a href="#cb11-10"></a>    }</span>
-<span id="cb11-11"><a href="#cb11-11"></a>    <span class="co">// ...</span></span>
-<span id="cb11-12"><a href="#cb11-12"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Solve<span class="op">&lt;</span>T<span class="op">&gt;(</span>T<span class="op">[]</span> left<span class="op">,</span> T<span class="op">[]</span> right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">foreach</span> <span class="op">(</span><span class="fu">var</span> <span class="op">(</span>l<span class="op">,</span> r<span class="op">)</span> <span class="kw">in</span> left<span class="op">.</span><span class="fu">Zip</span><span class="op">(</span>right<span class="op">))</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> newL <span class="op">=</span> subst<span class="op">.</span><span class="fu">Apply</span><span class="op">(</span>l<span class="op">);</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> newR <span class="op">=</span> subst<span class="op">.</span><span class="fu">Apply</span><span class="op">(</span>r<span class="op">);</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> newSubst <span class="op">=</span> newL<span class="op">.</span><span class="fu">Unify</span><span class="op">(</span>newR<span class="op">);</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        <span class="co">// ...</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>But we also need to propagate information from right to left. When you unify <code>f(X, Y)</code> with <code>f(Y, a)</code>, the first argument sets <code>X := Y</code>, but the second argument sets <code>Y := a</code>. Simply combining the two substitutions results in <code>X := Y; Y := a</code> which breaks our invariant that bound variables don’t appear inside a substitution. When you combine two substitutions, you need to <code>Apply</code> the second substitution to the terms inside the first one.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb12-2"><a href="#cb12-2"></a>{</span>
-<span id="cb12-3"><a href="#cb12-3"></a>    <span class="co">// ...</span></span>
-<span id="cb12-4"><a href="#cb12-4"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
-<span id="cb12-5"><a href="#cb12-5"></a>    {</span>
-<span id="cb12-6"><a href="#cb12-6"></a>        <span class="co">// ...</span></span>
-<span id="cb12-7"><a href="#cb12-7"></a>        subst = subst.<span class="fu">Compose</span>(newSubst);</span>
-<span id="cb12-8"><a href="#cb12-8"></a>    }</span>
-<span id="cb12-9"><a href="#cb12-9"></a>    <span class="co">// ...</span></span>
-<span id="cb12-10"><a href="#cb12-10"></a>}</span>
-<span id="cb12-11"><a href="#cb12-11"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Compose&lt;T&gt;(</span>
-<span id="cb12-12"><a href="#cb12-12"></a>    <span class="kw">this</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; left,</span>
-<span id="cb12-13"><a href="#cb12-13"></a>    ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; right</span>
-<span id="cb12-14"><a href="#cb12-14"></a>) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb12-15"><a href="#cb12-15"></a>    =&gt; left</span>
-<span id="cb12-16"><a href="#cb12-16"></a>        .<span class="fu">Select</span>(kvp =&gt; <span class="kw">new</span> KeyValuePair&lt;<span class="dt">string</span>, T&gt;(kvp.<span class="fu">Key</span>, right.<span class="fu">Apply</span>(kvp.<span class="fu">Value</span>)))</span>
-<span id="cb12-17"><a href="#cb12-17"></a>        .<span class="fu">Where</span>(kvp =&gt; !(kvp.<span class="fu">Value</span> <span class="kw">is</span> Variable v &amp;&amp; v.<span class="fu">Name</span> == kvp.<span class="fu">Key</span>))</span>
-<span id="cb12-18"><a href="#cb12-18"></a>        .<span class="fu">Concat</span>(right)</span>
-<span id="cb12-19"><a href="#cb12-19"></a>        .<span class="fu">ToImmutableDictionary</span>();</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Solve<span class="op">&lt;</span>T<span class="op">&gt;(</span>T<span class="op">[]</span> left<span class="op">,</span> T<span class="op">[]</span> right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">foreach</span> <span class="op">(</span><span class="fu">var</span> <span class="op">(</span>l<span class="op">,</span> r<span class="op">)</span> <span class="kw">in</span> left<span class="op">.</span><span class="fu">Zip</span><span class="op">(</span>right<span class="op">))</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        <span class="co">// ...</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        subst <span class="op">=</span> subst<span class="op">.</span><span class="fu">Compose</span><span class="op">(</span>newSubst<span class="op">);</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Compose<span class="op">&lt;</span>T<span class="op">&gt;(</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> left<span class="op">,</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> right</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> left</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>kvp <span class="op">=&gt;</span> <span class="kw">new</span> KeyValuePair<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;(</span>kvp<span class="op">.</span><span class="fu">Key</span><span class="op">,</span> right<span class="op">.</span><span class="fu">Apply</span><span class="op">(</span>kvp<span class="op">.</span><span class="fu">Value</span><span class="op">)))</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Where</span><span class="op">(</span>kvp <span class="op">=&gt;</span> <span class="op">!(</span>kvp<span class="op">.</span><span class="fu">Value</span> <span class="kw">is</span> Variable v <span class="op">&amp;&amp;</span> v<span class="op">.</span><span class="fu">Name</span> <span class="op">==</span> kvp<span class="op">.</span><span class="fu">Key</span><span class="op">))</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Concat</span><span class="op">(</span>right<span class="op">)</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">ToImmutableDictionary</span><span class="op">();</span></span></code></pre></div>
 <p>Note <code>right.Apply(kvp.Value)</code> inside the <code>Select</code>. This can sometimes result in substitution entries of the form <code>X := X</code> (for example when unifying <code>f(X, Y)</code> with <code>f(Y, X)</code>), so I’m just filtering them out with <code>Where</code>.</p>
 <p>That’s the whole algorithm! I’ll repeat <code>Unify</code> and <code>Solve</code> in full:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Unify&lt;T&gt;(<span class="kw">this</span> T left, T right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb13-2"><a href="#cb13-2"></a>{</span>
-<span id="cb13-3"><a href="#cb13-3"></a>    <span class="dt">var</span> leftName = left.<span class="fu">AsVariable</span>();</span>
-<span id="cb13-4"><a href="#cb13-4"></a>    <span class="kw">if</span> (leftName != <span class="kw">null</span>)</span>
-<span id="cb13-5"><a href="#cb13-5"></a>    {</span>
-<span id="cb13-6"><a href="#cb13-6"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(leftName, right);</span>
-<span id="cb13-7"><a href="#cb13-7"></a>    }</span>
-<span id="cb13-8"><a href="#cb13-8"></a>    <span class="dt">var</span> rightName = right.<span class="fu">AsVariable</span>();</span>
-<span id="cb13-9"><a href="#cb13-9"></a>    <span class="kw">if</span> (rightName != <span class="kw">null</span>)</span>
-<span id="cb13-10"><a href="#cb13-10"></a>    {</span>
-<span id="cb13-11"><a href="#cb13-11"></a>        <span class="kw">return</span> <span class="fu">Bind</span>(rightName, left);</span>
-<span id="cb13-12"><a href="#cb13-12"></a>    }</span>
-<span id="cb13-13"><a href="#cb13-13"></a>    <span class="kw">if</span> (!left.<span class="fu">Match</span>(right))</span>
-<span id="cb13-14"><a href="#cb13-14"></a>    {</span>
-<span id="cb13-15"><a href="#cb13-15"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
-<span id="cb13-16"><a href="#cb13-16"></a>    }</span>
-<span id="cb13-17"><a href="#cb13-17"></a>    <span class="dt">var</span> leftChildren = left.<span class="fu">GetChildren</span>();</span>
-<span id="cb13-18"><a href="#cb13-18"></a>    <span class="dt">var</span> rightChildren = right.<span class="fu">GetChildren</span>();</span>
-<span id="cb13-19"><a href="#cb13-19"></a>    <span class="kw">return</span> <span class="fu">Solve</span>(leftChildren, rightChildren);</span>
-<span id="cb13-20"><a href="#cb13-20"></a>}</span>
-<span id="cb13-21"><a href="#cb13-21"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary&lt;<span class="dt">string</span>, T&gt; Solve&lt;T&gt;(T[] left, T[] right) where T : IUnifiable&lt;T&gt;</span>
-<span id="cb13-22"><a href="#cb13-22"></a>{</span>
-<span id="cb13-23"><a href="#cb13-23"></a>    <span class="kw">if</span> (left.<span class="fu">Length</span> != right.<span class="fu">Length</span>)</span>
-<span id="cb13-24"><a href="#cb13-24"></a>    {</span>
-<span id="cb13-25"><a href="#cb13-25"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span>(<span class="st">&quot;values didn't match&quot;</span>);</span>
-<span id="cb13-26"><a href="#cb13-26"></a>    }</span>
-<span id="cb13-27"><a href="#cb13-27"></a>    <span class="dt">var</span> subst = ImmutableDictionary&lt;<span class="dt">string</span>, T&gt;.<span class="fu">Empty</span>;</span>
-<span id="cb13-28"><a href="#cb13-28"></a>    <span class="kw">foreach</span> (<span class="fu">var</span> (l, r) <span class="kw">in</span> left.<span class="fu">Zip</span>(right))</span>
-<span id="cb13-29"><a href="#cb13-29"></a>    {</span>
-<span id="cb13-30"><a href="#cb13-30"></a>        <span class="dt">var</span> newL = subst.<span class="fu">Apply</span>(l);</span>
-<span id="cb13-31"><a href="#cb13-31"></a>        <span class="dt">var</span> newR = subst.<span class="fu">Apply</span>(r);</span>
-<span id="cb13-32"><a href="#cb13-32"></a>        <span class="dt">var</span> newSubst = newL.<span class="fu">Unify</span>(newR);</span>
-<span id="cb13-33"><a href="#cb13-33"></a>        subst = subst.<span class="fu">Compose</span>(newSubst);</span>
-<span id="cb13-34"><a href="#cb13-34"></a>    }</span>
-<span id="cb13-35"><a href="#cb13-35"></a>    <span class="kw">return</span> subst;</span>
-<span id="cb13-36"><a href="#cb13-36"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Unify<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T left<span class="op">,</span> T right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> leftName <span class="op">=</span> left<span class="op">.</span><span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>leftName <span class="op">!=</span> <span class="kw">null</span><span class="op">)</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="fu">Bind</span><span class="op">(</span>leftName<span class="op">,</span> right<span class="op">);</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> rightName <span class="op">=</span> right<span class="op">.</span><span class="fu">AsVariable</span><span class="op">();</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>rightName <span class="op">!=</span> <span class="kw">null</span><span class="op">)</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="fu">Bind</span><span class="op">(</span>rightName<span class="op">,</span> left<span class="op">);</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(!</span>left<span class="op">.</span><span class="fu">Match</span><span class="op">(</span>right<span class="op">))</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span><span class="op">(</span><span class="st">&quot;values didn't match&quot;</span><span class="op">);</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> leftChildren <span class="op">=</span> left<span class="op">.</span><span class="fu">GetChildren</span><span class="op">();</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> rightChildren <span class="op">=</span> right<span class="op">.</span><span class="fu">GetChildren</span><span class="op">();</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="fu">Solve</span><span class="op">(</span>leftChildren<span class="op">,</span> rightChildren<span class="op">);</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;</span> Solve<span class="op">&lt;</span>T<span class="op">&gt;(</span>T<span class="op">[]</span> left<span class="op">,</span> T<span class="op">[]</span> right<span class="op">)</span> where T <span class="op">:</span> IUnifiable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>left<span class="op">.</span><span class="fu">Length</span> <span class="op">!=</span> right<span class="op">.</span><span class="fu">Length</span><span class="op">)</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>        <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">UnificationError</span><span class="op">(</span><span class="st">&quot;values didn't match&quot;</span><span class="op">);</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> subst <span class="op">=</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> T<span class="op">&gt;.</span><span class="fu">Empty</span><span class="op">;</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">foreach</span> <span class="op">(</span><span class="fu">var</span> <span class="op">(</span>l<span class="op">,</span> r<span class="op">)</span> <span class="kw">in</span> left<span class="op">.</span><span class="fu">Zip</span><span class="op">(</span>right<span class="op">))</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> newL <span class="op">=</span> subst<span class="op">.</span><span class="fu">Apply</span><span class="op">(</span>l<span class="op">);</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> newR <span class="op">=</span> subst<span class="op">.</span><span class="fu">Apply</span><span class="op">(</span>r<span class="op">);</span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> newSubst <span class="op">=</span> newL<span class="op">.</span><span class="fu">Unify</span><span class="op">(</span>newR<span class="op">);</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>        subst <span class="op">=</span> subst<span class="op">.</span><span class="fu">Compose</span><span class="op">(</span>newSubst<span class="op">);</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> subst<span class="op">;</span></span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>A quick test of one of our examples:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span>(<span class="dt">string</span>[] args)</span>
-<span id="cb14-2"><a href="#cb14-2"></a>{</span>
-<span id="cb14-3"><a href="#cb14-3"></a>    Term left = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(X), a)&quot;</span>);</span>
-<span id="cb14-4"><a href="#cb14-4"></a>    Term right = PrologParser.<span class="fu">ParseQuery</span>(<span class="st">&quot;f(g(Y), X)&quot;</span>);</span>
-<span id="cb14-5"><a href="#cb14-5"></a></span>
-<span id="cb14-6"><a href="#cb14-6"></a>    <span class="dt">var</span> subst = left.<span class="fu">Unify</span>(right);</span>
-<span id="cb14-7"><a href="#cb14-7"></a></span>
-<span id="cb14-8"><a href="#cb14-8"></a>    Console.<span class="fu">WriteLine</span>(<span class="dt">string</span>.<span class="fu">Join</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>, subst.<span class="fu">Select</span>(kvp =&gt; kvp.<span class="fu">Key</span> + <span class="st">&quot; := &quot;</span> + kvp.<span class="fu">Value</span>)));</span>
-<span id="cb14-9"><a href="#cb14-9"></a>    <span class="co">// prints out:</span></span>
-<span id="cb14-10"><a href="#cb14-10"></a>    <span class="co">// X := a</span></span>
-<span id="cb14-11"><a href="#cb14-11"></a>    <span class="co">// Y := a</span></span>
-<span id="cb14-12"><a href="#cb14-12"></a></span>
-<span id="cb14-13"><a href="#cb14-13"></a>    <span class="dt">var</span> newLeft = subst.<span class="fu">Apply</span>(left);</span>
-<span id="cb14-14"><a href="#cb14-14"></a>    <span class="dt">var</span> newRight = subst.<span class="fu">Apply</span>(right);</span>
-<span id="cb14-15"><a href="#cb14-15"></a></span>
-<span id="cb14-16"><a href="#cb14-16"></a>    Console.<span class="fu">WriteLine</span>(newLeft);</span>
-<span id="cb14-17"><a href="#cb14-17"></a>    Console.<span class="fu">WriteLine</span>(newRight);</span>
-<span id="cb14-18"><a href="#cb14-18"></a>    <span class="co">// both print out f(g(a), a)</span></span>
-<span id="cb14-19"><a href="#cb14-19"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span><span class="op">(</span><span class="dt">string</span><span class="op">[]</span> args<span class="op">)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    Term left <span class="op">=</span> PrologParser<span class="op">.</span><span class="fu">ParseQuery</span><span class="op">(</span><span class="st">&quot;f(g(X), a)&quot;</span><span class="op">);</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    Term right <span class="op">=</span> PrologParser<span class="op">.</span><span class="fu">ParseQuery</span><span class="op">(</span><span class="st">&quot;f(g(Y), X)&quot;</span><span class="op">);</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> subst <span class="op">=</span> left<span class="op">.</span><span class="fu">Unify</span><span class="op">(</span>right<span class="op">);</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="dt">string</span><span class="op">.</span><span class="fu">Join</span><span class="op">(</span><span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> subst<span class="op">.</span><span class="fu">Select</span><span class="op">(</span>kvp <span class="op">=&gt;</span> kvp<span class="op">.</span><span class="fu">Key</span> <span class="op">+</span> <span class="st">&quot; := &quot;</span> <span class="op">+</span> kvp<span class="op">.</span><span class="fu">Value</span><span class="op">)));</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// prints out:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// X := a</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Y := a</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> newLeft <span class="op">=</span> subst<span class="op">.</span><span class="fu">Apply</span><span class="op">(</span>left<span class="op">);</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> newRight <span class="op">=</span> subst<span class="op">.</span><span class="fu">Apply</span><span class="op">(</span>right<span class="op">);</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span>newLeft<span class="op">);</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span>newRight<span class="op">);</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">// both print out f(g(a), a)</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Some exercises you could try:</p>
 <ul>
 <li>This implementation does a lot of <code>Apply</code>ing substitutions to terms, specifically in <code>Solve</code> and <code>Compose</code>.

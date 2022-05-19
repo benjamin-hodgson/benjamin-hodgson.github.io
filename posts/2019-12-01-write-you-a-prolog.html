@@ -60,42 +60,42 @@
 <a href="../posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a>
 </li>
 </ol>
-<p></nav></p>
+</nav>
 <p>You’ll find all the code for this series <a href="https://github.com/benjamin-hodgson/Amateurlog">on GitHub</a>.</p>
 <h2 id="whistle-stop-introduction-to-prolog"><a href="#whistle-stop-introduction-to-prolog">Whistle-Stop Introduction to Prolog</a></h2>
 <p>Prolog is a <em>logic programming</em> language. Prolog code consists of a collection of <em>rules</em>. Each rule says “X is true if Y (and Z and…) is true”. A rule is a logical axiom, with a set of premises (on the right) and a conclusion you can draw from those premises (on the left).</p>
 <p>As an example, you might say that a <code>Person</code> wants a certain <code>Food</code> if they’re hungry and they like that food. And — I don’t know about you — but I’ll eat something I really love even if I’m not hungry.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb1-1"><a href="#cb1-1"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> hungry(<span class="dt">Person</span>)<span class="kw">,</span> likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> loves(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="co">% If someone loves a given food, then they also like it.</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a>likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> loves(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="co">% If we're going to have dinner, we'd better agree on what to eat.</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>dinner(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> wants(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">,</span> wants(<span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> hungry(<span class="dt">Person</span>)<span class="kw">,</span> likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> loves(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">% If someone loves a given food, then they also like it.</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> loves(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">% If we're going to have dinner, we'd better agree on what to eat.</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>dinner(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> wants(<span class="dt">Person1</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">,</span> wants(<span class="dt">Person2</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span></code></pre></div>
 <p>Variables in Prolog start with a capital letter. <code>:-</code> means “if” and <code>,</code> means “and”. You can give multiple alternative ways of satisfying the same predicate by just declaring it more than once. In other words, multiple declarations of the same predicate means “or”.</p>
 <p>Next, we’ll prime Prolog’s database with a couple of <em>facts</em> about people and foods.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb2-1"><a href="#cb2-1"></a>loves(benjamin<span class="kw">,</span> pizza)<span class="kw">.</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a>loves(benjamin<span class="kw">,</span> asparagus)<span class="kw">.</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a>likes(benjamin<span class="kw">,</span> soup)<span class="kw">.</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a></span>
-<span id="cb2-5"><a href="#cb2-5"></a>loves(clio<span class="kw">,</span> salad)<span class="kw">.</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>likes(clio<span class="kw">,</span> pizza)<span class="kw">.</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>likes(clio<span class="kw">,</span> soup)<span class="kw">.</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a>hungry(clio)<span class="kw">.</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>loves(benjamin<span class="kw">,</span> pizza)<span class="kw">.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>loves(benjamin<span class="kw">,</span> asparagus)<span class="kw">.</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>likes(benjamin<span class="kw">,</span> soup)<span class="kw">.</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>loves(clio<span class="kw">,</span> salad)<span class="kw">.</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>likes(clio<span class="kw">,</span> pizza)<span class="kw">.</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>likes(clio<span class="kw">,</span> soup)<span class="kw">.</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>hungry(clio)<span class="kw">.</span></span></code></pre></div>
 <p><em>Atoms</em> in Prolog are somewhat like strings. They begin with a lower case letter.</p>
 <p>Finally, we can issue a <em>query</em> to the interactive Prolog interpreter to find out whether we can have soup for dinner.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">?-</span> dinner(benjamin<span class="kw">,</span> clio<span class="kw">,</span> soup)<span class="kw">.</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">false</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">?-</span> dinner(benjamin<span class="kw">,</span> clio<span class="kw">,</span> soup)<span class="kw">.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">false</span></span></code></pre></div>
 <p>No soup for you. What <em>can</em> we eat for dinner? If we replace the atom <code>soup</code> — a specific food — with a variable <code>Food</code> (note the capital letter) — standing in for any food — Prolog will try to find a value for <code>Food</code> which satisfies the <code>dinner</code> predicate. (You can use as many variables as you like in a query. Prolog will try to find a value for all of them.)</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">?-</span> dinner(benjamin<span class="kw">,</span> clio<span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="dt">Food</span> <span class="kw">=</span> pizza</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">?-</span> dinner(benjamin<span class="kw">,</span> clio<span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Food</span> <span class="kw">=</span> pizza</span></code></pre></div>
 <p>Even though predicates don’t return anything per se — they either succeed or fail — you can use variables in this way to get information out of a predicate. Prolog’s constraint solving system is <strong>bi-directional</strong> — a predicate’s parameters can serve as both inputs and outputs.</p>
 <h3 id="pattern-matching-and-recursion"><a href="#pattern-matching-and-recursion">Pattern Matching and Recursion</a></h3>
 <p>As well as putting <em>conditions</em> on the right-hand side of a rule, you can put <em>patterns</em> on the left. This is somewhat like pattern matching in functional languages — the right-hand side of a rule is only entered if its arguments match the pattern on the left.</p>
 <p>Here’s a recursive predicate <code>last(List, Item)</code> which succeeds when <code>Item</code> is the last element of <code>List</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb5-1"><a href="#cb5-1"></a>last(cons(<span class="dt">X</span><span class="kw">,</span> nil)<span class="kw">,</span> <span class="dt">X</span>)<span class="kw">.</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>last(cons(<span class="dt">X</span><span class="kw">,</span> <span class="dt">Xs</span>)<span class="kw">,</span> <span class="dt">Y</span>) <span class="kw">:-</span> last(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Y</span>)<span class="kw">.</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>last(cons(<span class="dt">X</span><span class="kw">,</span> nil)<span class="kw">,</span> <span class="dt">X</span>)<span class="kw">.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>last(cons(<span class="dt">X</span><span class="kw">,</span> <span class="dt">Xs</span>)<span class="kw">,</span> <span class="dt">Y</span>) <span class="kw">:-</span> last(<span class="dt">Xs</span><span class="kw">,</span> <span class="dt">Y</span>)<span class="kw">.</span></span></code></pre></div>
 <p><code>last</code> is another example of bi-directionality. You can use the second parameter as an input by passing in a value (in which case <code>last</code> will test whether <code>Item</code> is the last element of <code>List</code>), or you can use it as an output by passing in a variable (in which case Prolog will find the last element of <code>List</code> and set <code>Item</code> equal to it).</p>
 <p>When running a predicate, Prolog tries each of its clauses from top to bottom to see if any of them succeed. So let’s review this code line by line.</p>
 <p>The first rule has no right hand side, which means it succeeds as long as the predicate’s arguments match the pattern on the left. (Rules with no right-hand side are called <em>facts</em>.) The first argument on the left hand side is the pattern <code>cons(X, nil)</code>. <code>cons</code> is a predicate whose two arguments are the head and tail of a list (<a href="https://en.wikipedia.org/wiki/Cons">the <code>cons</code> nomenclature</a> comes from Lisp); in this instance its second argument is the atom <code>nil</code> (representing an empty list) and its first argument is left indeterminate — <code>X</code> can stand in for any element. The second argument of <code>last</code> is <code>X</code>. This is the <em>same</em> <code>X</code> as appeared in <code>cons(X, nil)</code>. So, taken all together, this first line succeeds when its first argument is a single-element list and its second argument is that element.</p>
@@ -112,30 +112,30 @@
 <p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
 <p>As the name suggests, the exercise is to come up with an abstract representation of Prolog’s syntax. Think beyond the specifics of how the language is presented as text (such as where parentheses go and so on); we want to talk about the high-level grammatical constructs and how they relate to one another. This mode of thinking is akin to thinking about English at the level of sentence structure — subordinate clauses and so on — rather than spelling and punctuation.</p>
 <p>I said a Prolog program was a collection of <em>rules</em>, so let’s start there.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">class</span> Rule</span>
-<span id="cb6-2"><a href="#cb6-2"></a>{</span>
-<span id="cb6-3"><a href="#cb6-3"></a>    <span class="co">// ?</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Rule</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ?</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>What constitutes a rule? Looking at our example from earlier,</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb7-1"><a href="#cb7-1"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> hungry(<span class="dt">Person</span>)<span class="kw">,</span> likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode prolog"><code class="sourceCode prolog"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> hungry(<span class="dt">Person</span>)<span class="kw">,</span> likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span></code></pre></div>
 <p>you can see that a rule has two main parts, separated by the <code>:-</code> symbol. On the left is the <em>conclusion</em> of the logical statement, in the form of a pattern which the rule can match. On the right are the <em>premises</em> of the logical statement, in the form of a comma-separated list of calls to other predicates. We’ll call these the <code>Head</code> and the <code>Body</code> of the rule. (A fact is just a rule with no predicates in the body.)</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">class</span> Rule</span>
-<span id="cb8-2"><a href="#cb8-2"></a>{</span>
-<span id="cb8-3"><a href="#cb8-3"></a>    <span class="kw">public</span> ? Head { <span class="kw">get</span>; }</span>
-<span id="cb8-4"><a href="#cb8-4"></a>    <span class="kw">public</span> ImmutableArray&lt;?&gt; Body { <span class="kw">get</span>; }</span>
-<span id="cb8-5"><a href="#cb8-5"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Rule</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="op">?</span> Head <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableArray<span class="op">&lt;?&gt;</span> Body <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>(I’m omitting constructors for brevity.) What should the types of these properties be? A rule’s head is always a name, followed by a comma-separated list of expressions inside parentheses. We’ll call this a <code>Predicate</code>. A rule’s body is also list of predicates.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">class</span> Rule</span>
-<span id="cb9-2"><a href="#cb9-2"></a>{</span>
-<span id="cb9-3"><a href="#cb9-3"></a>    <span class="kw">public</span> Predicate Head { <span class="kw">get</span>; }</span>
-<span id="cb9-4"><a href="#cb9-4"></a>    <span class="kw">public</span> ImmutableArray&lt;Predicate&gt; Body { <span class="kw">get</span>; }</span>
-<span id="cb9-5"><a href="#cb9-5"></a>}</span>
-<span id="cb9-6"><a href="#cb9-6"></a></span>
-<span id="cb9-7"><a href="#cb9-7"></a><span class="kw">class</span> Predicate</span>
-<span id="cb9-8"><a href="#cb9-8"></a>{</span>
-<span id="cb9-9"><a href="#cb9-9"></a>    <span class="kw">public</span> <span class="dt">string</span> Name { <span class="kw">get</span>; }</span>
-<span id="cb9-10"><a href="#cb9-10"></a>    <span class="kw">public</span> ImmutableArray&lt;?&gt; Args { <span class="kw">get</span>; }</span>
-<span id="cb9-11"><a href="#cb9-11"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Rule</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Predicate Head <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableArray<span class="op">&lt;</span>Predicate<span class="op">&gt;</span> Body <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Predicate</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableArray<span class="op">&lt;?&gt;</span> Args <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Now to fill in the type of <code>Args</code>. Looking at the example <code>last(cons(X, nil), X)</code>, each argument to a predicate can be one of:</p>
 <ol type="1">
 <li>Another predicate applied to some arguments (<code>cons</code> in this example).</li>
@@ -143,130 +143,130 @@
 <li>An atom (<code>nil</code>).</li>
 </ol>
 <p>We’ll refer to all three of these syntactic forms as <em>terms</em>. We’ll use subtyping to represent the fact that each argument could be any one of the three. <code>Predicate</code>, <code>Variable</code> and <code>Atom</code> are all subclasses of the <code>Term</code> base class; a <code>Predicate</code>’s arguments are a collection of <code>Term</code>s (but you don’t know statically what kind of <code>Term</code> to expect).</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term {}</span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">class</span> Predicate : Term</span>
-<span id="cb10-3"><a href="#cb10-3"></a>{</span>
-<span id="cb10-4"><a href="#cb10-4"></a>    <span class="kw">public</span> <span class="dt">string</span> Name { <span class="kw">get</span>; }</span>
-<span id="cb10-5"><a href="#cb10-5"></a>    <span class="kw">public</span> ImmutableArray&lt;Term&gt; Args { <span class="kw">get</span>; }</span>
-<span id="cb10-6"><a href="#cb10-6"></a>}</span>
-<span id="cb10-7"><a href="#cb10-7"></a><span class="kw">class</span> Variable : Term</span>
-<span id="cb10-8"><a href="#cb10-8"></a>{</span>
-<span id="cb10-9"><a href="#cb10-9"></a>    <span class="kw">public</span> <span class="dt">string</span> Name { <span class="kw">get</span>; }</span>
-<span id="cb10-10"><a href="#cb10-10"></a>}</span>
-<span id="cb10-11"><a href="#cb10-11"></a><span class="kw">class</span> Atom : Term</span>
-<span id="cb10-12"><a href="#cb10-12"></a>{</span>
-<span id="cb10-13"><a href="#cb10-13"></a>    <span class="kw">public</span> <span class="dt">string</span> Value { <span class="kw">get</span>; }</span>
-<span id="cb10-14"><a href="#cb10-14"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term <span class="op">{}</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Predicate <span class="op">:</span> Term</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableArray<span class="op">&lt;</span>Term<span class="op">&gt;</span> Args <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Variable <span class="op">:</span> Term</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Atom <span class="op">:</span> Term</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Value <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>That’s our whole abstract syntax! Here’s how our <code>last(cons(X, Xs), Y) :- last(Xs, Y)</code> example would be represented:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">new</span> <span class="fu">Rule</span>(</span>
-<span id="cb11-2"><a href="#cb11-2"></a>    head: <span class="kw">new</span> <span class="fu">Predicate</span>(</span>
-<span id="cb11-3"><a href="#cb11-3"></a>        name: <span class="st">&quot;last&quot;</span>,</span>
-<span id="cb11-4"><a href="#cb11-4"></a>        args: <span class="kw">new</span>[]</span>
-<span id="cb11-5"><a href="#cb11-5"></a>        {</span>
-<span id="cb11-6"><a href="#cb11-6"></a>            <span class="kw">new</span> <span class="fu">Predicate</span>(<span class="st">&quot;cons&quot;</span>, <span class="kw">new</span>[] { <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;X&quot;</span>), <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Xs&quot;</span>) }),</span>
-<span id="cb11-7"><a href="#cb11-7"></a>            <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Y&quot;</span>)</span>
-<span id="cb11-8"><a href="#cb11-8"></a>        }</span>
-<span id="cb11-9"><a href="#cb11-9"></a>    ),</span>
-<span id="cb11-10"><a href="#cb11-10"></a>    body: <span class="kw">new</span>[]</span>
-<span id="cb11-11"><a href="#cb11-11"></a>    {</span>
-<span id="cb11-12"><a href="#cb11-12"></a>        <span class="kw">new</span> <span class="fu">Predicate</span>(<span class="st">&quot;last&quot;</span>, <span class="kw">new</span>[] { <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Xs&quot;</span>), <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Y&quot;</span>) })</span>
-<span id="cb11-13"><a href="#cb11-13"></a>    }</span>
-<span id="cb11-14"><a href="#cb11-14"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">new</span> <span class="fu">Rule</span><span class="op">(</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    head<span class="op">:</span> <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        name<span class="op">:</span> <span class="st">&quot;last&quot;</span><span class="op">,</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        args<span class="op">:</span> <span class="kw">new</span><span class="op">[]</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span><span class="st">&quot;cons&quot;</span><span class="op">,</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;X&quot;</span><span class="op">),</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Xs&quot;</span><span class="op">)</span> <span class="op">}),</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Y&quot;</span><span class="op">)</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    body<span class="op">:</span> <span class="kw">new</span><span class="op">[]</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span><span class="st">&quot;last&quot;</span><span class="op">,</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Xs&quot;</span><span class="op">),</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Y&quot;</span><span class="op">)</span> <span class="op">})</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
 <p><img src="../images/2019-12-01-write-you-a-prolog/anatomy.png" alt="Anatomy of a Rule" /></p>
 <p>Prolog’s rules engine is based entirely on manipulating terms, so these three classes will turn out to be quite important in our little interpreter.</p>
 <h2 id="implementing-irewritable"><a href="#implementing-irewritable">Implementing <code>IRewritable</code></a></h2>
 <p><code>Term</code> is an immutable type with a recursive tree-shaped structure — a predicate’s arguments can be any <code>Term</code>, including more predicates. My generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> is filled with tools for working with immutable trees! As a Sawmill user, you implement its core <code>IRewritable</code> interface on your tree structure, and Sawmill takes care of much of the boilerplate of traversing the tree for you. (See <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">my earlier post</a> for an introduction to Sawmill.)</p>
 <p><code>IRewritable</code> is all about addressing the immediate children of the current node in a tree. It has three methods, <code>CountChildren</code>, <code>GetChildren</code>, and <code>SetChildren</code>, which we have to implement for each subclass of our <code>Term</code> tree. Variables and atoms don’t have child terms — only predicates.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term : IRewritable&lt;Term&gt;</span>
-<span id="cb12-2"><a href="#cb12-2"></a>{</span>
-<span id="cb12-3"><a href="#cb12-3"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">int</span> <span class="fu">CountChildren</span>();</span>
-<span id="cb12-4"><a href="#cb12-4"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">void</span> <span class="fu">GetChildren</span>(Span&lt;Term&gt; childrenReceiver);</span>
-<span id="cb12-5"><a href="#cb12-5"></a>    <span class="kw">public</span> <span class="kw">abstract</span> Term <span class="fu">SetChildren</span>(ReadOnlySpan&lt;Term&gt; newChildren);</span>
-<span id="cb12-6"><a href="#cb12-6"></a>}</span>
-<span id="cb12-7"><a href="#cb12-7"></a><span class="kw">class</span> Predicate : Term</span>
-<span id="cb12-8"><a href="#cb12-8"></a>{</span>
-<span id="cb12-9"><a href="#cb12-9"></a>    <span class="co">// ...</span></span>
-<span id="cb12-10"><a href="#cb12-10"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">int</span> <span class="fu">CountChildren</span>() =&gt; Args.<span class="fu">Length</span>;</span>
-<span id="cb12-11"><a href="#cb12-11"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">GetChildren</span>(Span&lt;Term&gt; childrenReceiver)</span>
-<span id="cb12-12"><a href="#cb12-12"></a>    {</span>
-<span id="cb12-13"><a href="#cb12-13"></a>        Args.<span class="fu">CopyTo</span>(childrenReceiver);</span>
-<span id="cb12-14"><a href="#cb12-14"></a>    }</span>
-<span id="cb12-15"><a href="#cb12-15"></a>    <span class="kw">public</span> <span class="kw">override</span> Term <span class="fu">SetChildren</span>(ReadOnlySpan&lt;Term&gt; newChildren)</span>
-<span id="cb12-16"><a href="#cb12-16"></a>        =&gt; <span class="kw">new</span> <span class="fu">Predicate</span>(Name, newChildren.<span class="fu">ToImmutableArray</span>());</span>
-<span id="cb12-17"><a href="#cb12-17"></a>}</span>
-<span id="cb12-18"><a href="#cb12-18"></a><span class="kw">class</span> Variable : Term</span>
-<span id="cb12-19"><a href="#cb12-19"></a>{</span>
-<span id="cb12-20"><a href="#cb12-20"></a>    <span class="co">// ...</span></span>
-<span id="cb12-21"><a href="#cb12-21"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">int</span> <span class="fu">CountChildren</span>() =&gt; <span class="dv">0</span>;</span>
-<span id="cb12-22"><a href="#cb12-22"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">GetChildren</span>(Span&lt;Term&gt; childrenReceiver) { }</span>
-<span id="cb12-23"><a href="#cb12-23"></a>    <span class="kw">public</span> <span class="kw">override</span> Term <span class="fu">SetChildren</span>(ReadOnlySpan&lt;Term&gt; newChildren) =&gt; <span class="kw">this</span>;</span>
-<span id="cb12-24"><a href="#cb12-24"></a>}</span>
-<span id="cb12-25"><a href="#cb12-25"></a><span class="kw">class</span> Atom : Term</span>
-<span id="cb12-26"><a href="#cb12-26"></a>{</span>
-<span id="cb12-27"><a href="#cb12-27"></a>    <span class="co">// ...</span></span>
-<span id="cb12-28"><a href="#cb12-28"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">int</span> <span class="fu">CountChildren</span>() =&gt; <span class="dv">0</span>;</span>
-<span id="cb12-29"><a href="#cb12-29"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">GetChildren</span>(Span&lt;Term&gt; childrenReceiver) { }</span>
-<span id="cb12-30"><a href="#cb12-30"></a>    <span class="kw">public</span> <span class="kw">override</span> Term <span class="fu">SetChildren</span>(ReadOnlySpan&lt;Term&gt; newChildren) =&gt; <span class="kw">this</span>;</span>
-<span id="cb12-31"><a href="#cb12-31"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term <span class="op">:</span> IRewritable<span class="op">&lt;</span>Term<span class="op">&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">();</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">abstract</span> <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>Span<span class="op">&lt;</span>Term<span class="op">&gt;</span> childrenReceiver<span class="op">);</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">abstract</span> Term <span class="fu">SetChildren</span><span class="op">(</span>ReadOnlySpan<span class="op">&lt;</span>Term<span class="op">&gt;</span> newChildren<span class="op">);</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Predicate <span class="op">:</span> Term</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">()</span> <span class="op">=&gt;</span> Args<span class="op">.</span><span class="fu">Length</span><span class="op">;</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>Span<span class="op">&lt;</span>Term<span class="op">&gt;</span> childrenReceiver<span class="op">)</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>        Args<span class="op">.</span><span class="fu">CopyTo</span><span class="op">(</span>childrenReceiver<span class="op">);</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> Term <span class="fu">SetChildren</span><span class="op">(</span>ReadOnlySpan<span class="op">&lt;</span>Term<span class="op">&gt;</span> newChildren<span class="op">)</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span>Name<span class="op">,</span> newChildren<span class="op">.</span><span class="fu">ToImmutableArray</span><span class="op">());</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Variable <span class="op">:</span> Term</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">()</span> <span class="op">=&gt;</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>Span<span class="op">&lt;</span>Term<span class="op">&gt;</span> childrenReceiver<span class="op">)</span> <span class="op">{</span> <span class="op">}</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> Term <span class="fu">SetChildren</span><span class="op">(</span>ReadOnlySpan<span class="op">&lt;</span>Term<span class="op">&gt;</span> newChildren<span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">this</span><span class="op">;</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Atom <span class="op">:</span> Term</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">()</span> <span class="op">=&gt;</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>Span<span class="op">&lt;</span>Term<span class="op">&gt;</span> childrenReceiver<span class="op">)</span> <span class="op">{</span> <span class="op">}</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> Term <span class="fu">SetChildren</span><span class="op">(</span>ReadOnlySpan<span class="op">&lt;</span>Term<span class="op">&gt;</span> newChildren<span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">this</span><span class="op">;</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>We can now use Sawmill’s stock traversals like <code>SelfAndDescendants</code> and <code>Rewrite</code> to work with terms. For example, here’s a method which finds all of the variables mentioned in a term.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">public</span> <span class="kw">static</span> IEnumerable&lt;<span class="dt">string</span>&gt; <span class="fu">Variables</span>(<span class="kw">this</span> Term term)</span>
-<span id="cb13-2"><a href="#cb13-2"></a>    =&gt; term</span>
-<span id="cb13-3"><a href="#cb13-3"></a>        .<span class="fu">SelfAndDescendants</span>()</span>
-<span id="cb13-4"><a href="#cb13-4"></a>        .<span class="fu">OfType</span>&lt;Variable&gt;()</span>
-<span id="cb13-5"><a href="#cb13-5"></a>        .<span class="fu">Select</span>(v =&gt; v.<span class="fu">Name</span>)</span>
-<span id="cb13-6"><a href="#cb13-6"></a>        .<span class="fu">Distinct</span>();</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> IEnumerable<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> <span class="fu">Variables</span><span class="op">(</span><span class="kw">this</span> Term term<span class="op">)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> term</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">SelfAndDescendants</span><span class="op">()</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">OfType</span><span class="op">&lt;</span>Variable<span class="op">&gt;()</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>v <span class="op">=&gt;</span> v<span class="op">.</span><span class="fu">Name</span><span class="op">)</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Distinct</span><span class="op">();</span></span></code></pre></div>
 <p>Here’s a method which writes out a term as a string (and a corresponding one for <code>Rule</code>s).</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term</span>
-<span id="cb14-2"><a href="#cb14-2"></a>{</span>
-<span id="cb14-3"><a href="#cb14-3"></a>    <span class="co">// ...</span></span>
-<span id="cb14-4"><a href="#cb14-4"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">ToString</span>()</span>
-<span id="cb14-5"><a href="#cb14-5"></a>        =&gt; <span class="kw">this</span>.<span class="fu">Fold</span>&lt;Term, <span class="dt">string</span>&gt;((childStrings, x) =&gt;</span>
-<span id="cb14-6"><a href="#cb14-6"></a>        {</span>
-<span id="cb14-7"><a href="#cb14-7"></a>            <span class="kw">switch</span> (x)</span>
-<span id="cb14-8"><a href="#cb14-8"></a>            {</span>
-<span id="cb14-9"><a href="#cb14-9"></a>                <span class="kw">case</span> Predicate p:</span>
-<span id="cb14-10"><a href="#cb14-10"></a>                    <span class="kw">return</span> p.<span class="fu">Name</span> + <span class="st">&quot;(&quot;</span> + <span class="dt">string</span>.<span class="fu">Join</span>(<span class="st">&quot;, &quot;</span>, childStrings.<span class="fu">ToArray</span>()) + <span class="st">&quot;)&quot;</span>;</span>
-<span id="cb14-11"><a href="#cb14-11"></a>                <span class="kw">case</span> Variable v:</span>
-<span id="cb14-12"><a href="#cb14-12"></a>                    <span class="kw">return</span> v.<span class="fu">Name</span>;</span>
-<span id="cb14-13"><a href="#cb14-13"></a>                <span class="kw">case</span> Atom a:</span>
-<span id="cb14-14"><a href="#cb14-14"></a>                    <span class="kw">return</span> a.<span class="fu">Value</span>;</span>
-<span id="cb14-15"><a href="#cb14-15"></a>                <span class="kw">default</span>:</span>
-<span id="cb14-16"><a href="#cb14-16"></a>                    <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">Exception</span>(<span class="st">&quot;unknown term&quot;</span>);</span>
-<span id="cb14-17"><a href="#cb14-17"></a>            }</span>
-<span id="cb14-18"><a href="#cb14-18"></a>        });</span>
-<span id="cb14-19"><a href="#cb14-19"></a>}</span>
-<span id="cb14-20"><a href="#cb14-20"></a><span class="kw">class</span> Rule</span>
-<span id="cb14-21"><a href="#cb14-21"></a>{</span>
-<span id="cb14-22"><a href="#cb14-22"></a>    <span class="co">// ...</span></span>
-<span id="cb14-23"><a href="#cb14-23"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">ToString</span>()</span>
-<span id="cb14-24"><a href="#cb14-24"></a>        =&gt; Head + (</span>
-<span id="cb14-25"><a href="#cb14-25"></a>            Body.<span class="fu">Length</span> == <span class="dv">0</span></span>
-<span id="cb14-26"><a href="#cb14-26"></a>                ? <span class="st">&quot;&quot;</span></span>
-<span id="cb14-27"><a href="#cb14-27"></a>                : <span class="st">&quot; :- &quot;</span> + <span class="dt">string</span>.<span class="fu">Join</span>(<span class="st">&quot;, &quot;</span>, Body.<span class="fu">Select</span>(x =&gt; x.<span class="fu">ToString</span>()))</span>
-<span id="cb14-28"><a href="#cb14-28"></a>        ) + <span class="st">&quot;.&quot;</span>;</span>
-<span id="cb14-29"><a href="#cb14-29"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">ToString</span><span class="op">()</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">this</span><span class="op">.</span><span class="fu">Fold</span><span class="op">&lt;</span>Term<span class="op">,</span> <span class="dt">string</span><span class="op">&gt;((</span>childStrings<span class="op">,</span> x<span class="op">)</span> <span class="op">=&gt;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>            <span class="kw">switch</span> <span class="op">(</span>x<span class="op">)</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> Predicate p<span class="op">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> p<span class="op">.</span><span class="fu">Name</span> <span class="op">+</span> <span class="st">&quot;(&quot;</span> <span class="op">+</span> <span class="dt">string</span><span class="op">.</span><span class="fu">Join</span><span class="op">(</span><span class="st">&quot;, &quot;</span><span class="op">,</span> childStrings<span class="op">.</span><span class="fu">ToArray</span><span class="op">())</span> <span class="op">+</span> <span class="st">&quot;)&quot;</span><span class="op">;</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> Variable v<span class="op">:</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> v<span class="op">.</span><span class="fu">Name</span><span class="op">;</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                <span class="kw">case</span> Atom a<span class="op">:</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> a<span class="op">.</span><span class="fu">Value</span><span class="op">;</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                <span class="kw">default</span><span class="op">:</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">Exception</span><span class="op">(</span><span class="st">&quot;unknown term&quot;</span><span class="op">);</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">});</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Rule</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> <span class="dt">string</span> <span class="fu">ToString</span><span class="op">()</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> Head <span class="op">+</span> <span class="op">(</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>            Body<span class="op">.</span><span class="fu">Length</span> <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>                <span class="op">?</span> <span class="st">&quot;&quot;</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>                <span class="op">:</span> <span class="st">&quot; :- &quot;</span> <span class="op">+</span> <span class="dt">string</span><span class="op">.</span><span class="fu">Join</span><span class="op">(</span><span class="st">&quot;, &quot;</span><span class="op">,</span> Body<span class="op">.</span><span class="fu">Select</span><span class="op">(</span>x <span class="op">=&gt;</span> x<span class="op">.</span><span class="fu">ToString</span><span class="op">()))</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">)</span> <span class="op">+</span> <span class="st">&quot;.&quot;</span><span class="op">;</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>As an exercise, you could try extending this abstract syntax (and <code>ToString</code>) to support numbers.</p>
 <p>And a quick test of our <code>last</code> example:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span>(<span class="dt">string</span>[] args)</span>
-<span id="cb15-2"><a href="#cb15-2"></a>{</span>
-<span id="cb15-3"><a href="#cb15-3"></a>    <span class="dt">var</span> rule = <span class="kw">new</span> <span class="fu">Rule</span>(</span>
-<span id="cb15-4"><a href="#cb15-4"></a>        head: <span class="kw">new</span> <span class="fu">Predicate</span>(</span>
-<span id="cb15-5"><a href="#cb15-5"></a>            name: <span class="st">&quot;last&quot;</span>,</span>
-<span id="cb15-6"><a href="#cb15-6"></a>            args: <span class="kw">new</span>[]</span>
-<span id="cb15-7"><a href="#cb15-7"></a>            {</span>
-<span id="cb15-8"><a href="#cb15-8"></a>                <span class="kw">new</span> <span class="fu">Predicate</span>(<span class="st">&quot;cons&quot;</span>, <span class="kw">new</span>[] { <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;X&quot;</span>), <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Xs&quot;</span>) }),</span>
-<span id="cb15-9"><a href="#cb15-9"></a>                <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Y&quot;</span>)</span>
-<span id="cb15-10"><a href="#cb15-10"></a>            }</span>
-<span id="cb15-11"><a href="#cb15-11"></a>        ),</span>
-<span id="cb15-12"><a href="#cb15-12"></a>        body: <span class="kw">new</span>[]</span>
-<span id="cb15-13"><a href="#cb15-13"></a>        {</span>
-<span id="cb15-14"><a href="#cb15-14"></a>            <span class="kw">new</span> <span class="fu">Predicate</span>(<span class="st">&quot;last&quot;</span>, <span class="kw">new</span>[] { <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Xs&quot;</span>), <span class="kw">new</span> <span class="fu">Variable</span>(<span class="st">&quot;Y&quot;</span>) })</span>
-<span id="cb15-15"><a href="#cb15-15"></a>        }</span>
-<span id="cb15-16"><a href="#cb15-16"></a>    );</span>
-<span id="cb15-17"><a href="#cb15-17"></a></span>
-<span id="cb15-18"><a href="#cb15-18"></a>    Console.<span class="fu">WriteLine</span>(rule.<span class="fu">ToString</span>());</span>
-<span id="cb15-19"><a href="#cb15-19"></a>    <span class="co">// prints out last(cons(X, Xs), Y) :- last(Xs, Y).</span></span>
-<span id="cb15-20"><a href="#cb15-20"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span><span class="op">(</span><span class="dt">string</span><span class="op">[]</span> args<span class="op">)</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> rule <span class="op">=</span> <span class="kw">new</span> <span class="fu">Rule</span><span class="op">(</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>        head<span class="op">:</span> <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>            name<span class="op">:</span> <span class="st">&quot;last&quot;</span><span class="op">,</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>            args<span class="op">:</span> <span class="kw">new</span><span class="op">[]</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span><span class="st">&quot;cons&quot;</span><span class="op">,</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;X&quot;</span><span class="op">),</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Xs&quot;</span><span class="op">)</span> <span class="op">}),</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Y&quot;</span><span class="op">)</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">),</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>        body<span class="op">:</span> <span class="kw">new</span><span class="op">[]</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span><span class="st">&quot;last&quot;</span><span class="op">,</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Xs&quot;</span><span class="op">),</span> <span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span><span class="st">&quot;Y&quot;</span><span class="op">)</span> <span class="op">})</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span>rule<span class="op">.</span><span class="fu">ToString</span><span class="op">());</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">// prints out last(cons(X, Xs), Y) :- last(Xs, Y).</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>You can find these AST classes in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the file <a href="https://github.com/benjamin-hodgson/Prolog/blob/master/Syntax.cs"><code>Syntax.cs</code></a>. <a href="../posts/2019-12-08-parsing-prolog-with-pidgin.html">Next time</a> we’ll write a parser!</p>
 
         </article>

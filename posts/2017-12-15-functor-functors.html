@@ -48,265 +48,265 @@
 <p>One of the fun things about category theory is that once you’ve learned an idea in one context it’s easy to apply it to another one. Of the numerous categories available to Haskell programmers, <strong>Hask</strong>, the category of Haskell types and functions, gets the lion’s share of the attention. Working with standard abstractions in more overlooked categories is a great way to reuse ideas: it makes you look clever, like you’ve invented something new, but actually all you’ve done is put the building blocks together differently. I won’t tell if you don’t.</p>
 <h2 id="templates-reusable-records"><a href="#templates-reusable-records">Templates: Reusable Records</a></h2>
 <p>Every now and then I’ll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and “draft” checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">data</span> <span class="dt">CardType</span> <span class="ot">=</span> <span class="dt">Visa</span> <span class="op">|</span> <span class="dt">AmEx</span> <span class="op">|</span> <span class="dt">Mastercard</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">data</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">Form</span> {</span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="ot">    form_email ::</span> <span class="dt">Text</span>,</span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="ot">    form_cardType ::</span> <span class="dt">CardType</span>,</span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="ot">    form_cardNumber ::</span> <span class="dt">Text</span>,</span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="ot">    form_cardExpiry ::</span> <span class="dt">Day</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>}</span>
-<span id="cb1-9"><a href="#cb1-9"></a></span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="kw">data</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">DraftForm</span> {</span>
-<span id="cb1-11"><a href="#cb1-11"></a><span class="ot">    draftForm_email ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
-<span id="cb1-12"><a href="#cb1-12"></a><span class="ot">    draftForm_cardType ::</span> <span class="dt">Maybe</span> <span class="dt">CardType</span>,</span>
-<span id="cb1-13"><a href="#cb1-13"></a><span class="ot">    draftForm_cardNumber ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
-<span id="cb1-14"><a href="#cb1-14"></a><span class="ot">    draftForm_cardExpiry ::</span> <span class="dt">Maybe</span> <span class="dt">Day</span></span>
-<span id="cb1-15"><a href="#cb1-15"></a>}</span>
-<span id="cb1-16"><a href="#cb1-16"></a></span>
-<span id="cb1-17"><a href="#cb1-17"></a><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></span>
-<span id="cb1-18"><a href="#cb1-18"></a>toForm (<span class="dt">DraftForm</span></span>
-<span id="cb1-19"><a href="#cb1-19"></a>    (<span class="dt">Just</span> email)</span>
-<span id="cb1-20"><a href="#cb1-20"></a>    (<span class="dt">Just</span> cardType)</span>
-<span id="cb1-21"><a href="#cb1-21"></a>    (<span class="dt">Just</span> cardNumber)</span>
-<span id="cb1-22"><a href="#cb1-22"></a>    (<span class="dt">Just</span> cardExpiry)) <span class="ot">=</span> <span class="dt">Just</span> <span class="op">$</span></span>
-<span id="cb1-23"><a href="#cb1-23"></a>        <span class="dt">Form</span> email cardType cardNumber cardExpiry</span>
-<span id="cb1-24"><a href="#cb1-24"></a>toForm _ <span class="ot">=</span> <span class="dt">Nothing</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">CardType</span> <span class="ot">=</span> <span class="dt">Visa</span> <span class="op">|</span> <span class="dt">AmEx</span> <span class="op">|</span> <span class="dt">Mastercard</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">Form</span> {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    form_email ::</span> <span class="dt">Text</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ot">    form_cardType ::</span> <span class="dt">CardType</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ot">    form_cardNumber ::</span> <span class="dt">Text</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ot">    form_cardExpiry ::</span> <span class="dt">Day</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">DraftForm</span> {</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ot">    draftForm_email ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="ot">    draftForm_cardType ::</span> <span class="dt">Maybe</span> <span class="dt">CardType</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ot">    draftForm_cardNumber ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ot">    draftForm_cardExpiry ::</span> <span class="dt">Maybe</span> <span class="dt">Day</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>toForm (<span class="dt">DraftForm</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    (<span class="dt">Just</span> email)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    (<span class="dt">Just</span> cardType)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    (<span class="dt">Just</span> cardNumber)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    (<span class="dt">Just</span> cardExpiry)) <span class="ot">=</span> <span class="dt">Just</span> <span class="op">$</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Form</span> email cardType cardNumber cardExpiry</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>toForm _ <span class="ot">=</span> <span class="dt">Nothing</span></span></code></pre></div>
 <p>Now, the standard trick to de-duplicate these two types is to derive both from what I’ll call a <em>template</em> type, wrapping each field of the template in some type constructor <code>f</code>. You recover <code>Form</code> by setting <code>f</code> to the boring <code>Identity</code> functor, and you get <code>DraftForm</code> by setting <code>f</code> to <code>Maybe</code>.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">data</span> <span class="dt">FormTemplate</span> f <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="ot">    _email ::</span> f <span class="dt">Text</span>,</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="ot">    _cardType ::</span> f <span class="dt">CardType</span>,</span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="ot">    _cardNumber ::</span> f <span class="dt">Text</span>,</span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="ot">    _cardExpiry ::</span> f <span class="dt">Day</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>}</span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">type</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="dt">Identity</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="dt">Maybe</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">FormTemplate</span> f <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ot">    _email ::</span> f <span class="dt">Text</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ot">    _cardType ::</span> f <span class="dt">CardType</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    _cardNumber ::</span> f <span class="dt">Text</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ot">    _cardExpiry ::</span> f <span class="dt">Day</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="dt">Identity</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="dt">Maybe</span></span></code></pre></div>
 <p>So a template is a record type parameterised by a type constructor. It’ll generally have a kind of <code>(* -&gt; *) -&gt; *</code>. The fields of the record are the type constructor applied to a variety of different type arguments. Working with a template typically involves coming up with an interesting type constructor <code>(* -&gt; *)</code> and plugging it in to get interestingly-typed fields. You can think of a record as a container of <code>f</code>s.</p>
 <p>This trick has become Haskell folklore - I couldn’t tell you where I first saw it - but I’ve only seen a few people talk about what happens when you treat templates as first class citizens. To get used to this style, a simple example is giving names to specific instantiations of arbitrary templates:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">type</span> <span class="dt">Record</span> t <span class="ot">=</span> t <span class="dt">Identity</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">type</span> <span class="dt">Partial</span> t <span class="ot">=</span> t <span class="dt">Maybe</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">type</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">FormTemplate</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">Partial</span> <span class="dt">FormTemplate</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Record</span> t <span class="ot">=</span> t <span class="dt">Identity</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Partial</span> t <span class="ot">=</span> t <span class="dt">Maybe</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Form</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">FormTemplate</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">DraftForm</span> <span class="ot">=</span> <span class="dt">Partial</span> <span class="dt">FormTemplate</span></span></code></pre></div>
 <p>The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I’ll be taking familiar tools for working with containers of <em>values</em> - <code>Functor</code>, <code>Traversable</code>, <code>Representable</code> - and applying them to the context of containers of <em>functors</em>.</p>
 <h2 id="functors-from-the-category-of-endofunctors"><a href="#functors-from-the-category-of-endofunctors">Functors from the Category of Endofunctors</a></h2>
 <p>In Haskell, categories are represented as a <em>kind</em> <code>k</code> of objects and a <em>type constructor</em> <code>c :: k -&gt; k -&gt; *</code> of morphisms between those objects. If the category <code>C</code> has objects in <code>k1</code> and morphisms in <code>c</code>, and <code>D</code> has objects in <code>k2</code> and morphisms in <code>d</code>, then a functor from <code>C</code> to <code>D</code> is a type constructor <code>f :: k1 -&gt; k2</code> mapping objects paired with an operation <code>fmap :: c a b -&gt; d (f a) (f b)</code> mapping the morphisms. The standard <code>Functor</code> class is for <em>endofunctors on <strong>Hask</strong></em> - the special case in which <code>k1 ~ k2 ~ *</code> and <code>c ~ d ~ (-&gt;)</code>.</p>
 <p><img src="../images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" /></p>
 <p>Given two categories <code>C</code> and <code>D</code>, you can construct the category of functors between <code>C</code> and <code>D</code>, written as <code>[C, D]</code>. Objects in this category are functors from <code>C</code> to <code>D</code>, and morphisms are natural transformations between those functors. Since <code>[C, D]</code> is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that’d be a type of kind <code>(k1 -&gt; k2) -&gt; k3</code>. I’ll call such types <em>functor functors</em>.</p>
 <p>We’re talking about record templates of kind <code>(* -&gt; *) -&gt; *</code>. This fits the pattern of a functor from the functor category, with <code>k1 ~ k2 ~ k3 ~ *</code>. So the functor category in question is the category of endofunctors on <strong>Hask</strong> (that is, members of the standard <code>Functor</code> class), and the destination category is <strong>Hask</strong>. So it’s reasonable to expect record templates to be functorial in their argument:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">-- natural transformations between functors f and g</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">type</span> f <span class="op">~&gt;</span> g <span class="ot">=</span> <span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x</span>
-<span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="co">-- &quot;functor functors&quot;, functors from the functor category</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="kw">class</span> <span class="dt">FFunctor</span> f <span class="kw">where</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="ot">    ffmap ::</span> (<span class="dt">Functor</span> g, <span class="dt">Functor</span> h) <span class="ot">=&gt;</span> (g <span class="op">~&gt;</span> h) <span class="ot">-&gt;</span> f g <span class="ot">-&gt;</span> f h</span>
-<span id="cb4-7"><a href="#cb4-7"></a></span>
-<span id="cb4-8"><a href="#cb4-8"></a><span class="kw">instance</span> <span class="dt">FFunctor</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>    ffmap eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</span>
-<span id="cb4-10"><a href="#cb4-10"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>            (eta email)</span>
-<span id="cb4-12"><a href="#cb4-12"></a>            (eta cardType)</span>
-<span id="cb4-13"><a href="#cb4-13"></a>            (eta cardNumber)</span>
-<span id="cb4-14"><a href="#cb4-14"></a>            (eta cardExpiry)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- natural transformations between functors f and g</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> f <span class="op">~&gt;</span> g <span class="ot">=</span> <span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- &quot;functor functors&quot;, functors from the functor category</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> f <span class="kw">where</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ot">    ffmap ::</span> (<span class="dt">Functor</span> g, <span class="dt">Functor</span> h) <span class="ot">=&gt;</span> (g <span class="op">~&gt;</span> h) <span class="ot">-&gt;</span> f g <span class="ot">-&gt;</span> f h</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FFunctor</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    ffmap eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>            (eta email)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>            (eta cardType)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>            (eta cardNumber)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>            (eta cardExpiry)</span></code></pre></div>
 <p><code>FFunctor</code> comes with the usual functor laws. The only difference is the types.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a><span class="co">-- identity</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>ffmap <span class="fu">id</span> <span class="ot">=</span> <span class="fu">id</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="co">-- composition</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>ffmap (eta <span class="op">.</span> phi) <span class="ot">=</span> ffmap eta <span class="op">.</span> ffmap phi</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- identity</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>ffmap <span class="fu">id</span> <span class="ot">=</span> <span class="fu">id</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- composition</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>ffmap (eta <span class="op">.</span> phi) <span class="ot">=</span> ffmap eta <span class="op">.</span> ffmap phi</span></code></pre></div>
 <p><img src="../images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" /></p>
 <p><code>ffmap</code> encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor <code>f</code> into <code>g</code>, then you can map a record of <code>f</code>s to a record of <code>g</code>s by embedding each <code>f</code>. (This is also sometimes called “hoisting”.) For example, the boring <code>Identity</code> functor can be embedded into an arbitrary <code>Applicative</code> by injecting the contained value using <code>pure</code>. We can use this to turn a total record into a partial one:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="ot">generalise ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Identity</span> a <span class="ot">-&gt;</span> f a</span>
-<span id="cb6-2"><a href="#cb6-2"></a>generalise (<span class="dt">Identity</span> x) <span class="ot">=</span> <span class="fu">pure</span> x</span>
-<span id="cb6-3"><a href="#cb6-3"></a></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="ot">toPartial ::</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t</span>
-<span id="cb6-5"><a href="#cb6-5"></a>toPartial <span class="ot">=</span> ffmap generalise</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">generalise ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Identity</span> a <span class="ot">-&gt;</span> f a</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>generalise (<span class="dt">Identity</span> x) <span class="ot">=</span> <span class="fu">pure</span> x</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ot">toPartial ::</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>toPartial <span class="ot">=</span> ffmap generalise</span></code></pre></div>
 <h2 id="traversing-records"><a href="#traversing-records">Traversing Records</a></h2>
 <p>Now that we have a new dog, it’s natural to ask which old tricks we can teach it. With the intuition that a template <code>t f</code> is like a container of <code>f</code>s, what does it mean to traverse such a container? <code>sequenceA :: Applicative f =&gt; t (f a) -&gt; f (t a)</code> takes a container of strategies to produce values and sequences them to get a strategy to produce a container of values. Replacing <em>value</em> with <em>functor</em> in the above sentence, it’s clear that we need to decide on a notion of “strategy to produce a functor”. <a href="https://stackoverflow.com/questions/44187945/what-should-a-higher-order-traversable-class-look-like">With thanks to Li-yao Xia</a>, the simplest of such notions is a regular applicative functor <code>a</code> returning a functorial value <code>g x</code> - that is, <code>Compose a g</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FTraversable</span> t <span class="kw">where</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="ot">    ftraverse ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">Applicative</span> a)</span>
-<span id="cb7-3"><a href="#cb7-3"></a>              <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> <span class="dt">Compose</span> a g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> a (t g)</span>
-<span id="cb7-4"><a href="#cb7-4"></a>    ftraverse eta <span class="ot">=</span> fsequence <span class="op">.</span> ffmap eta</span>
-<span id="cb7-5"><a href="#cb7-5"></a><span class="ot">    fsequence ::</span> (<span class="dt">Functor</span> f, <span class="dt">Applicative</span> a)</span>
-<span id="cb7-6"><a href="#cb7-6"></a>              <span class="ot">=&gt;</span> t (<span class="dt">Compose</span> a f) <span class="ot">-&gt;</span> a (t f)</span>
-<span id="cb7-7"><a href="#cb7-7"></a>    fsequence <span class="ot">=</span> ftraverse <span class="fu">id</span></span>
-<span id="cb7-8"><a href="#cb7-8"></a></span>
-<span id="cb7-9"><a href="#cb7-9"></a><span class="ot">ffmapDefault ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">FTraversable</span> t)</span>
-<span id="cb7-10"><a href="#cb7-10"></a>             <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
-<span id="cb7-11"><a href="#cb7-11"></a>ffmapDefault eta <span class="ot">=</span></span>
-<span id="cb7-12"><a href="#cb7-12"></a>    runIdentity <span class="op">.</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span> <span class="op">.</span> eta)</span>
-<span id="cb7-13"><a href="#cb7-13"></a></span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="ot">fsequence' ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</span>
-<span id="cb7-15"><a href="#cb7-15"></a>fsequence' <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FTraversable</span> t <span class="kw">where</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ot">    ftraverse ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">Applicative</span> a)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>              <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> <span class="dt">Compose</span> a g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> a (t g)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    ftraverse eta <span class="ot">=</span> fsequence <span class="op">.</span> ffmap eta</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ot">    fsequence ::</span> (<span class="dt">Functor</span> f, <span class="dt">Applicative</span> a)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>              <span class="ot">=&gt;</span> t (<span class="dt">Compose</span> a f) <span class="ot">-&gt;</span> a (t f)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    fsequence <span class="ot">=</span> ftraverse <span class="fu">id</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="ot">ffmapDefault ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g, <span class="dt">FTraversable</span> t)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>             <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>ffmapDefault eta <span class="ot">=</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    runIdentity <span class="op">.</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span> <span class="op">.</span> eta)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ot">fsequence' ::</span> (<span class="dt">FTraversable</span> t, <span class="dt">Applicative</span> a) <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a (<span class="dt">Record</span> t)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>fsequence' <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span></code></pre></div>
 <p>The <code>FTraversable</code> laws come about by adjusting the <code>Traversable</code> laws to add some <code>Compose</code>-bookkeeping.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">-- naturality</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a>nu <span class="op">.</span> ftraverse eta <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> nu <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
-<span id="cb8-3"><a href="#cb8-3"></a><span class="co">-- for any applicative transformation nu</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a></span>
-<span id="cb8-5"><a href="#cb8-5"></a><span class="co">-- identity</span></span>
-<span id="cb8-6"><a href="#cb8-6"></a>ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span>) <span class="ot">=</span> <span class="dt">Identity</span></span>
-<span id="cb8-7"><a href="#cb8-7"></a></span>
-<span id="cb8-8"><a href="#cb8-8"></a><span class="co">-- composition</span></span>
-<span id="cb8-9"><a href="#cb8-9"></a>ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> (getCompose<span class="op">.</span>phi) <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
-<span id="cb8-10"><a href="#cb8-10"></a>    <span class="ot">=</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> (ftraverse phi) <span class="op">.</span> ftraverse eta</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- naturality</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>nu <span class="op">.</span> ftraverse eta <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> nu <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- for any applicative transformation nu</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- identity</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Identity</span>) <span class="ot">=</span> <span class="dt">Identity</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- composition</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> (getCompose<span class="op">.</span>phi) <span class="op">.</span> getCompose <span class="op">.</span> eta)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> (ftraverse phi) <span class="op">.</span> ftraverse eta</span></code></pre></div>
 <p>Implementations of <code>traverse</code> look like implementations of <code>fmap</code> but in an applicative context. Likewise, implementations of <code>ftraverse</code> look like implementations of <code>ffmap</code> in an applicative context, with a few <code>getCompose</code>s scattered around.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">instance</span> <span class="dt">FTraversable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>    ftraverse eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</span>
-<span id="cb9-3"><a href="#cb9-3"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="op">&lt;$&gt;</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a>            (getCompose <span class="op">$</span> eta email) <span class="op">&lt;*&gt;</span></span>
-<span id="cb9-5"><a href="#cb9-5"></a>            (getCompose <span class="op">$</span> eta cardType) <span class="op">&lt;*&gt;</span></span>
-<span id="cb9-6"><a href="#cb9-6"></a>            (getCompose <span class="op">$</span> eta cardNumber) <span class="op">&lt;*&gt;</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a>            (getCompose <span class="op">$</span> eta cardExpiry)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FTraversable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    ftraverse eta (<span class="dt">FormTemplate</span> email cardType cardNumber cardExpiry)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span> <span class="op">&lt;$&gt;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>            (getCompose <span class="op">$</span> eta email) <span class="op">&lt;*&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>            (getCompose <span class="op">$</span> eta cardType) <span class="op">&lt;*&gt;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>            (getCompose <span class="op">$</span> eta cardNumber) <span class="op">&lt;*&gt;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>            (getCompose <span class="op">$</span> eta cardExpiry)</span></code></pre></div>
 <p>This is where things start to get interesting. The <code>toForm</code> function, which converts a draft form to a regular form if all of its fields have been filled in, can be defined tersely in terms of <code>ftraverse</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="ot">toRecord ::</span> <span class="dt">FTraversable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Record</span> t)</span>
-<span id="cb10-2"><a href="#cb10-2"></a>toRecord <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span>
-<span id="cb10-3"><a href="#cb10-3"></a></span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></span>
-<span id="cb10-5"><a href="#cb10-5"></a>toForm <span class="ot">=</span> toRecord</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">toRecord ::</span> <span class="dt">FTraversable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Record</span> t)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>toRecord <span class="ot">=</span> ftraverse (<span class="dt">Compose</span> <span class="op">.</span> <span class="fu">fmap</span> <span class="dt">Identity</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="ot">toForm ::</span> <span class="dt">DraftForm</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Form</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>toForm <span class="ot">=</span> toRecord</span></code></pre></div>
 <p>Here’s another example: a generic program, defined by analogy to <code>Foldable</code>’s <code>foldMap</code>, to collapse the fields of a record into a monoidal value. Note that <code>f () -&gt; m</code> is isomorphic to, but simpler than, <code>forall x. f x -&gt; m</code>. Annoyingly, we have to give a type signature to <code>mkConst</code> to resolve the ambiguity over <code>g</code> in the call to <code>ftraverse</code>. I’m picking <code>Empty</code> as a way of demonstrating that I have nothing up my sleeves.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">data</span> <span class="dt">Empty</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a></span>
-<span id="cb11-3"><a href="#cb11-3"></a><span class="ot">ffoldMap ::</span> <span class="kw">forall</span> f t m<span class="op">.</span> (<span class="dt">Monoid</span> m, <span class="dt">Functor</span> f, <span class="dt">FTraversable</span> t)</span>
-<span id="cb11-4"><a href="#cb11-4"></a>         <span class="ot">=&gt;</span> (f () <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> m</span>
-<span id="cb11-5"><a href="#cb11-5"></a>ffoldMap f <span class="ot">=</span> getConst <span class="op">.</span> ftraverse mkConst</span>
-<span id="cb11-6"><a href="#cb11-6"></a>    <span class="kw">where</span></span>
-<span id="cb11-7"><a href="#cb11-7"></a>        <span class="co">-- using ScopedTypeVariables to bind f</span></span>
-<span id="cb11-8"><a href="#cb11-8"></a><span class="ot">        mkConst ::</span> f x <span class="ot">-&gt;</span> <span class="dt">Compose</span> (<span class="dt">Const</span> m) <span class="dt">Empty</span> x</span>
-<span id="cb11-9"><a href="#cb11-9"></a>        mkConst <span class="ot">=</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Const</span> <span class="op">.</span> f <span class="op">.</span> (<span class="op">$&gt;</span> ())</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Empty</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ot">ffoldMap ::</span> <span class="kw">forall</span> f t m<span class="op">.</span> (<span class="dt">Monoid</span> m, <span class="dt">Functor</span> f, <span class="dt">FTraversable</span> t)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>         <span class="ot">=&gt;</span> (f () <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> m</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>ffoldMap f <span class="ot">=</span> getConst <span class="op">.</span> ftraverse mkConst</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">-- using ScopedTypeVariables to bind f</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="ot">        mkConst ::</span> f x <span class="ot">-&gt;</span> <span class="dt">Compose</span> (<span class="dt">Const</span> m) <span class="dt">Empty</span> x</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        mkConst <span class="ot">=</span> <span class="dt">Compose</span> <span class="op">.</span> <span class="dt">Const</span> <span class="op">.</span> f <span class="op">.</span> (<span class="op">$&gt;</span> ())</span></code></pre></div>
 <h2 id="zipping-templates"><a href="#zipping-templates">Zipping templates</a></h2>
 <p>Given a pair of records of the same shape <code>t</code>, we should be able to combine them point-wise, matching up the fields of each: <code>fzip :: t f -&gt; t g -&gt; t (Product f g)</code>. In <strong>Hask</strong>, “combining point-wise” is exactly what the “reader” applicative <code>(-&gt;) r</code> does, so any functor which enjoys an isomorphism to <code>(-&gt;) r</code> for some <code>r</code> has at least a zippy <code>Applicative</code> instance. Such functors are called <em>representable functors</em> and they are members of the class <a href="https://hackage.haskell.org/package/adjunctions-4.3/docs/Data-Functor-Rep.html#t:Representable"><code>Representable</code></a>.</p>
 <p>Of course, we’re working with functors from the functor category, so the relevant notion of <code>Representable</code> will need a little adjustment. Instead of an isomorphism to a function <code>(-&gt;) r</code> we’ll use an isomorphism to a natural transformation <code>(~&gt;) r</code>.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FRepresentable</span> t <span class="kw">where</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a>    <span class="kw">type</span> <span class="dt">FRep</span><span class="ot"> t ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span></span>
-<span id="cb12-3"><a href="#cb12-3"></a><span class="ot">    ftabulate ::</span> (<span class="dt">FRep</span> t <span class="op">~&gt;</span> f) <span class="ot">-&gt;</span> t f</span>
-<span id="cb12-4"><a href="#cb12-4"></a><span class="ot">    findex ::</span> t f <span class="ot">-&gt;</span> <span class="dt">FRep</span> t a <span class="ot">-&gt;</span> f a</span>
-<span id="cb12-5"><a href="#cb12-5"></a></span>
-<span id="cb12-6"><a href="#cb12-6"></a><span class="ot">fzipWith ::</span> <span class="dt">FRepresentable</span> t</span>
-<span id="cb12-7"><a href="#cb12-7"></a>         <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x)</span>
-<span id="cb12-8"><a href="#cb12-8"></a>         <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h</span>
-<span id="cb12-9"><a href="#cb12-9"></a>fzipWith f t u <span class="ot">=</span> ftabulate <span class="op">$</span> \r <span class="ot">-&gt;</span> f (findex t r) (findex u r)</span>
-<span id="cb12-10"><a href="#cb12-10"></a></span>
-<span id="cb12-11"><a href="#cb12-11"></a><span class="ot">fzipWith3 ::</span> <span class="dt">FRepresentable</span> t</span>
-<span id="cb12-12"><a href="#cb12-12"></a>          <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x <span class="ot">-&gt;</span> k x)</span>
-<span id="cb12-13"><a href="#cb12-13"></a>          <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h <span class="ot">-&gt;</span> t k</span>
-<span id="cb12-14"><a href="#cb12-14"></a>fzipWith3 f t u v <span class="ot">=</span> ftabulate <span class="op">$</span></span>
-<span id="cb12-15"><a href="#cb12-15"></a>    \r <span class="ot">-&gt;</span> f (findex t r) (findex u r) (findex v r)</span>
-<span id="cb12-16"><a href="#cb12-16"></a></span>
-<span id="cb12-17"><a href="#cb12-17"></a><span class="ot">fzip ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t (<span class="dt">Product</span> f g)</span>
-<span id="cb12-18"><a href="#cb12-18"></a>fzip <span class="ot">=</span> fzipWith <span class="dt">Pair</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FRepresentable</span> t <span class="kw">where</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">type</span> <span class="dt">FRep</span><span class="ot"> t ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ot">    ftabulate ::</span> (<span class="dt">FRep</span> t <span class="op">~&gt;</span> f) <span class="ot">-&gt;</span> t f</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    findex ::</span> t f <span class="ot">-&gt;</span> <span class="dt">FRep</span> t a <span class="ot">-&gt;</span> f a</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="ot">fzipWith ::</span> <span class="dt">FRepresentable</span> t</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>         <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>         <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>fzipWith f t u <span class="ot">=</span> ftabulate <span class="op">$</span> \r <span class="ot">-&gt;</span> f (findex t r) (findex u r)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="ot">fzipWith3 ::</span> <span class="dt">FRepresentable</span> t</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>          <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="op">.</span> f x <span class="ot">-&gt;</span> g x <span class="ot">-&gt;</span> h x <span class="ot">-&gt;</span> k x)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>          <span class="ot">-&gt;</span>            t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t h <span class="ot">-&gt;</span> t k</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>fzipWith3 f t u v <span class="ot">=</span> ftabulate <span class="op">$</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    \r <span class="ot">-&gt;</span> f (findex t r) (findex u r) (findex v r)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="ot">fzip ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> t f <span class="ot">-&gt;</span> t g <span class="ot">-&gt;</span> t (<span class="dt">Product</span> f g)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>fzip <span class="ot">=</span> fzipWith <span class="dt">Pair</span></span></code></pre></div>
 <p>The laws for <code>FRepresentable</code> simply state that <code>ftabulate</code> and <code>findex</code> must witness an isomorphism:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="co">-- isomorphism</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>ftabulate <span class="op">.</span> findex <span class="ot">=</span> findex <span class="op">.</span> ftabulate <span class="ot">=</span> <span class="fu">id</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- isomorphism</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>ftabulate <span class="op">.</span> findex <span class="ot">=</span> findex <span class="op">.</span> ftabulate <span class="ot">=</span> <span class="fu">id</span></span></code></pre></div>
 <p><code>FRep</code> will typically be a GADT: it tells you what type of value one should expect to find at a given position in a record.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">data</span> <span class="dt">FormTemplateRep</span> a <span class="kw">where</span></span>
-<span id="cb14-2"><a href="#cb14-2"></a>    <span class="dt">Email</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></span>
-<span id="cb14-3"><a href="#cb14-3"></a>    <span class="dt">CardType</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">CardType</span></span>
-<span id="cb14-4"><a href="#cb14-4"></a>    <span class="dt">CardNumber</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></span>
-<span id="cb14-5"><a href="#cb14-5"></a>    <span class="dt">CardExpiry</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Day</span></span>
-<span id="cb14-6"><a href="#cb14-6"></a></span>
-<span id="cb14-7"><a href="#cb14-7"></a><span class="kw">instance</span> <span class="dt">FRepresentable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb14-8"><a href="#cb14-8"></a>    <span class="kw">type</span> <span class="dt">FRep</span> <span class="dt">FormTemplate</span> <span class="ot">=</span> <span class="dt">FormTemplateRep</span></span>
-<span id="cb14-9"><a href="#cb14-9"></a></span>
-<span id="cb14-10"><a href="#cb14-10"></a>    ftabulate eta <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
-<span id="cb14-11"><a href="#cb14-11"></a>        (eta <span class="dt">Email</span>)</span>
-<span id="cb14-12"><a href="#cb14-12"></a>        (eta <span class="dt">CardType</span>)</span>
-<span id="cb14-13"><a href="#cb14-13"></a>        (eta <span class="dt">CardNumber</span>)</span>
-<span id="cb14-14"><a href="#cb14-14"></a>        (eta <span class="dt">CardExpiry</span>)</span>
-<span id="cb14-15"><a href="#cb14-15"></a>    </span>
-<span id="cb14-16"><a href="#cb14-16"></a>    findex p <span class="dt">Email</span> <span class="ot">=</span> _email p</span>
-<span id="cb14-17"><a href="#cb14-17"></a>    findex p <span class="dt">CardType</span> <span class="ot">=</span> _cardType p</span>
-<span id="cb14-18"><a href="#cb14-18"></a>    findex p <span class="dt">CardNumber</span> <span class="ot">=</span> _cardNumber p</span>
-<span id="cb14-19"><a href="#cb14-19"></a>    findex p <span class="dt">CardExpiry</span> <span class="ot">=</span> _cardExpiry p</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">FormTemplateRep</span> a <span class="kw">where</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Email</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">CardType</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">CardType</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">CardNumber</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Text</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">CardExpiry</span><span class="ot"> ::</span> <span class="dt">FormTemplateRep</span> <span class="dt">Day</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FRepresentable</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">type</span> <span class="dt">FRep</span> <span class="dt">FormTemplate</span> <span class="ot">=</span> <span class="dt">FormTemplateRep</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    ftabulate eta <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        (eta <span class="dt">Email</span>)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        (eta <span class="dt">CardType</span>)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        (eta <span class="dt">CardNumber</span>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>        (eta <span class="dt">CardExpiry</span>)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    findex p <span class="dt">Email</span> <span class="ot">=</span> _email p</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    findex p <span class="dt">CardType</span> <span class="ot">=</span> _cardType p</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    findex p <span class="dt">CardNumber</span> <span class="ot">=</span> _cardNumber p</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    findex p <span class="dt">CardExpiry</span> <span class="ot">=</span> _cardExpiry p</span></code></pre></div>
 <p>Something useful you can do with this infrastructure: filling in defaults for missing values of a partial record. Or, looking at it the other way, overriding certain parts of a record.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1"></a><span class="ot">with ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</span>
-<span id="cb15-2"><a href="#cb15-2"></a>with <span class="ot">=</span> fzipWith override</span>
-<span id="cb15-3"><a href="#cb15-3"></a>    <span class="kw">where</span> override x <span class="dt">Nothing</span> <span class="ot">=</span> x</span>
-<span id="cb15-4"><a href="#cb15-4"></a>          override _ (<span class="dt">Just</span> y) <span class="ot">=</span> <span class="dt">Identity</span> y</span>
-<span id="cb15-5"><a href="#cb15-5"></a></span>
-<span id="cb15-6"><a href="#cb15-6"></a><span class="ot">fillInDefaults ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</span>
-<span id="cb15-7"><a href="#cb15-7"></a>fillInDefaults t defaults <span class="ot">=</span> defaults <span class="ot">`with`</span> t</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ot">with ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>with <span class="ot">=</span> fzipWith override</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> override x <span class="dt">Nothing</span> <span class="ot">=</span> x</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>          override _ (<span class="dt">Just</span> y) <span class="ot">=</span> <span class="dt">Identity</span> y</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="ot">fillInDefaults ::</span> <span class="dt">FRepresentable</span> t <span class="ot">=&gt;</span> <span class="dt">Partial</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t <span class="ot">-&gt;</span> <span class="dt">Record</span> t</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>fillInDefaults t defaults <span class="ot">=</span> defaults <span class="ot">`with`</span> t</span></code></pre></div>
 <p>You can also make a record of <code>Monoid</code> values into a <code>Monoid</code>, once again by zipping.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">newtype</span> <span class="dt">Wrap</span> t f <span class="ot">=</span> <span class="dt">Wrap</span> {<span class="ot"> unWrap ::</span> t f }</span>
-<span id="cb16-2"><a href="#cb16-2"></a>makeWrapped '<span class="dt">'Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></span>
-<span id="cb16-3"><a href="#cb16-3"></a></span>
-<span id="cb16-4"><a href="#cb16-4"></a><span class="kw">instance</span> (<span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> c) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Wrap</span> t (<span class="dt">Const</span> c)) <span class="kw">where</span></span>
-<span id="cb16-5"><a href="#cb16-5"></a>    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> ftabulate (<span class="fu">const</span> (<span class="dt">Const</span> <span class="fu">mempty</span>))</span>
-<span id="cb16-6"><a href="#cb16-6"></a>    <span class="dt">Wrap</span> t <span class="ot">`mappend`</span> <span class="dt">Wrap</span> u <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> fzipWith <span class="fu">mappend</span> t u</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Wrap</span> t f <span class="ot">=</span> <span class="dt">Wrap</span> {<span class="ot"> unWrap ::</span> t f }</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>makeWrapped '<span class="dt">'Wrap</span>  <span class="co">-- from Control.Lens.Wrapped</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> c) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Wrap</span> t (<span class="dt">Const</span> c)) <span class="kw">where</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> ftabulate (<span class="fu">const</span> (<span class="dt">Const</span> <span class="fu">mempty</span>))</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Wrap</span> t <span class="ot">`mappend`</span> <span class="dt">Wrap</span> u <span class="ot">=</span> <span class="dt">Wrap</span> <span class="op">$</span> fzipWith <span class="fu">mappend</span> t u</span></code></pre></div>
 <h2 id="lenses"><a href="#lenses">Lenses</a></h2>
 <p>Rather than come up with a new notion of <code>Lens</code> formulated in terms of <code>FFunctor</code>, we can reuse the standard <code>Lens</code> type as long as we’re careful about how polymorphic lenses should be. Specifically, a lens into a record template should express no opinion as to which functor the template should be instantiated with.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="ot">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="op">.</span> <span class="dt">Lens'</span> (t f) (f a))</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">FLens</span> t a <span class="ot">=</span> <span class="dt">FLens</span> (<span class="kw">forall</span> f<span class="op">.</span> <span class="dt">Lens'</span> (t f) (f a))</span></code></pre></div>
 <p>We can store a template’s lenses in an instance of the template itself!</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1"></a><span class="kw">type</span> <span class="dt">Lenses</span> t <span class="ot">=</span> t (<span class="dt">FLens</span> t)</span>
-<span id="cb18-2"><a href="#cb18-2"></a></span>
-<span id="cb18-3"><a href="#cb18-3"></a><span class="kw">class</span> <span class="dt">HasLenses</span> t <span class="kw">where</span></span>
-<span id="cb18-4"><a href="#cb18-4"></a><span class="ot">    lenses ::</span> <span class="dt">Lenses</span> t</span>
-<span id="cb18-5"><a href="#cb18-5"></a></span>
-<span id="cb18-6"><a href="#cb18-6"></a>makeLenses '<span class="dt">'FormTemplate</span></span>
-<span id="cb18-7"><a href="#cb18-7"></a><span class="kw">instance</span> <span class="dt">HasLenses</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb18-8"><a href="#cb18-8"></a>    lenses <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
-<span id="cb18-9"><a href="#cb18-9"></a>        _email <span class="ot">=</span> <span class="dt">FLens</span> email,</span>
-<span id="cb18-10"><a href="#cb18-10"></a>        _cardType <span class="ot">=</span> <span class="dt">FLens</span> cardType,</span>
-<span id="cb18-11"><a href="#cb18-11"></a>        _cardNumber <span class="ot">=</span> <span class="dt">FLens</span> cardNumber,</span>
-<span id="cb18-12"><a href="#cb18-12"></a>        _cardExpiry <span class="ot">=</span> <span class="dt">FLens</span> cardExpiry</span>
-<span id="cb18-13"><a href="#cb18-13"></a>    }</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Lenses</span> t <span class="ot">=</span> t (<span class="dt">FLens</span> t)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">HasLenses</span> t <span class="kw">where</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    lenses ::</span> <span class="dt">Lenses</span> t</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>makeLenses '<span class="dt">'FormTemplate</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">HasLenses</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    lenses <span class="ot">=</span> <span class="dt">FormTemplate</span> {</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>        _email <span class="ot">=</span> <span class="dt">FLens</span> email,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>        _cardType <span class="ot">=</span> <span class="dt">FLens</span> cardType,</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>        _cardNumber <span class="ot">=</span> <span class="dt">FLens</span> cardNumber,</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>        _cardExpiry <span class="ot">=</span> <span class="dt">FLens</span> cardExpiry</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div>
 <h2 id="compositional-validation"><a href="#compositional-validation">Compositional Validation</a></h2>
 <p>Now for an extended example: form validation. We’ll be making use of all of the tools from above - zipping, traversing, and mapping - to design a typed API for validating individual fields of a form.</p>
 <p><code>Either</code> isn’t a great choice for a validation monad, because <code>Either</code> aborts the computation at the first failure. You typically want to report all the errors in a form. Instead, we’ll be working with the following type, which is isomorphic to <code>Either</code> but with an <code>Applicative</code> instance which returns <em>all</em> of the failures in a given computation, combining the values using a <code>Monoid</code>. So it’s kind of a Frankensteinian mishmash of the <code>Either</code> and <code>Writer</code> applicatives.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1"></a><span class="kw">data</span> <span class="dt">Validation</span> e a <span class="ot">=</span> <span class="dt">Failure</span> e <span class="op">|</span> <span class="dt">Success</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></span>
-<span id="cb19-2"><a href="#cb19-2"></a></span>
-<span id="cb19-3"><a href="#cb19-3"></a><span class="kw">instance</span> <span class="dt">Bifunctor</span> <span class="dt">Validation</span> <span class="kw">where</span></span>
-<span id="cb19-4"><a href="#cb19-4"></a>    bimap f g (<span class="dt">Failure</span> e) <span class="ot">=</span> <span class="dt">Failure</span> (f e)</span>
-<span id="cb19-5"><a href="#cb19-5"></a>    bimap f g (<span class="dt">Success</span> x) <span class="ot">=</span> <span class="dt">Success</span> (g x)</span>
-<span id="cb19-6"><a href="#cb19-6"></a></span>
-<span id="cb19-7"><a href="#cb19-7"></a><span class="kw">instance</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="dt">Validation</span> e) <span class="kw">where</span></span>
-<span id="cb19-8"><a href="#cb19-8"></a>    <span class="fu">pure</span> <span class="ot">=</span> <span class="dt">Success</span></span>
-<span id="cb19-9"><a href="#cb19-9"></a>    <span class="dt">Success</span> f <span class="op">&lt;*&gt;</span> <span class="dt">Success</span> x <span class="ot">=</span> <span class="dt">Success</span> (f x)</span>
-<span id="cb19-10"><a href="#cb19-10"></a>    <span class="dt">Failure</span> e1 <span class="op">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="ot">=</span> <span class="dt">Failure</span> (e1 <span class="ot">`mappend`</span> e2)</span>
-<span id="cb19-11"><a href="#cb19-11"></a>    <span class="dt">Failure</span> e1 <span class="op">&lt;*&gt;</span> _ <span class="ot">=</span> <span class="dt">Failure</span> e1</span>
-<span id="cb19-12"><a href="#cb19-12"></a>    _ <span class="op">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="ot">=</span> <span class="dt">Failure</span> e2</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Validation</span> e a <span class="ot">=</span> <span class="dt">Failure</span> e <span class="op">|</span> <span class="dt">Success</span> a <span class="kw">deriving</span> <span class="dt">Functor</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Bifunctor</span> <span class="dt">Validation</span> <span class="kw">where</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    bimap f g (<span class="dt">Failure</span> e) <span class="ot">=</span> <span class="dt">Failure</span> (f e)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    bimap f g (<span class="dt">Success</span> x) <span class="ot">=</span> <span class="dt">Success</span> (g x)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="dt">Validation</span> e) <span class="kw">where</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> <span class="ot">=</span> <span class="dt">Success</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Success</span> f <span class="op">&lt;*&gt;</span> <span class="dt">Success</span> x <span class="ot">=</span> <span class="dt">Success</span> (f x)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Failure</span> e1 <span class="op">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="ot">=</span> <span class="dt">Failure</span> (e1 <span class="ot">`mappend`</span> e2)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Failure</span> e1 <span class="op">&lt;*&gt;</span> _ <span class="ot">=</span> <span class="dt">Failure</span> e1</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    _ <span class="op">&lt;*&gt;</span> <span class="dt">Failure</span> e2 <span class="ot">=</span> <span class="dt">Failure</span> e2</span></code></pre></div>
 <p>This <code>Applicative</code> instance has no compatible <code>Monad</code> instance.</p>
 <p>We’ll build a library for validation processes which examine a single field of a record at a time. A validation rule for a field typed <code>a</code> is a function which takes an <code>a</code> and returns a <code>Validation e a</code>.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1"></a><span class="kw">newtype</span> <span class="dt">Validator</span> e a <span class="ot">=</span> <span class="dt">Validator</span> {<span class="ot"> runValidator ::</span> a <span class="ot">-&gt;</span> <span class="dt">Validation</span> e a }</span>
-<span id="cb20-2"><a href="#cb20-2"></a></span>
-<span id="cb20-3"><a href="#cb20-3"></a><span class="co">-- a validator which always succeeds</span></span>
-<span id="cb20-4"><a href="#cb20-4"></a><span class="ot">noop ::</span> <span class="dt">Validator</span> e a</span>
-<span id="cb20-5"><a href="#cb20-5"></a>noop <span class="ot">=</span> <span class="dt">Validator</span> <span class="dt">Success</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Validator</span> e a <span class="ot">=</span> <span class="dt">Validator</span> {<span class="ot"> runValidator ::</span> a <span class="ot">-&gt;</span> <span class="dt">Validation</span> e a }</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- a validator which always succeeds</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="ot">noop ::</span> <span class="dt">Validator</span> e a</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>noop <span class="ot">=</span> <span class="dt">Validator</span> <span class="dt">Success</span></span></code></pre></div>
 <p>If a given field has multiple validation rules, you can compose them under the assumption that each validator leaves its input unchanged.</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb21-1"><a href="#cb21-1"></a><span class="ot">(&amp;&gt;) ::</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a</span>
-<span id="cb21-2"><a href="#cb21-2"></a><span class="dt">Validator</span> f <span class="op">&amp;&gt;</span> <span class="dt">Validator</span> g <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \x <span class="ot">-&gt;</span> f x <span class="op">*&gt;</span> g x</span>
-<span id="cb21-3"><a href="#cb21-3"></a></span>
-<span id="cb21-4"><a href="#cb21-4"></a><span class="co">-- for example</span></span>
-<span id="cb21-5"><a href="#cb21-5"></a><span class="ot">emailValidator ::</span> <span class="dt">Validator</span> [<span class="dt">Text</span>] <span class="dt">Text</span></span>
-<span id="cb21-6"><a href="#cb21-6"></a>emailValidator <span class="ot">=</span> hasAtSymbol <span class="op">&amp;&gt;</span> hasTopLevelDomain</span>
-<span id="cb21-7"><a href="#cb21-7"></a>    <span class="kw">where</span></span>
-<span id="cb21-8"><a href="#cb21-8"></a>        hasAtSymbol <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \email <span class="ot">-&gt;</span> </span>
-<span id="cb21-9"><a href="#cb21-9"></a>            <span class="kw">if</span> <span class="st">&quot;@&quot;</span> <span class="ot">`isInfixOf`</span> email</span>
-<span id="cb21-10"><a href="#cb21-10"></a>            <span class="kw">then</span> <span class="dt">Success</span> email</span>
-<span id="cb21-11"><a href="#cb21-11"></a>            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;No @ in email&quot;</span>]</span>
-<span id="cb21-12"><a href="#cb21-12"></a>        hasTopLevelDomain <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \email <span class="ot">-&gt;</span></span>
-<span id="cb21-13"><a href="#cb21-13"></a>            <span class="kw">if</span> <span class="fu">any</span> (<span class="ot">`isSuffixOf`</span> email) topLevelDomains</span>
-<span id="cb21-14"><a href="#cb21-14"></a>            <span class="kw">then</span> <span class="dt">Success</span> email</span>
-<span id="cb21-15"><a href="#cb21-15"></a>            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;Invalid TLD&quot;</span>]</span>
-<span id="cb21-16"><a href="#cb21-16"></a>        topLevelDomains <span class="ot">=</span> [<span class="st">&quot;.com&quot;</span>, <span class="st">&quot;.org&quot;</span>, <span class="st">&quot;.co.uk&quot;</span>]  <span class="co">-- etc</span></span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ot">(&amp;&gt;) ::</span> <span class="dt">Monoid</span> e <span class="ot">=&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a <span class="ot">-&gt;</span> <span class="dt">Validator</span> e a</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Validator</span> f <span class="op">&amp;&gt;</span> <span class="dt">Validator</span> g <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \x <span class="ot">-&gt;</span> f x <span class="op">*&gt;</span> g x</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- for example</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="ot">emailValidator ::</span> <span class="dt">Validator</span> [<span class="dt">Text</span>] <span class="dt">Text</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>emailValidator <span class="ot">=</span> hasAtSymbol <span class="op">&amp;&gt;</span> hasTopLevelDomain</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        hasAtSymbol <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \email <span class="ot">-&gt;</span> </span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> <span class="st">&quot;@&quot;</span> <span class="ot">`isInfixOf`</span> email</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">then</span> <span class="dt">Success</span> email</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;No @ in email&quot;</span>]</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>        hasTopLevelDomain <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \email <span class="ot">-&gt;</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> <span class="fu">any</span> (<span class="ot">`isSuffixOf`</span> email) topLevelDomains</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>            <span class="kw">then</span> <span class="dt">Success</span> email</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>            <span class="kw">else</span> <span class="dt">Failure</span> [<span class="st">&quot;Invalid TLD&quot;</span>]</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>        topLevelDomains <span class="ot">=</span> [<span class="st">&quot;.com&quot;</span>, <span class="st">&quot;.org&quot;</span>, <span class="st">&quot;.co.uk&quot;</span>]  <span class="co">-- etc</span></span></code></pre></div>
 <p>The plan is to store these <code>Validator</code>s in a record template, zip them along an instance of the record itself, and then traverse the result to get either a validated record or a collection of errors. To make things interesting, we’ll store the validation results for a given field in the matching field of another record.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb22-1"><a href="#cb22-1"></a><span class="kw">type</span> <span class="dt">Validators</span> e t <span class="ot">=</span> t (<span class="dt">Validator</span> e)</span>
-<span id="cb22-2"><a href="#cb22-2"></a><span class="kw">type</span> <span class="dt">Errors</span> e t <span class="ot">=</span> t (<span class="dt">Const</span> e)</span>
-<span id="cb22-3"><a href="#cb22-3"></a></span>
-<span id="cb22-4"><a href="#cb22-4"></a><span class="co">-- turn a record of validators into a validator of records</span></span>
-<span id="cb22-5"><a href="#cb22-5"></a><span class="ot">validate ::</span> (<span class="dt">HasLenses</span> t, <span class="dt">FTraversable</span> t, <span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> e)</span>
-<span id="cb22-6"><a href="#cb22-6"></a>         <span class="ot">=&gt;</span> <span class="dt">Validators</span> e t</span>
-<span id="cb22-7"><a href="#cb22-7"></a>         <span class="ot">-&gt;</span> <span class="dt">Validator</span> (<span class="dt">Errors</span> e t) (<span class="dt">Record</span> t)</span>
-<span id="cb22-8"><a href="#cb22-8"></a>validate validators <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \record <span class="ot">-&gt;</span></span>
-<span id="cb22-9"><a href="#cb22-9"></a>    first unWrap <span class="op">$</span></span>
-<span id="cb22-10"><a href="#cb22-10"></a>    fsequence' <span class="op">$</span></span>
-<span id="cb22-11"><a href="#cb22-11"></a>    fzipWith3 applyValidator lenses validators record</span>
-<span id="cb22-12"><a href="#cb22-12"></a>    <span class="kw">where</span></span>
-<span id="cb22-13"><a href="#cb22-13"></a>        applyValidator</span>
-<span id="cb22-14"><a href="#cb22-14"></a>            (<span class="dt">FLens</span> lens)</span>
-<span id="cb22-15"><a href="#cb22-15"></a>            (<span class="dt">Validator</span> validator)</span>
-<span id="cb22-16"><a href="#cb22-16"></a>            (<span class="dt">Identity</span> value) <span class="ot">=</span></span>
-<span id="cb22-17"><a href="#cb22-17"></a>                <span class="kw">let</span> setError e <span class="ot">=</span> <span class="fu">mempty</span> <span class="op">&amp;</span> _Wrapped'<span class="op">.</span>lens<span class="op">.</span>_Wrapped' <span class="op">.~</span> e</span>
-<span id="cb22-18"><a href="#cb22-18"></a>                <span class="kw">in</span> first setError <span class="op">$</span> validator value</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Validators</span> e t <span class="ot">=</span> t (<span class="dt">Validator</span> e)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Errors</span> e t <span class="ot">=</span> t (<span class="dt">Const</span> e)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- turn a record of validators into a validator of records</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="ot">validate ::</span> (<span class="dt">HasLenses</span> t, <span class="dt">FTraversable</span> t, <span class="dt">FRepresentable</span> t, <span class="dt">Monoid</span> e)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>         <span class="ot">=&gt;</span> <span class="dt">Validators</span> e t</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>         <span class="ot">-&gt;</span> <span class="dt">Validator</span> (<span class="dt">Errors</span> e t) (<span class="dt">Record</span> t)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>validate validators <span class="ot">=</span> <span class="dt">Validator</span> <span class="op">$</span> \record <span class="ot">-&gt;</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    first unWrap <span class="op">$</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>    fsequence' <span class="op">$</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>    fzipWith3 applyValidator lenses validators record</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>        applyValidator</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>            (<span class="dt">FLens</span> lens)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>            (<span class="dt">Validator</span> validator)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>            (<span class="dt">Identity</span> value) <span class="ot">=</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>                <span class="kw">let</span> setError e <span class="ot">=</span> <span class="fu">mempty</span> <span class="op">&amp;</span> _Wrapped'<span class="op">.</span>lens<span class="op">.</span>_Wrapped' <span class="op">.~</span> e</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>                <span class="kw">in</span> first setError <span class="op">$</span> validator value</span></code></pre></div>
 <p><code>applyValidator</code> takes a lens into a record field, a validator for that field and the value in that field. It applies the validator to the value; upon failure it stores the error message (<code>e</code>) in the correct field of the <code>Errors</code> record using the lens. <code>fzipWith3</code> handles the logic of running <code>applyValidator</code> for each field of the record, then <code>fsequence'</code> combines the resulting <code>Validation</code> applicative actions into a single one. So all of the errors from all of the fields are eventually collected into the matching fields of the <code>Errors</code> record and combined monoidally.</p>
 <p>A quick test, wherein I test validation on the email field:</p>
 <pre><code>ghci&gt; let formValidator = validate
@@ -348,33 +348,33 @@ Failure (FormTemplate {
 </ul>
 <p>One design decision I made when developing the <code>FFunctor</code> class was to give <code>ffmap</code> a <code>(Functor f, Functor g)</code> constraint, so you can only <code>ffmap</code> between types that are in fact functors. This is mathematically principled in some sense, but it has certain engineering tradeoffs compared to an unconstrained type for <code>ffmap</code>. It enables more instances of <code>FFunctor</code> - for example, you can only write <code>Fix</code>’s <code>ffmap</code> with a <code>Functor</code> constraint for either the input or output type parameters - but it rules out certain usages of <code>ffmap</code>. You can’t <code>ffmap</code> over a template containing <code>Validator</code>s, for example, because <code>Validator</code> is not a <code>Functor</code>. I <em>didn’t</em> put the same <code>Functor</code> constraints into <code>FRepresentable</code>’s methods. An <code>FRep</code> type typically won’t be functorial - it’ll be GADT-like - so adding a <code>Functor (FRep t)</code> constraint would be far too restrictive.</p>
 <p>You’ll notice that the concept of an applicative functor functor is conspicuously absent from my presentation above. <code>FApplicative</code> would probably look something like this:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb24-1"><a href="#cb24-1"></a><span class="kw">newtype</span> (f <span class="op">:-&gt;</span> g) a <span class="ot">=</span> <span class="dt">Morph</span> {<span class="ot"> getMorph ::</span> f a <span class="ot">-&gt;</span> g a }</span>
-<span id="cb24-2"><a href="#cb24-2"></a></span>
-<span id="cb24-3"><a href="#cb24-3"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FApplicative</span> t <span class="kw">where</span></span>
-<span id="cb24-4"><a href="#cb24-4"></a><span class="ot">    fpure ::</span> (<span class="kw">forall</span> a<span class="op">.</span> f a) <span class="ot">-&gt;</span> t f</span>
-<span id="cb24-5"><a href="#cb24-5"></a><span class="ot">    fap ::</span> t (f <span class="op">:-&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
-<span id="cb24-6"><a href="#cb24-6"></a></span>
-<span id="cb24-7"><a href="#cb24-7"></a><span class="ot">fliftA ::</span> <span class="dt">FApplicative</span> t <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
-<span id="cb24-8"><a href="#cb24-8"></a>fliftA eta t <span class="ot">=</span> fpure (<span class="dt">Morph</span> eta) <span class="ot">`fap`</span> t</span>
-<span id="cb24-9"><a href="#cb24-9"></a></span>
-<span id="cb24-10"><a href="#cb24-10"></a><span class="kw">instance</span> <span class="dt">FApplicative</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
-<span id="cb24-11"><a href="#cb24-11"></a>    fpure x <span class="ot">=</span> <span class="dt">FormTemplate</span> x x x x</span>
-<span id="cb24-12"><a href="#cb24-12"></a>    fap</span>
-<span id="cb24-13"><a href="#cb24-13"></a>        (<span class="dt">FormTemplate</span></span>
-<span id="cb24-14"><a href="#cb24-14"></a>            (<span class="dt">Morph</span> f1)</span>
-<span id="cb24-15"><a href="#cb24-15"></a>            (<span class="dt">Morph</span> f2)</span>
-<span id="cb24-16"><a href="#cb24-16"></a>            (<span class="dt">Morph</span> f3)</span>
-<span id="cb24-17"><a href="#cb24-17"></a>            (<span class="dt">Morph</span> f4))</span>
-<span id="cb24-18"><a href="#cb24-18"></a>        (<span class="dt">FormTemplate</span></span>
-<span id="cb24-19"><a href="#cb24-19"></a>            email</span>
-<span id="cb24-20"><a href="#cb24-20"></a>            cardType</span>
-<span id="cb24-21"><a href="#cb24-21"></a>            cardNumber</span>
-<span id="cb24-22"><a href="#cb24-22"></a>            cardExpiry)</span>
-<span id="cb24-23"><a href="#cb24-23"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
-<span id="cb24-24"><a href="#cb24-24"></a>            (f1 email)</span>
-<span id="cb24-25"><a href="#cb24-25"></a>            (f2 cardType)</span>
-<span id="cb24-26"><a href="#cb24-26"></a>            (f3 cardNumber)</span>
-<span id="cb24-27"><a href="#cb24-27"></a>            (f4 cardExpiry)</span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> (f <span class="op">:-&gt;</span> g) a <span class="ot">=</span> <span class="dt">Morph</span> {<span class="ot"> getMorph ::</span> f a <span class="ot">-&gt;</span> g a }</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">FFunctor</span> t <span class="ot">=&gt;</span> <span class="dt">FApplicative</span> t <span class="kw">where</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    fpure ::</span> (<span class="kw">forall</span> a<span class="op">.</span> f a) <span class="ot">-&gt;</span> t f</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="ot">    fap ::</span> t (f <span class="op">:-&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="ot">fliftA ::</span> <span class="dt">FApplicative</span> t <span class="ot">=&gt;</span> (f <span class="op">~&gt;</span> g) <span class="ot">-&gt;</span> t f <span class="ot">-&gt;</span> t g</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>fliftA eta t <span class="ot">=</span> fpure (<span class="dt">Morph</span> eta) <span class="ot">`fap`</span> t</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FApplicative</span> <span class="dt">FormTemplate</span> <span class="kw">where</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    fpure x <span class="ot">=</span> <span class="dt">FormTemplate</span> x x x x</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>    fap</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>        (<span class="dt">FormTemplate</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>            (<span class="dt">Morph</span> f1)</span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>            (<span class="dt">Morph</span> f2)</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>            (<span class="dt">Morph</span> f3)</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>            (<span class="dt">Morph</span> f4))</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>        (<span class="dt">FormTemplate</span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>            email</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>            cardType</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>            cardNumber</span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>            cardExpiry)</span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>        <span class="ot">=</span> <span class="dt">FormTemplate</span></span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>            (f1 email)</span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>            (f2 cardType)</span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>            (f3 cardNumber)</span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>            (f4 cardExpiry)</span></code></pre></div>
 <p><code>FApplicative</code> is a more general interface than <code>FRepresentable</code>, in that it supports notions of composition other than zipping. However, that bookkeeping <code>:-&gt;</code> <code>newtype</code> wrapper is inconvenient. With the normal <code>Applicative</code> class you can map an <em>n</em>-ary function over <em>n</em> applicative values directly: <code>f &lt;$&gt; x &lt;*&gt; y &lt;*&gt; z</code>. With <code>FApplicative</code> you have to apply the <code>Morph</code> constructor as many times as <code>f</code> has arguments: <code>fpure (Morph $ \x -&gt; Morph $ \y -&gt; Morph $ \z -&gt; f x y z) `fap` t `fap` u `fap` v</code>, which becomes very unwieldy very quickly. (<a href="https://www.reddit.com/r/haskell/comments/78xxql/structures_of_arrays_functors_and_continuations/doy80ft/">/u/rampion has come up with nicer syntax for this</a>, but it involves <a href="https://gist.github.com/rampion/20291bde6c8568c11f9cc5923d9639eb#file-ffunctor-hs-L28">a more complicated formulation of <code>FApplicative</code></a>.) On the other hand, <code>FApplicative</code> does open up some interesting options for the design of <code>FTraversable</code>: one can traverse in an <code>FApplicative</code> rather than an <code>Applicative</code>. This gives some nice type signatures - <code>fsequence :: (FTraversable t, FApplicative f) =&gt; t f -&gt; f t</code> - and is strictly more general than the <code>FTraversable</code> I gave above, since any <code>Applicative</code> can be lifted into an <code>FApplicative</code> by composition (<code>newtype ComposeAt a f g = ComposeAt { getComposeAt :: f (g a) }</code>).</p>
 <p>How useful are these tools in practice? Would I structure a production application around functor functors? Probably not. It’s a question of balance - while it’s useful to recognise functorial structures in categories other than <strong>Hask</strong> as a thinking tool, actually representing such abstractions in code doesn’t always pay off. Haskell already has a rich ecosystem of tools for working with the <code>Functor</code> family, but there’s much less code in the wild that’s structured around functor functors. This is partly because <code>Functor</code> has the advantage of being a standard class in <code>base</code>, but it’s also because code built around functor functors is a little less convenient to work with, typically requiring some tedious <code>newtype</code> bookkeeping.</p>
 <p>Over the course of putting together this article I came across some work by others on this very topic. I’ve spotted versions of these classes being packaged with bigger libraries such as <a href="http://hackage.haskell.org/package/hedgehog-0.5.1/docs/Hedgehog-Internal-HTraversable.html"><code>hedgehog</code></a> and <a href="https://hackage.haskell.org/package/quickcheck-state-machine-0.2.0/docs/Test-StateMachine-Types-HFunctor.html"><code>quickcheck-state-machine</code></a>. There are also a few packages providing similar tools. The most mature of these seems to be <a href="http://hackage.haskell.org/package/rank2classes"><code>rank2classes</code></a>, which includes some Template Haskell tools for deriving instances; there’s also <a href="http://hackage.haskell.org/package/conkin">the Conkin package</a>, which has <a href="https://github.com/rampion/conkin/blob/master/README.md">a well-written tutorial</a> focusing on working with data in column-major order.</p>

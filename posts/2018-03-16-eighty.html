@@ -51,14 +51,14 @@
 <h2 id="eighty"><a href="#eighty">Eighty</a></h2>
 <p><a href="https://github.com/benjamin-hodgson/Eighty">Eighty</a> (as in <em>eigh-ty-M-L</em>) is my attempt at striking a balance between these two extremes: not so abstract as to constitute a separate programming language, but not so concrete that you have to manipulate XML tags or strings manually. It’s a simple embedded domain-specific language which piggybacks on C#’s syntax, enabling you to write code resembling the HTML you’re generating. Rather than embedding C# into an HTML generator, Eighty embeds an HTML generator into C#.</p>
 <p>Here’s an example from <a href="https://github.com/benjamin-hodgson/Eighty/blob/master/README.md">the readme</a>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1"></a><span class="dt">var</span> html = <span class="fu">article</span>(@class: <span class="st">&quot;readme&quot;</span>)._(</span>
-<span id="cb1-2"><a href="#cb1-2"></a>    <span class="fu">h1</span>(id: <span class="st">&quot;Eighty&quot;</span>)._(<span class="st">&quot;Eighty&quot;</span>),</span>
-<span id="cb1-3"><a href="#cb1-3"></a>    <span class="fu">p_</span>(</span>
-<span id="cb1-4"><a href="#cb1-4"></a>        <span class="st">&quot;Eighty (as in &quot;</span>,</span>
-<span id="cb1-5"><a href="#cb1-5"></a>        <span class="fu">i_</span>(<span class="st">&quot;eigh-ty-M-L&quot;</span>),</span>
-<span id="cb1-6"><a href="#cb1-6"></a>        <span class="st">&quot;) is a simple HTML generation library.&quot;</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a>    )</span>
-<span id="cb1-8"><a href="#cb1-8"></a>);</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> html <span class="op">=</span> <span class="fu">article</span><span class="op">(</span>@class<span class="op">:</span> <span class="st">&quot;readme&quot;</span><span class="op">).</span><span class="fu">_</span><span class="op">(</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">h1</span><span class="op">(</span>id<span class="op">:</span> <span class="st">&quot;Eighty&quot;</span><span class="op">).</span><span class="fu">_</span><span class="op">(</span><span class="st">&quot;Eighty&quot;</span><span class="op">),</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">p_</span><span class="op">(</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Eighty (as in &quot;</span><span class="op">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">i_</span><span class="op">(</span><span class="st">&quot;eigh-ty-M-L&quot;</span><span class="op">),</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;) is a simple HTML generation library.&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span></code></pre></div>
 <p>Eighty is organised around <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html">the <code>Html</code> class</a>, being an immutable chunk of HTML which knows how to render itself using <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html#Eighty_Html_Write_System_IO_TextWriter_">its <code>Write(TextWriter)</code> method</a>. <code>Html</code> defines a large collection of static methods (designed to be imported with <code>using static</code>), with names like <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html#Eighty_Html_h1_System_String_System_String_System_String_System_String_System_String_System_String_"><code>h1</code></a> and <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.Html.html#Eighty_Html_p_System_String_System_String_System_String_System_String_System_String_System_String_"><code>p</code></a>, which create <code>Html</code> values representing their respective tags, with a collection of children which are smaller <code>Html</code> values.</p>
 <p>Eighty adopts some simple conventions for its HTML-esque domain-specific language:</p>
 <ul>
@@ -81,8 +81,8 @@
 &lt;h1&gt;@Model.Title&lt;/h1&gt;</code></pre>
 <p>One important disadvantage of Razor’s <code>@model</code> construct is that it is dynamically checked. The controller’s <code>View</code> method takes an <code>object</code> for the <code>model</code> parameter. You get a runtime error, without any feedback from the compiler, if you pass in a model whose type doesn’t match the view’s expected model type.</p>
 <p>Since Eighty is embedded within C#, there’s no special syntax to declare the type of data a function depends on. You can just use a plain old parameter.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1"></a>Html <span class="fu">Example</span>(ExampleModel model)</span>
-<span id="cb3-2"><a href="#cb3-2"></a>    =&gt; <span class="fu">h1_</span>(model.<span class="fu">Title</span>);</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>Html <span class="fu">Example</span><span class="op">(</span>ExampleModel model<span class="op">)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">h1_</span><span class="op">(</span>model<span class="op">.</span><span class="fu">Title</span><span class="op">);</span></span></code></pre></div>
 <p>Since a template is a regular C# method, it’s much easier to run in a unit test harness than Razor. You can just call the method and make assertions about the generated HTML, either by looking at the string directly or by parsing it and traversing the resultant DOM.</p>
 <p>Eighty includes <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.IHtmlRenderer-1.html">an <code>IHtmlRenderer&lt;TModel&gt;</code> interface</a>, which captures this pattern of parameterising a chunk of HTML by a model, but its use is optional — it’s used primarily by Eighty’s ASP.NET integration packages.</p>
 <h3 id="control-flow"><a href="#control-flow">Control flow</a></h3>
@@ -97,115 +97,115 @@
     }
 &lt;/ul&gt;</code></pre>
 <p>With Eighty, it’s a question of building different <code>Html</code> values. You can use LINQ’s high-level functional looping constructs:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">return</span> <span class="fu">ul_</span>(</span>
-<span id="cb5-2"><a href="#cb5-2"></a>    model.<span class="fu">Items</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a>        .<span class="fu">Where</span>(item =&gt; item.<span class="fu">Visible</span>)</span>
-<span id="cb5-4"><a href="#cb5-4"></a>        .<span class="fu">Select</span>(item =&gt; <span class="fu">li_</span>(item.<span class="fu">Value</span>))</span>
-<span id="cb5-5"><a href="#cb5-5"></a>);</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">return</span> <span class="fu">ul_</span><span class="op">(</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    model<span class="op">.</span><span class="fu">Items</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Where</span><span class="op">(</span>item <span class="op">=&gt;</span> item<span class="op">.</span><span class="fu">Visible</span><span class="op">)</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>item <span class="op">=&gt;</span> <span class="fu">li_</span><span class="op">(</span>item<span class="op">.</span><span class="fu">Value</span><span class="op">))</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span></code></pre></div>
 <p>Or you can write your own loop and build a list:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1"></a><span class="dt">var</span> lis = <span class="kw">new</span> List&lt;Html&gt;();</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="kw">foreach</span> (<span class="dt">var</span> item <span class="kw">in</span> model.<span class="fu">Items</span>)</span>
-<span id="cb6-3"><a href="#cb6-3"></a>{</span>
-<span id="cb6-4"><a href="#cb6-4"></a>    <span class="kw">if</span> (item.<span class="fu">Visible</span>)</span>
-<span id="cb6-5"><a href="#cb6-5"></a>    {</span>
-<span id="cb6-6"><a href="#cb6-6"></a>        lis.<span class="fu">Add</span>(<span class="fu">li_</span>(item.<span class="fu">Value</span>));</span>
-<span id="cb6-7"><a href="#cb6-7"></a>    }</span>
-<span id="cb6-8"><a href="#cb6-8"></a>}</span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="kw">return</span> <span class="fu">ul_</span>(lis);</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> lis <span class="op">=</span> <span class="kw">new</span> List<span class="op">&lt;</span>Html<span class="op">&gt;();</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> item <span class="kw">in</span> model<span class="op">.</span><span class="fu">Items</span><span class="op">)</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>item<span class="op">.</span><span class="fu">Visible</span><span class="op">)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        lis<span class="op">.</span><span class="fu">Add</span><span class="op">(</span><span class="fu">li_</span><span class="op">(</span>item<span class="op">.</span><span class="fu">Value</span><span class="op">));</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="kw">return</span> <span class="fu">ul_</span><span class="op">(</span>lis<span class="op">);</span></span></code></pre></div>
 <p>Mixing markup with C# is not a problem, because markup <em>is</em> C#.</p>
 <h3 id="partials-and-helpers"><a href="#partials-and-helpers">Partials and Helpers</a></h3>
 <p>Razor’s two main tools for code reuse are <em>partial views</em> and <em>helpers</em>. For the purposes of this article, they’re roughly equivalent. Partial views can be returned directly from a controller but their model type is checked at runtime, whereas helpers’ parameters are checked by the compiler but they can only be invoked from within a Razor view.</p>
 <p>Eighty handles both of these uses in the simplest of ways: <em>calling a function</em>. If I want to include an HTML snippet in more than one place, I can just extract it into a method returning an <code>Html</code> object. Transliterating an example from <a href="https://docs.microsoft.com/en-us/aspnet/web-pages/overview/ui-layouts-and-themes/creating-and-using-a-helper-in-an-aspnet-web-pages-site">the MVC documentation</a>:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1"></a>Html <span class="fu">MakeNote</span>(<span class="dt">string</span> content)</span>
-<span id="cb7-2"><a href="#cb7-2"></a>    =&gt; <span class="fu">div</span>(@class: <span class="st">&quot;note&quot;</span>)._(</span>
-<span id="cb7-3"><a href="#cb7-3"></a>        <span class="fu">p_</span>(</span>
-<span id="cb7-4"><a href="#cb7-4"></a>            <span class="fu">strong_</span>(<span class="st">&quot;Note&quot;</span>),</span>
-<span id="cb7-5"><a href="#cb7-5"></a>            <span class="fu">Raw</span>(<span class="st">&quot;&amp;nbsp;&amp;nbsp; &quot;</span>),</span>
-<span id="cb7-6"><a href="#cb7-6"></a>            content</span>
-<span id="cb7-7"><a href="#cb7-7"></a>        )</span>
-<span id="cb7-8"><a href="#cb7-8"></a>    );</span>
-<span id="cb7-9"><a href="#cb7-9"></a></span>
-<span id="cb7-10"><a href="#cb7-10"></a>Html <span class="fu">SomeHtmlContainingANote</span>()</span>
-<span id="cb7-11"><a href="#cb7-11"></a>    =&gt; <span class="fu">article_</span>(</span>
-<span id="cb7-12"><a href="#cb7-12"></a>        <span class="fu">p_</span>(<span class="st">&quot;This is some opening paragraph text&quot;</span>),</span>
-<span id="cb7-13"><a href="#cb7-13"></a>        <span class="fu">MakeNote</span>(<span class="st">&quot;My test note content&quot;</span>),</span>
-<span id="cb7-14"><a href="#cb7-14"></a>        <span class="fu">p_</span>(<span class="st">&quot;This is some following text&quot;</span>)</span>
-<span id="cb7-15"><a href="#cb7-15"></a>    );</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>Html <span class="fu">MakeNote</span><span class="op">(</span><span class="dt">string</span> content<span class="op">)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">div</span><span class="op">(</span>@class<span class="op">:</span> <span class="st">&quot;note&quot;</span><span class="op">).</span><span class="fu">_</span><span class="op">(</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">p_</span><span class="op">(</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">strong_</span><span class="op">(</span><span class="st">&quot;Note&quot;</span><span class="op">),</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">Raw</span><span class="op">(</span><span class="st">&quot;&amp;nbsp;&amp;nbsp; &quot;</span><span class="op">),</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>            content</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">)</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>Html <span class="fu">SomeHtmlContainingANote</span><span class="op">()</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">article_</span><span class="op">(</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">p_</span><span class="op">(</span><span class="st">&quot;This is some opening paragraph text&quot;</span><span class="op">),</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">MakeNote</span><span class="op">(</span><span class="st">&quot;My test note content&quot;</span><span class="op">),</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">p_</span><span class="op">(</span><span class="st">&quot;This is some following text&quot;</span><span class="op">)</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div>
 <p>This is the best of both worlds: types are checked by the compiler as usual, but the returned <code>Html</code> value is a perfectly good standalone chunk of HTML, and can be rendered separately if necessary.</p>
 <p><code>Html</code> values being ordinary C# values, Eighty actually supports more types of reuse than Razor does. For example, you can pass a chunk of HTML as an argument, which is not easy to do with Razor:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1"></a>Html <span class="fu">RepeatFiveTimes</span>(Html html)</span>
-<span id="cb8-2"><a href="#cb8-2"></a>    =&gt; <span class="fu">_</span>(Enumerable.<span class="fu">Repeat</span>(html, <span class="dv">5</span>));</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>Html <span class="fu">RepeatFiveTimes</span><span class="op">(</span>Html html<span class="op">)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">_</span><span class="op">(</span>Enumerable<span class="op">.</span><span class="fu">Repeat</span><span class="op">(</span>html<span class="op">,</span> <span class="dv">5</span><span class="op">));</span></span></code></pre></div>
 <p>Since <code>Html</code> values are immutable, you can safely share them between different HTML documents, across different threads, etc. Sharing parts of your HTML document that don’t change can be an important optimisation.</p>
 <h3 id="layouts"><a href="#layouts">Layouts</a></h3>
 <p>Razor lets you define a shared <em>layout</em> page, which acts as a template for the other pages in your application. For example, you might put the <code>html</code> and <code>body</code> tags in a layout page, and use the built in <code>RenderBody</code> helper to render the concrete page’s body inside the <code>body</code> tag. This is also where global navs and the like are defined.</p>
 <p>One way to handle global layouts and sections in Eighty would be to define an abstract base class. Each section becomes an abstract method, allowing individual pages to fill in their own HTML for those sections.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Layout</span>
-<span id="cb9-2"><a href="#cb9-2"></a>{</span>
-<span id="cb9-3"><a href="#cb9-3"></a>    <span class="kw">public</span> Html <span class="fu">GetHtml</span>()</span>
-<span id="cb9-4"><a href="#cb9-4"></a>        =&gt; <span class="fu">doctypeHtml_</span>(</span>
-<span id="cb9-5"><a href="#cb9-5"></a>            <span class="fu">head</span>(</span>
-<span id="cb9-6"><a href="#cb9-6"></a>                <span class="fu">link</span>(</span>
-<span id="cb9-7"><a href="#cb9-7"></a>                    rel: <span class="st">&quot;stylesheet&quot;</span>,</span>
-<span id="cb9-8"><a href="#cb9-8"></a>                    type: <span class="st">&quot;text/css&quot;</span>,</span>
-<span id="cb9-9"><a href="#cb9-9"></a>                    href: <span class="st">&quot;default.css&quot;</span></span>
-<span id="cb9-10"><a href="#cb9-10"></a>                ),</span>
-<span id="cb9-11"><a href="#cb9-11"></a>                <span class="fu">Css</span>(),</span>
-<span id="cb9-12"><a href="#cb9-12"></a>                <span class="fu">script</span>(</span>
-<span id="cb9-13"><a href="#cb9-13"></a>                    type: <span class="st">&quot;text/javascript&quot;</span>,</span>
-<span id="cb9-14"><a href="#cb9-14"></a>                    src: <span class="st">&quot;jquery-3.3.1.min.js&quot;</span></span>
-<span id="cb9-15"><a href="#cb9-15"></a>                ),</span>
-<span id="cb9-16"><a href="#cb9-16"></a>                <span class="fu">Js</span>()</span>
-<span id="cb9-17"><a href="#cb9-17"></a>            ),</span>
-<span id="cb9-18"><a href="#cb9-18"></a>            <span class="fu">body</span>(</span>
-<span id="cb9-19"><a href="#cb9-19"></a>                <span class="fu">Body</span>()</span>
-<span id="cb9-20"><a href="#cb9-20"></a>            )</span>
-<span id="cb9-21"><a href="#cb9-21"></a>        );</span>
-<span id="cb9-22"><a href="#cb9-22"></a></span>
-<span id="cb9-23"><a href="#cb9-23"></a>    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Css</span>();</span>
-<span id="cb9-24"><a href="#cb9-24"></a>    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Js</span>();</span>
-<span id="cb9-25"><a href="#cb9-25"></a>    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Body</span>();</span>
-<span id="cb9-26"><a href="#cb9-26"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Layout</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Html <span class="fu">GetHtml</span><span class="op">()</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">doctypeHtml_</span><span class="op">(</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">head</span><span class="op">(</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                <span class="fu">link</span><span class="op">(</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                    rel<span class="op">:</span> <span class="st">&quot;stylesheet&quot;</span><span class="op">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                    type<span class="op">:</span> <span class="st">&quot;text/css&quot;</span><span class="op">,</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                    href<span class="op">:</span> <span class="st">&quot;default.css&quot;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                <span class="op">),</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                <span class="fu">Css</span><span class="op">(),</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                <span class="fu">script</span><span class="op">(</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                    type<span class="op">:</span> <span class="st">&quot;text/javascript&quot;</span><span class="op">,</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>                    src<span class="op">:</span> <span class="st">&quot;jquery-3.3.1.min.js&quot;</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                <span class="op">),</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>                <span class="fu">Js</span><span class="op">()</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">),</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>            <span class="fu">body</span><span class="op">(</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>                <span class="fu">Body</span><span class="op">()</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">)</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>        <span class="op">);</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Css</span><span class="op">();</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Js</span><span class="op">();</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">abstract</span> Html <span class="fu">Body</span><span class="op">();</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Then, inheriting a layout is as easy as inheriting a class.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">class</span> DashboardPage : Layout</span>
-<span id="cb10-2"><a href="#cb10-2"></a>{</span>
-<span id="cb10-3"><a href="#cb10-3"></a>    <span class="kw">private</span> DashboardModel _model;</span>
-<span id="cb10-4"><a href="#cb10-4"></a></span>
-<span id="cb10-5"><a href="#cb10-5"></a>    <span class="kw">public</span> <span class="fu">Dashboard</span>(DashboardModel model)</span>
-<span id="cb10-6"><a href="#cb10-6"></a>    {</span>
-<span id="cb10-7"><a href="#cb10-7"></a>        _model = model;</span>
-<span id="cb10-8"><a href="#cb10-8"></a>    }</span>
-<span id="cb10-9"><a href="#cb10-9"></a></span>
-<span id="cb10-10"><a href="#cb10-10"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Css</span>()</span>
-<span id="cb10-11"><a href="#cb10-11"></a>        =&gt; <span class="co">/* Dashboard-specific CSS */</span>;</span>
-<span id="cb10-12"><a href="#cb10-12"></a></span>
-<span id="cb10-13"><a href="#cb10-13"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Js</span>()</span>
-<span id="cb10-14"><a href="#cb10-14"></a>        =&gt; <span class="co">/* Dashboard-specific scripts */</span>;</span>
-<span id="cb10-15"><a href="#cb10-15"></a></span>
-<span id="cb10-16"><a href="#cb10-16"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Body</span>()</span>
-<span id="cb10-17"><a href="#cb10-17"></a>        =&gt; <span class="co">/* The body of the dashboard page */</span>;</span>
-<span id="cb10-18"><a href="#cb10-18"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> DashboardPage <span class="op">:</span> Layout</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> DashboardModel _model<span class="op">;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="fu">Dashboard</span><span class="op">(</span>DashboardModel model<span class="op">)</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        _model <span class="op">=</span> model<span class="op">;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Css</span><span class="op">()</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="co">/* Dashboard-specific CSS */</span><span class="op">;</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Js</span><span class="op">()</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="co">/* Dashboard-specific scripts */</span><span class="op">;</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Body</span><span class="op">()</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="co">/* The body of the dashboard page */</span><span class="op">;</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <h2 id="twenty"><a href="#twenty">Twenty</a></h2>
 <p>Eighty comes bundled with a second HTML generation library called Twenty. Twenty is harder to use correctly than Eighty, and its API is more verbose, but it’s faster.</p>
 <p>HTML tags have to be balanced: every opening tag has to have a matching closing tag and vice versa. While an <code>Html</code> value is being written to a <code>TextWriter</code>, Eighty manages the stack of currently-open tags using the call stack. Each tag writes its opening tag, tells its children to write themselves, and then writes its closing tag. This is possible because <code>Html</code> is an ordinary reference type; the objects you build with methods like <code>p()</code> and <code>h1()</code> are tree-shaped objects representing a DOM of statically-unknown size.</p>
 <p>Twenty instead takes an imperative view of HTML generation. Each tag method writes an opening tag to the <code>TextWriter</code> immediately, and returns an <code>IDisposable</code> which writes out the closing tag when it’s disposed. You, the programmer, use C#’s <code>using</code> statement to ensure that the <code>Dispose</code> method is called as soon as the children have been written. The structure of your HTML document is still visible in the code, but it’s present in the nesting of <code>using</code> statements, rather than by the structure of a tree-shaped object.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">class</span> MyHtmlBuilder : HtmlBuilder</span>
-<span id="cb11-2"><a href="#cb11-2"></a>{</span>
-<span id="cb11-3"><a href="#cb11-3"></a>    <span class="kw">protected</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Build</span>()</span>
-<span id="cb11-4"><a href="#cb11-4"></a>    {</span>
-<span id="cb11-5"><a href="#cb11-5"></a>        <span class="kw">using</span> (<span class="fu">article</span>(@class: <span class="st">&quot;readme&quot;</span>))</span>
-<span id="cb11-6"><a href="#cb11-6"></a>        {</span>
-<span id="cb11-7"><a href="#cb11-7"></a>            <span class="kw">using</span> (<span class="fu">h1</span>(id: <span class="st">&quot;Eighty&quot;</span>))</span>
-<span id="cb11-8"><a href="#cb11-8"></a>                <span class="fu">Text</span>(<span class="st">&quot;Eighty&quot;</span>);</span>
-<span id="cb11-9"><a href="#cb11-9"></a>            <span class="kw">using</span> (<span class="fu">p</span>())</span>
-<span id="cb11-10"><a href="#cb11-10"></a>            {</span>
-<span id="cb11-11"><a href="#cb11-11"></a>                <span class="fu">Text</span>(<span class="st">&quot;Eighty (as in &quot;</span>);</span>
-<span id="cb11-12"><a href="#cb11-12"></a>                <span class="kw">using</span> (<span class="fu">i</span>())</span>
-<span id="cb11-13"><a href="#cb11-13"></a>                    <span class="fu">Text</span>(<span class="st">&quot;eigh-ty-M-L&quot;</span>);</span>
-<span id="cb11-14"><a href="#cb11-14"></a>                <span class="fu">Text</span>(<span class="st">&quot;) is a simple HTML generation library.&quot;</span>);</span>
-<span id="cb11-15"><a href="#cb11-15"></a>            }</span>
-<span id="cb11-16"><a href="#cb11-16"></a>        }</span>
-<span id="cb11-17"><a href="#cb11-17"></a>    }</span>
-<span id="cb11-18"><a href="#cb11-18"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MyHtmlBuilder <span class="op">:</span> HtmlBuilder</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Build</span><span class="op">()</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">using</span> <span class="op">(</span><span class="fu">article</span><span class="op">(</span>@class<span class="op">:</span> <span class="st">&quot;readme&quot;</span><span class="op">))</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>            <span class="kw">using</span> <span class="op">(</span><span class="fu">h1</span><span class="op">(</span>id<span class="op">:</span> <span class="st">&quot;Eighty&quot;</span><span class="op">))</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                <span class="fu">Text</span><span class="op">(</span><span class="st">&quot;Eighty&quot;</span><span class="op">);</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">using</span> <span class="op">(</span><span class="fu">p</span><span class="op">())</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                <span class="fu">Text</span><span class="op">(</span><span class="st">&quot;Eighty (as in &quot;</span><span class="op">);</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>                <span class="kw">using</span> <span class="op">(</span><span class="fu">i</span><span class="op">())</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">Text</span><span class="op">(</span><span class="st">&quot;eigh-ty-M-L&quot;</span><span class="op">);</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>                <span class="fu">Text</span><span class="op">(</span><span class="st">&quot;) is a simple HTML generation library.&quot;</span><span class="op">);</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Perhaps this is a bit of an abuse of <code>IDisposable</code>, and the <code>using</code> syntax is comparatively noisy, but this trick allows Twenty to operate quickly and without generating any garbage while still making for a reasonable DSL. Compared to Eighty, Twenty does lose out on some flexibility and safety:</p>
 <ul>
 <li>You mustn’t forget a <code>using</code> statement, or call <code>Dispose</code> more than once, or Twenty will output malformed HTML. Eighty, on the other hand, will never generate bad HTML (notwithstanding the use of <code>Raw</code>).</li>
