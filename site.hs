@@ -1,14 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (mappend)
 import qualified Data.Time as Time
+import Data.Text (Text)
+import qualified Data.Text as Text
 import System.Environment (getArgs)
 import Text.Pandoc
 import Text.Pandoc.Shared (stringify)
 import Text.Pandoc.Walk (walk)
-import qualified Data.HashMap.Strict as H
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as Aeson
 import Hakyll
 
 
@@ -49,7 +52,7 @@ main = do
 
         matchMetadata postsPattern metadataMatcher $ do
             route $ setExtension "html"
-            compile $ do
+            compile $
                 pandocCompilerWithTransform defaultHakyllReaderOptions defaultHakyllWriterOptions linkifyHeaders
                     >>= loadAndApplyTemplate "templates/post.html" postCtx
                     >>= saveSnapshot "content"
@@ -118,7 +121,7 @@ parseDate = Time.parseTimeOrError True Time.defaultTimeLocale "%Y-%m-%d"
 showTOC :: Compiler Bool
 showTOC = do
     meta <- getMetadata =<< getUnderlying
-    return $ case H.lookup "toc" meta of
+    return $ case Aeson.lookup "toc" meta of
         Just (Aeson.Bool True) -> True
         _ -> False
 
@@ -140,10 +143,9 @@ postCtx =
                 else return []
             )
         tocCtx =
-            field "sectionHash" (return . sectionHash . itemBody) `mappend`
-            field "sectionTitle" (return . sectionTitle . itemBody)
+            field "sectionHash" (pure . sectionHash . itemBody) `mappend`
+            field "sectionTitle" (pure . sectionTitle . itemBody)
 
-        
 
 atomCtx :: Context String
 atomCtx =
@@ -163,8 +165,8 @@ data TOCEntry = TOCEntry { sectionHash :: String, sectionTitle :: String }
 
 makeTOC :: Pandoc -> [Item TOCEntry]
 makeTOC (Pandoc _ blocks) = [
-    Item (fromFilePath hash) (TOCEntry hash (stringify content))
-        | Header 2 (hash, _, _) content <- blocks
+    Item (fromFilePath hash) (TOCEntry hash (Text.unpack $ stringify content))
+        | Header 2 (Text.unpack -> hash, _, _) content <- blocks
     ]
 
 linkifyHeaders :: Pandoc -> Pandoc

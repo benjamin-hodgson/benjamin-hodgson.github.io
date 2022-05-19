@@ -20,5 +20,6 @@ executable benjamin-pizza
                        pandoc,
                        pandoc-types,
                        time,
+                       text,
                        unordered-containers,
                        aeson
