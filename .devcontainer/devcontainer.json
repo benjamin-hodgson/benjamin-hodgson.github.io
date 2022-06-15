@@ -24,7 +24,7 @@
     // "forwardPorts": [],
 
     "forwardPorts": [8888],
-    "postCreateCommand": ["/bin/zsh", "-c", "stack build"],
+    "postCreateCommand": "zsh -c 'stack build'",
     "postStartCommand": "nohup zsh -c 'stack run -- watch --port=8888 &'",
     "remoteUser": "codespace"
 }
