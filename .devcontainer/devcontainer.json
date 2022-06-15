@@ -1,23 +1,30 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.236.0/containers/codespaces-linux
 {
-  "name": "benjamin.pizza",
+    "name": "GitHub Codespaces (Default)",
 
-  "build": {
-    "dockerfile": "Dockerfile",
-    "args": {
-      // Update 'VARIANT' to pick a Haskell version: 9, 8
-			"VARIANT": "9",
-			"UPGRADE_PACKAGES": "true"
-    }
-  },
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
 
-  "settings": {},
+    // Configure tool-specific properties.
+    "customizations": {
+        // Configure properties specific to VS Code.
+        "vscode": {
+            // Add the IDs of extensions you want installed when the container is created.
+            "extensions": [
+                "GitHub.vscode-pull-request-github",
+                "haskell.haskell"
+            ]
+        }
+    },
 
-  "extensions": [
-    "haskell.haskell"
-  ],
 
-  "forwardPorts": [8888],
-  "postCreateCommand": "stack build",
-  "postStartCommand": "nohup zsh -c 'stack run -- watch --port=8888 &'",
-  "remoteUser": "vscode"
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+
+    "forwardPorts": [8888],
+    "postCreateCommand": ["bin/zsh", "-c", "stack build"],
+    "postStartCommand": "nohup zsh -c 'stack run -- watch --port=8888 &'",
+    "remoteUser": "codespace"
 }
