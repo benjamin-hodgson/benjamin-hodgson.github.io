@@ -19,12 +19,8 @@
         }
     },
 
-
-    // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    // "forwardPorts": [],
-
     "forwardPorts": [8888],
     "postCreateCommand": ". ~/.ghcup/env && stack build",
-    "postStartCommand": "nohup zsh -c 'stack run -- watch --port=8888 &'",
+    "postStartCommand": "stack run -- watch --port=8888 &",
     "remoteUser": "codespace"
 }
