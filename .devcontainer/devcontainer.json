@@ -21,6 +21,6 @@
 
     "forwardPorts": [8888],
     "postCreateCommand": ". ~/.ghcup/env && stack build",
-    "postStartCommand": "stack run -- watch --port=8888 &",
+    "postStartCommand": "nohup zsh -lic 'stack run -- watch --port=8888 &'",
     "remoteUser": "codespace"
 }
