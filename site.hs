@@ -18,11 +18,9 @@ import Hakyll
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-    Options { optCommand = command } <- defaultParser defaultConfiguration
-    let debug = case command of { Watch {} -> True; _ -> False }
-
-    let postsPat = postsPattern debug
-    metadataMatcher <- metadataMatcher debug
+    command <- fromMaybe "" <$> listToMaybe <$> getArgs
+    let postsPattern = postsPatternForCommand command
+    metadataMatcher <- metadataMatcherForCommand command
     
     hakyll $ do
         match "favicon.ico" $ do
@@ -44,7 +42,7 @@ main = do
             route   idRoute
             compile $ do
                 items <- loadAll "css/*"
-                makeItem $ (if debug then id else compressCss) $ concatMap itemBody items
+                makeItem $ compressCss $ concatMap itemBody items
 
         match "contact.md" $ do
             route   $ setExtension "html"
@@ -52,13 +50,13 @@ main = do
                 >>= loadAndApplyTemplate "templates/default.html" defaultContext
                 >>= relativizeUrls
 
-        matchMetadata postsPat metadataMatcher $ do
+        matchMetadata postsPattern metadataMatcher $ do
             route $ setExtension "html"
             compile $
                 pandocCompilerWithTransform defaultHakyllReaderOptions defaultHakyllWriterOptions linkifyHeaders
-                    >>= loadAndApplyTemplate "templates/post.html" (postCtx debug)
+                    >>= loadAndApplyTemplate "templates/post.html" postCtx
                     >>= saveSnapshot "content"
-                    >>= loadAndApplyTemplate "templates/default.html" (postCtx debug)
+                    >>= loadAndApplyTemplate "templates/default.html" postCtx
                     >>= relativizeUrls
 
         version "redirects" $ createRedirects [
@@ -69,11 +67,10 @@ main = do
         create ["archive.html"] $ do
             route idRoute
             compile $ do
-                posts <- recentFirst =<< loadAll postsPat
+                posts <- recentFirst =<< loadAll postsPattern
                 let archiveCtx =
-                        boolField "debug" (const debug) `mappend`
-                        listField "posts" (postCtx debug) (pure posts) `mappend`
-                        constField "title" "Archives" `mappend`
+                        listField "posts" postCtx (return posts) `mappend`
+                        constField "title" "Archives"            `mappend`
                         defaultContext
 
                 makeItem ""
@@ -84,18 +81,17 @@ main = do
         create ["atom.xml"] $ do
             route idRoute
             compile $ 
-                loadAllSnapshots postsPat "content"
+                loadAllSnapshots postsPattern "content"
                     >>= recentFirst
-                    >>= renderAtom feedConfig (atomCtx debug)
+                    >>= renderAtom feedConfig atomCtx
 
 
         match "index.html" $ do
             route idRoute
             compile $ do
-                posts <- recentFirst =<< loadAll postsPat
+                posts <- recentFirst =<< loadAll postsPattern
                 let indexCtx =
-                        boolField "debug" (const debug) `mappend`
-                        listField "posts" (postCtx debug) (pure posts) `mappend`
+                        listField "posts" postCtx (return posts) `mappend`
                         defaultContext
 
                 getResourceBody
@@ -108,11 +104,11 @@ main = do
 
 --------------------------------------------------------------------------------
 
-postsPattern True = "posts/*" .&&. hasNoVersion .||. "drafts/*"
-postsPattern False = "posts/*" .&&. hasNoVersion
+postsPatternForCommand "watch" = "posts/*" .&&. hasNoVersion .||. "drafts/*"
+postsPatternForCommand _ = "posts/*" .&&. hasNoVersion
 
-metadataMatcher True = return (const True)
-metadataMatcher False = do
+metadataMatcherForCommand "watch" = return (const True)
+metadataMatcherForCommand _ = do
     time <- Time.getCurrentTime
     return $ \metadata ->
         case parseDate <$> lookupString "date" metadata of
@@ -129,9 +125,10 @@ showTOC = do
         Just (Aeson.Bool True) -> True
         _ -> False
 
-postCtx :: Bool -> Context String
-postCtx debug =
-    boolField "debug" (const debug) `mappend`
+
+
+postCtx :: Context String
+postCtx =
     tocFields `mappend`
     dateField "date" "%Y-%m-%d" `mappend`
     dateField "englishDate" "%B %e, %Y" `mappend`
@@ -149,9 +146,10 @@ postCtx debug =
             field "sectionHash" (pure . sectionHash . itemBody) `mappend`
             field "sectionTitle" (pure . sectionTitle . itemBody)
 
-atomCtx :: Bool -> Context String
-atomCtx debug =
-    postCtx debug `mappend`
+
+atomCtx :: Context String
+atomCtx =
+    postCtx `mappend`
     bodyField "description"
 
 feedConfig = FeedConfiguration {
