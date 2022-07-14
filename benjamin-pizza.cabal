@@ -1,25 +1,25 @@
-name:                benjamin-pizza
-version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/githubuser/benjamin-pizza#readme
-license:             BSD3
-license-file:        LICENSE.md
-author:              Benjamin Hodgson
-copyright:           2017-2021 Benjamin Hodgson
-category:            Web
-build-type:          Simple
-cabal-version:       >=1.10
+cabal-version: 3.6
+
+name: benjamin-pizza
+version: 0.1.0.0
+homepage: https://github.com/benjamin-hodgson/benjamin-hodgson.github.io
+license: MIT AND CC-BY-4.0
+license-file: LICENSE.md
+author: Benjamin Hodgson
+copyright: 2017-2022 Benjamin Hodgson
+category: Web
+build-type: Simple
 
 executable benjamin-pizza
-  main-is:             site.hs
-  default-language:    Haskell2010
-  ghc-options:         -threaded
-  build-depends:       base,
-                       hakyll,
-                       pandoc,
-                       pandoc-types,
-                       time,
-                       text,
-                       unordered-containers,
-                       aeson
+    main-is: site.hs
+    default-language: GHC2021
+    ghc-options: -threaded
+    build-depends:
+        base,
+        hakyll,
+        pandoc,
+        pandoc-types,
+        time,
+        text,
+        unordered-containers,
+        aeson
