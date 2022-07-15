@@ -84,7 +84,7 @@ Assert.Equal(&quot;abc1&quot;, Identifier.ParseOrThrow(&quot;abc1&quot;));
 </ul>
 <p>Parser combinators' power comes from their composability. The library comprises a small number of building blocks, which you can put together in rich and varied ways to build a parser which does what you need. The library's level of abstraction is a good fit for small-to-medium sized parsing tasks: it's not as high-level as a full-blown parser generator like Antlr, but it's much simpler to integrate. Rewriting our hand-written <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">JQL</a> parser in Pidgin took around four times less code.</p>
 <p>That's the overview — I won't dive into a full tutorial on parser combinators because there are already <a href="http://www.lihaoyi.com/post/EasyParsingwithParserCombinators.html">plenty</a> <a href="http://webdoc.sub.gwdg.de/ebook/serien/ah/UU-CS/2008-044.pdf">of</a> <a href="https://news.ycombinator.com/item?id=14600079">those</a> a mere Google away.</p>
-<h3 id="how-it-works">[How it works](#how-it-works</h3>
+<h3 id="how-it-works"><a href="#how-it-works">How it works</a></h3>
 <p>Pidgin's <code>Parser&lt;TToken, T&gt;</code> type represents a process which pulls <code>TToken</code>s one at a time from a (stateful) input stream, and either successfully returns a <code>T</code> or fails with an error message.</p>
 <pre><code class="language-csharp">public abstract class Parser&lt;TToken, T&gt;
 {
@@ -216,10 +216,10 @@ var lowPrecedence = midPrecedence.Then(Char('+').Then(midPrecedence).Many());
 
 </a></h2>
 <p>Performance has always been one of Pidgin's priorities — I'm proud that Pidgin is C#'s fastest parser combinator library (that I know of!) — but there's always room for improvement. In my tests Pidgin still runs somewhat slower than F#'s FParsec library, for example. In this release I made some architectural changes to <code>IParseState</code> to help close that gap.</p>
-<h3 id="buffering-uniformly">[Buffering Uniformly](#buffering-uniformly</h3>
+<h3 id="buffering-uniformly"><a href="#buffering-uniformly">Buffering Uniformly</a></h3>
 <p>As I mentioned earlier, Pidgin has several internal implementations of <code>IParseState</code>, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to <em>backtrack</em> on failure (using the <code>Try</code> combinator), so you can't always discard a token as soon as you've seen it. Some <code>IParseState</code> implementations — specifically the ones that are built on top of streaming storage (like <code>Stream</code>) — therefore <em>buffer</em> their input into an array. The ones that are backed by in-memory storage like <code>string</code> don't need to buffer because their data is already in memory.</p>
 <p>I decided to move the buffering logic to a shared part of the code. Now <em>all</em> <code>IParseState</code> implementations buffer their input, even the in-memory ones. On its own this should make the code slower (it's more expensive to copy a <code>string</code> into an array than not to!), but it enables all of the optimisations I'm about to describe.</p>
-<h3 id="de-virtualisation--inlining">[De-Virtualisation &amp; Inlining](#de-virtualisation--inlining</h3>
+<h3 id="de-virtualisation--inlining"><a href="#de-virtualisation--inlining">De-Virtualisation &amp; Inlining</a></h3>
 <p>Virtual method calls are comparatively expensive in .NET, and they happen frequently in Pidgin's implementation because of <code>IParseState</code>'s design: a parser which consumes <em>n</em> tokens makes a minimum of <em>n</em> virtual calls to <code>Advance</code>.</p>
 <p>With the buffering code extracted into a single place, there was no longer any need to keep it behind an interface. I moved all the buffering and error handling code into a mutable struct which is stored on the stack and passed to the <code>Parser</code>s by reference. Now <code>Advance</code> and <code>Peek</code> are non-virtual.</p>
 <pre><code class="language-csharp">struct ParseState&lt;TToken&gt;
@@ -262,7 +262,7 @@ public abstract class Parser&lt;TToken, T&gt;
 }
 </code></pre>
 <p>These properties are short and non-virtual, so they are good inlining candidates. After inlining them, the JIT sees simple array-manipulating code, which it can easily optimise in the context of the containing method. This simple change resulted in a 15-20% performance improvement across the board.</p>
-<h3 id="chunking">[Chunking](#chunking</h3>
+<h3 id="chunking"><a href="#chunking"></a></h3>
 <p>The <code>Stream</code> version of <code>Advance</code> called <code>stream.Read()</code>, which reads and returns a single byte from the stream. This is not as efficient as <code>stream.Read(byte[])</code>, which reads a chunk of bytes from the stream and copies them into an array. (The former requires <em>n</em> virtual method calls to read <em>n</em> bytes, whereas the latter requires only <em>n / <code>array.Length</code></em>.)</p>
 <p>I replaced <code>ITokenStream</code>'s <code>Advance</code> and <code>Peek</code> methods with a method which reads a chunk of tokens into the <code>ParseState</code>'s buffer.</p>
 <pre><code class="language-csharp">interface ITokenStream&lt;TToken&gt;

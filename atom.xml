@@ -576,7 +576,7 @@ private IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Rule ru
 <h2 id="scope-management"><a href="#scope-management">Scope Management
 
 </a></h2>
-<h3 id="discharging">[Discharging](#discharging</h3>
+<h3 id="discharging"><a href="#discharging"></a></h3>
 <p>Here's another example program which reveals a bug in <code>Query</code>.</p>
 <pre><code class="language-prolog">foo(X).
 bar(baz).
@@ -606,7 +606,7 @@ private static ImmutableDictionary&lt;string, Term&gt; Discharge(ImmutableDictio
         .ToImmutableDictionary();
 </code></pre>
 <p>This fixes the bug. <code>test()</code> now correctly returns an empty substitution.</p>
-<h3 id="freshening">[Freshening](#freshening</h3>
+<h3 id="freshening"><a href="#freshening"></a></h3>
 <p>There's one final bug to fix in the engine.</p>
 <pre><code class="language-prolog">foo(a, X).
 </code></pre>
@@ -1358,7 +1358,7 @@ false
 Food = pizza
 </code></pre>
 <p>Even though predicates don't return anything per se — they either succeed or fail — you can use variables in this way to get information out of a predicate. Prolog's constraint solving system is <strong>bi-directional</strong> — a predicate's parameters can serve as both inputs and outputs.</p>
-<h3 id="pattern-matching-and-recursion">[Pattern Matching and Recursion](#pattern-matching-and-recursion</h3>
+<h3 id="pattern-matching-and-recursion"><a href="#pattern-matching-and-recursion">Pattern Matching and Recursion</a></h3>
 <p>As well as putting <em>conditions</em> on the right-hand side of a rule, you can put <em>patterns</em> on the left. This is somewhat like pattern matching in functional languages — the right-hand side of a rule is only entered if its arguments match the pattern on the left.</p>
 <p>Here's a recursive predicate <code>last(List, Item)</code> which succeeds when <code>Item</code> is the last element of <code>List</code>.</p>
 <pre><code class="language-prolog">last(cons(X, nil), X).
@@ -1569,7 +1569,7 @@ class Rule
 <blockquote>
 <p><em>I got married yesterday! This post is about my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Have a read of <a href="/posts/2017-11-13-recursion-without-recursion.html">my earlier post</a> for an introduction.</em></p>
 </blockquote>
-<h2 id="how-things-were">[How things were](#how-things-were</h2>
+<h2 id="how-things-were"><a href="#how-things-were">How things were</a></h2>
 <p>I recently made a substantial change to Sawmill's core <code>IRewritable</code> interface. Here's what it used to look like:</p>
 <pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
 {
@@ -1579,7 +1579,7 @@ class Rule
 }
 </code></pre>
 <p>It's a pleasingly simple interface with two core operations — <code>GetChildren</code> returns the current object's immediate children and <code>SetChildren</code> replaces them. But there are also some warts.</p>
-<h3 id="wart-1-childrent">[Wart 1: <code>Children&lt;T&gt;</code>](#wart-1-childrent</h3>
+<h3 id="wart-1-childrent"><a href="#wart-1-childrent">Wart 1: <code>Children&lt;T&gt;</code></a></h3>
 <p><code>Children&lt;T&gt;</code> is a custom struct, not a standard collection type:</p>
 <pre><code class="language-csharp">struct Children&lt;T&gt;
 {
@@ -1595,7 +1595,7 @@ enum NumberOfChildren
 </code></pre>
 <p>I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So <code>GetChildren</code> returns a <code>Children&lt;T&gt;</code>, passing up to two children on the stack and the rest in an <code>ImmutableList</code>. The <code>NumberOfChildren</code> property tells the library how many of the struct's fields are filled in.</p>
 <p>This custom collection type is an extra hurdle to understanding <code>IRewritable</code>'s API. It also makes certain parts of Sawmill's implementation more complex — many internal methods have to <code>switch</code> on the <code>NumberOfChildren</code> they're working with and do the same work in four different ways. It's also relatively large for a <code>struct</code> (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.</p>
-<h3 id="wart-2-collections">[Wart 2: Collections](#wart-2-collections</h3>
+<h3 id="wart-2-collections"><a href="#wart-2-collections">Wart 2: Collections</a></h3>
 <p>In fact, having <code>GetChildren</code> return a collection at all is problematic, because it forces implementations to allocate memory. If your object has three or more children (and they're not already stored in an <code>ImmutableList</code>) then you have to create a new <code>ImmutableList</code> whenever <code>GetChildren</code> is called:</p>
 <pre><code class="language-csharp">class ThreeChildren : IRewritable&lt;ThreeChildren&gt;
 {
@@ -1637,7 +1637,7 @@ enum NumberOfChildren
 </code></pre>
 <p>This is not a &quot;pit of success&quot; API — <code>SetChildren</code> looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each <code>GetChildren</code>/<code>SetChildren</code> call in order to be safe. So this design would end up allocating just as much as the <code>ImmutableList</code> version.</p>
 <p>(Keep the buffer idea in your head, though, because we'll be coming back to it in a minute.)</p>
-<h3 id="wart-3-rewritechildren">[Wart 3: <code>RewriteChildren</code>](#wart-3-rewritechildren</h3>
+<h3 id="wart-3-rewritechildren"><a href="#wart-3-rewritechildren">Wart 3: <code>RewriteChildren</code></a></h3>
 <p><code>RewriteChildren</code>, which applies a transformation function to the object's immediate children (in other words, a one-level <code>Rewrite</code>), has a sensible implementation in terms of the other two methods: get the children, transform them, and put them back.</p>
 <pre><code class="language-csharp">public static T DefaultRewriteChildren&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
     where T : IRewritable&lt;T&gt;
@@ -1657,7 +1657,7 @@ enum NumberOfChildren
 }
 </code></pre>
 <p>The extra method makes <code>IRewritable</code> harder to understand and harder to implement. Implementing <code>RewriteChildren</code> (without using <code>DefaultRewriteChildren</code>) can be tricky; if the transformer function doesn't change anything you should avoid recreating the object.</p>
-<h2 id="the-new-way">[The new way](#the-new-way</h2>
+<h2 id="the-new-way"><a href="#the-new-way">The new way</a></h2>
 <p>I'm pleased to say that <code>IRewritable</code>'s new design addresses all three of these warts. Remember the &quot;buffer&quot; idea from earlier?</p>
 <pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
 {
@@ -1699,7 +1699,7 @@ enum NumberOfChildren
 }
 </code></pre>
 <p>The main reason for having <code>RewriteChildren</code> be a method on the interface was to avoid allocating memory (for the <code>GetChildren</code> calls). So we don't need it on the interface any more — this extension method serves as a single universal implementation. Likewise, <code>Children&lt;T&gt;</code>'s purpose was also to avoid allocating memory, so we can do away with it too.</p>
-<h2 id="relieving-arraypool-pressure">[Relieving <code>ArrayPool</code> pressure](#relieving-arraypool-pressure</h2>
+<h2 id="relieving-arraypool-pressure"><a href="#relieving-arraypool-pressure">Relieving <code>ArrayPool</code> pressure</a></h2>
 <p>There's one operational problem with this implementation: it can end up renting a large number of arrays from the pool. <code>Rewrite</code>, which applies a transformation function to every node in a tree (not just one layer), is implemented something like this:</p>
 <pre><code class="language-csharp">public static T Rewrite(this T value, Func&lt;T, T&gt; transformer) where T : IRewritable&lt;T&gt;
     =&gt; transformer(t.RewriteChildren(child =&gt; child.Rewrite(transformer)));
@@ -1791,7 +1791,7 @@ private static T RewriteChildrenInternal&lt;T&gt;(
 </code></pre>
 <p>I've glossed over an important part of <code>ChunkStack</code>'s implementation: what happens when the array fills up? The <a href="https://github.com/benjamin-hodgson/Sawmill/blob/bf652359023a76d3ea395d7d743db1a8d6559ec2/Sawmill/ChunkStack.cs">real implementation</a> manages a collection of &quot;regions&quot;, taking a new region from the array pool when existing regions fill up.</p>
 <p>In the pathological case of a <em>very</em> large tree, this version of <code>Rewrite</code> can still exhaust the array pool, but it'll happen much less quickly.</p>
-<h2 id="hackalloc">[Hackalloc](#hackalloc</h2>
+<h2 id="hackalloc"><a href="#hackalloc"></a></h2>
 <p>I mentioned earlier that a <code>Span</code> is not necessarily backed by an array. <code>Span</code> represents <em>a contiguous block of memory</em>, with no assumptions about where that memory is or how it's managed. A <code>Span</code> could be a slice of an array, or it could be a chunk of unmanaged memory, or it could be an area of the stack. Under the hood it's <em>just a pointer</em>; <code>Span</code> doesn't care exactly where the pointer points.</p>
 <p>In fact, C# has built in support for that last case. The <code>stackalloc</code> keyword works like C's <code>alloca</code>: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, <code>stackalloc</code> was only available in an <code>unsafe</code> context, but today it's available in safe code thanks to <code>Span</code>.</p>
 <pre><code class="language-csharp">public void StackallocExample()
@@ -2001,7 +2001,7 @@ Assert.Equal(&quot;abc1&quot;, Identifier.ParseOrThrow(&quot;abc1&quot;));
 </ul>
 <p>Parser combinators' power comes from their composability. The library comprises a small number of building blocks, which you can put together in rich and varied ways to build a parser which does what you need. The library's level of abstraction is a good fit for small-to-medium sized parsing tasks: it's not as high-level as a full-blown parser generator like Antlr, but it's much simpler to integrate. Rewriting our hand-written <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">JQL</a> parser in Pidgin took around four times less code.</p>
 <p>That's the overview — I won't dive into a full tutorial on parser combinators because there are already <a href="http://www.lihaoyi.com/post/EasyParsingwithParserCombinators.html">plenty</a> <a href="http://webdoc.sub.gwdg.de/ebook/serien/ah/UU-CS/2008-044.pdf">of</a> <a href="https://news.ycombinator.com/item?id=14600079">those</a> a mere Google away.</p>
-<h3 id="how-it-works">[How it works](#how-it-works</h3>
+<h3 id="how-it-works"><a href="#how-it-works">How it works</a></h3>
 <p>Pidgin's <code>Parser&lt;TToken, T&gt;</code> type represents a process which pulls <code>TToken</code>s one at a time from a (stateful) input stream, and either successfully returns a <code>T</code> or fails with an error message.</p>
 <pre><code class="language-csharp">public abstract class Parser&lt;TToken, T&gt;
 {
@@ -2133,10 +2133,10 @@ var lowPrecedence = midPrecedence.Then(Char('+').Then(midPrecedence).Many());
 
 </a></h2>
 <p>Performance has always been one of Pidgin's priorities — I'm proud that Pidgin is C#'s fastest parser combinator library (that I know of!) — but there's always room for improvement. In my tests Pidgin still runs somewhat slower than F#'s FParsec library, for example. In this release I made some architectural changes to <code>IParseState</code> to help close that gap.</p>
-<h3 id="buffering-uniformly">[Buffering Uniformly](#buffering-uniformly</h3>
+<h3 id="buffering-uniformly"><a href="#buffering-uniformly">Buffering Uniformly</a></h3>
 <p>As I mentioned earlier, Pidgin has several internal implementations of <code>IParseState</code>, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to <em>backtrack</em> on failure (using the <code>Try</code> combinator), so you can't always discard a token as soon as you've seen it. Some <code>IParseState</code> implementations — specifically the ones that are built on top of streaming storage (like <code>Stream</code>) — therefore <em>buffer</em> their input into an array. The ones that are backed by in-memory storage like <code>string</code> don't need to buffer because their data is already in memory.</p>
 <p>I decided to move the buffering logic to a shared part of the code. Now <em>all</em> <code>IParseState</code> implementations buffer their input, even the in-memory ones. On its own this should make the code slower (it's more expensive to copy a <code>string</code> into an array than not to!), but it enables all of the optimisations I'm about to describe.</p>
-<h3 id="de-virtualisation--inlining">[De-Virtualisation &amp; Inlining](#de-virtualisation--inlining</h3>
+<h3 id="de-virtualisation--inlining"><a href="#de-virtualisation--inlining">De-Virtualisation &amp; Inlining</a></h3>
 <p>Virtual method calls are comparatively expensive in .NET, and they happen frequently in Pidgin's implementation because of <code>IParseState</code>'s design: a parser which consumes <em>n</em> tokens makes a minimum of <em>n</em> virtual calls to <code>Advance</code>.</p>
 <p>With the buffering code extracted into a single place, there was no longer any need to keep it behind an interface. I moved all the buffering and error handling code into a mutable struct which is stored on the stack and passed to the <code>Parser</code>s by reference. Now <code>Advance</code> and <code>Peek</code> are non-virtual.</p>
 <pre><code class="language-csharp">struct ParseState&lt;TToken&gt;
@@ -2179,7 +2179,7 @@ public abstract class Parser&lt;TToken, T&gt;
 }
 </code></pre>
 <p>These properties are short and non-virtual, so they are good inlining candidates. After inlining them, the JIT sees simple array-manipulating code, which it can easily optimise in the context of the containing method. This simple change resulted in a 15-20% performance improvement across the board.</p>
-<h3 id="chunking">[Chunking](#chunking</h3>
+<h3 id="chunking"><a href="#chunking"></a></h3>
 <p>The <code>Stream</code> version of <code>Advance</code> called <code>stream.Read()</code>, which reads and returns a single byte from the stream. This is not as efficient as <code>stream.Read(byte[])</code>, which reads a chunk of bytes from the stream and copies them into an array. (The former requires <em>n</em> virtual method calls to read <em>n</em> bytes, whereas the latter requires only <em>n / <code>array.Length</code></em>.)</p>
 <p>I replaced <code>ITokenStream</code>'s <code>Advance</code> and <code>Peek</code> methods with a method which reads a chunk of tokens into the <code>ParseState</code>'s buffer.</p>
 <pre><code class="language-csharp">interface ITokenStream&lt;TToken&gt;
@@ -2492,7 +2492,7 @@ class Product
 }
 </code></pre>
 <p>To summarise, a lens is a way to focus on a small part of a big immutable structure. They're like a first-class version of the <code>.</code> and <code>=</code> operators: you can compose lenses together to focus deeper, and upon focusing on a location you can get and set the value at that location.</p>
-<h3 id="mapping-under-a-lens">[Mapping under a lens](#mapping-under-a-lens</h3>
+<h3 id="mapping-under-a-lens"><a href="#mapping-under-a-lens">Mapping under a lens</a></h3>
 <p>A common pattern is to get a value from a lens, apply some sort of transformation to it, and then put it back where it was. The <code>Map</code> helper function wraps up this pattern:</p>
 <pre><code class="language-csharp">interface ILens&lt;T, TProp&gt;
 {
@@ -2820,7 +2820,7 @@ class List&lt;T&gt; : IEnumerable&lt;T&gt;
 </li>
 </ol>
 <p>To illustrate the second point, here are some examples of how you might emulate some of Razor's programming constructs using Eighty. In many of these cases Eighty does a better job than Razor of allowing abstraction and code reuse, because Eighty is embedded within C# rather than layered on top of C#.</p>
-<h3 id="models">[Models](#models</h3>
+<h3 id="models"><a href="#models"></a></h3>
 <p>In Razor, each view file you write declares a <em>model type</em> — the type of object it expects you to pass in to direct the generation of HTML. You use the <code>@model</code> directive at the top of your file, and then you can access members of the model in your Razor code.</p>
 <pre><code class="language-cshtml">@model ExampleModel
 
@@ -2833,7 +2833,7 @@ class List&lt;T&gt; : IEnumerable&lt;T&gt;
 </code></pre>
 <p>Since a template is a regular C# method, it's much easier to run in a unit test harness than Razor. You can just call the method and make assertions about the generated HTML, either by looking at the string directly or by parsing it and traversing the resultant DOM.</p>
 <p>Eighty includes <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.IHtmlRenderer-1.html">an <code>IHtmlRenderer&lt;TModel&gt;</code> interface</a>, which captures this pattern of parameterising a chunk of HTML by a model, but its use is optional — it's used primarily by Eighty's ASP.NET integration packages.</p>
-<h3 id="control-flow">[Control flow](#control-flow</h3>
+<h3 id="control-flow"><a href="#control-flow">Control flow</a></h3>
 <p>Razor allows you to mix markup with C#'s control flow constructs such as <code>foreach</code> and <code>if</code>. Here's a simple example of populating a <code>ul</code> based on a list of values:</p>
 <pre><code class="language-cshtml">&lt;ul&gt;
     @foreach (var item in Model.Items)
@@ -2864,7 +2864,7 @@ foreach (var item in model.Items)
 return ul_(lis);
 </code></pre>
 <p>Mixing markup with C# is not a problem, because markup <em>is</em> C#.</p>
-<h3 id="partials-and-helpers">[Partials and Helpers](#partials-and-helpers</h3>
+<h3 id="partials-and-helpers"><a href="#partials-and-helpers">Partials and Helpers</a></h3>
 <p>Razor's two main tools for code reuse are <em>partial views</em> and <em>helpers</em>. For the purposes of this article, they're roughly equivalent. Partial views can be returned directly from a controller but their model type is checked at runtime, whereas helpers' parameters are checked by the compiler but they can only be invoked from within a Razor view.</p>
 <p>Eighty handles both of these uses in the simplest of ways: <em>calling a function</em>. If I want to include an HTML snippet in more than one place, I can just extract it into a method returning an <code>Html</code> object. Transliterating an example from <a href="https://docs.microsoft.com/en-us/aspnet/web-pages/overview/ui-layouts-and-themes/creating-and-using-a-helper-in-an-aspnet-web-pages-site">the MVC documentation</a>:</p>
 <pre><code class="language-csharp">Html MakeNote(string content)
@@ -2889,7 +2889,7 @@ Html SomeHtmlContainingANote()
     =&gt; _(Enumerable.Repeat(html, 5));
 </code></pre>
 <p>Since <code>Html</code> values are immutable, you can safely share them between different HTML documents, across different threads, etc. Sharing parts of your HTML document that don't change can be an important optimisation.</p>
-<h3 id="layouts">[Layouts](#layouts</h3>
+<h3 id="layouts"><a href="#layouts"></a></h3>
 <p>Razor lets you define a shared <em>layout</em> page, which acts as a template for the other pages in your application. For example, you might put the <code>html</code> and <code>body</code> tags in a layout page, and use the built in <code>RenderBody</code> helper to render the concrete page's body inside the <code>body</code> tag. This is also where global navs and the like are defined.</p>
 <p>One way to handle global layouts and sections in Eighty would be to define an abstract base class. Each section becomes an abstract method, allowing individual pages to fill in their own HTML for those sections.</p>
 <pre><code class="language-csharp">abstract class Layout

@@ -148,7 +148,7 @@ class Product
 }
 </code></pre>
 <p>To summarise, a lens is a way to focus on a small part of a big immutable structure. They're like a first-class version of the <code>.</code> and <code>=</code> operators: you can compose lenses together to focus deeper, and upon focusing on a location you can get and set the value at that location.</p>
-<h3 id="mapping-under-a-lens">[Mapping under a lens](#mapping-under-a-lens</h3>
+<h3 id="mapping-under-a-lens"><a href="#mapping-under-a-lens">Mapping under a lens</a></h3>
 <p>A common pattern is to get a value from a lens, apply some sort of transformation to it, and then put it back where it was. The <code>Map</code> helper function wraps up this pattern:</p>
 <pre><code class="language-csharp">interface ILens&lt;T, TProp&gt;
 {

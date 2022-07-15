@@ -87,7 +87,7 @@
 </li>
 </ol>
 <p>To illustrate the second point, here are some examples of how you might emulate some of Razor's programming constructs using Eighty. In many of these cases Eighty does a better job than Razor of allowing abstraction and code reuse, because Eighty is embedded within C# rather than layered on top of C#.</p>
-<h3 id="models">[Models](#models</h3>
+<h3 id="models"><a href="#models"></a></h3>
 <p>In Razor, each view file you write declares a <em>model type</em> — the type of object it expects you to pass in to direct the generation of HTML. You use the <code>@model</code> directive at the top of your file, and then you can access members of the model in your Razor code.</p>
 <pre><code class="language-cshtml">@model ExampleModel
 
@@ -100,7 +100,7 @@
 </code></pre>
 <p>Since a template is a regular C# method, it's much easier to run in a unit test harness than Razor. You can just call the method and make assertions about the generated HTML, either by looking at the string directly or by parsing it and traversing the resultant DOM.</p>
 <p>Eighty includes <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.IHtmlRenderer-1.html">an <code>IHtmlRenderer&lt;TModel&gt;</code> interface</a>, which captures this pattern of parameterising a chunk of HTML by a model, but its use is optional — it's used primarily by Eighty's ASP.NET integration packages.</p>
-<h3 id="control-flow">[Control flow](#control-flow</h3>
+<h3 id="control-flow"><a href="#control-flow">Control flow</a></h3>
 <p>Razor allows you to mix markup with C#'s control flow constructs such as <code>foreach</code> and <code>if</code>. Here's a simple example of populating a <code>ul</code> based on a list of values:</p>
 <pre><code class="language-cshtml">&lt;ul&gt;
     @foreach (var item in Model.Items)
@@ -131,7 +131,7 @@ foreach (var item in model.Items)
 return ul_(lis);
 </code></pre>
 <p>Mixing markup with C# is not a problem, because markup <em>is</em> C#.</p>
-<h3 id="partials-and-helpers">[Partials and Helpers](#partials-and-helpers</h3>
+<h3 id="partials-and-helpers"><a href="#partials-and-helpers">Partials and Helpers</a></h3>
 <p>Razor's two main tools for code reuse are <em>partial views</em> and <em>helpers</em>. For the purposes of this article, they're roughly equivalent. Partial views can be returned directly from a controller but their model type is checked at runtime, whereas helpers' parameters are checked by the compiler but they can only be invoked from within a Razor view.</p>
 <p>Eighty handles both of these uses in the simplest of ways: <em>calling a function</em>. If I want to include an HTML snippet in more than one place, I can just extract it into a method returning an <code>Html</code> object. Transliterating an example from <a href="https://docs.microsoft.com/en-us/aspnet/web-pages/overview/ui-layouts-and-themes/creating-and-using-a-helper-in-an-aspnet-web-pages-site">the MVC documentation</a>:</p>
 <pre><code class="language-csharp">Html MakeNote(string content)
@@ -156,7 +156,7 @@ Html SomeHtmlContainingANote()
     =&gt; _(Enumerable.Repeat(html, 5));
 </code></pre>
 <p>Since <code>Html</code> values are immutable, you can safely share them between different HTML documents, across different threads, etc. Sharing parts of your HTML document that don't change can be an important optimisation.</p>
-<h3 id="layouts">[Layouts](#layouts</h3>
+<h3 id="layouts"><a href="#layouts"></a></h3>
 <p>Razor lets you define a shared <em>layout</em> page, which acts as a template for the other pages in your application. For example, you might put the <code>html</code> and <code>body</code> tags in a layout page, and use the built in <code>RenderBody</code> helper to render the concrete page's body inside the <code>body</code> tag. This is also where global navs and the like are defined.</p>
 <p>One way to handle global layouts and sections in Eighty would be to define an abstract base class. Each section becomes an abstract method, allowing individual pages to fill in their own HTML for those sections.</p>
 <pre><code class="language-csharp">abstract class Layout

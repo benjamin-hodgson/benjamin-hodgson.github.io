@@ -91,7 +91,7 @@ false
 Food = pizza
 </code></pre>
 <p>Even though predicates don't return anything per se — they either succeed or fail — you can use variables in this way to get information out of a predicate. Prolog's constraint solving system is <strong>bi-directional</strong> — a predicate's parameters can serve as both inputs and outputs.</p>
-<h3 id="pattern-matching-and-recursion">[Pattern Matching and Recursion](#pattern-matching-and-recursion</h3>
+<h3 id="pattern-matching-and-recursion"><a href="#pattern-matching-and-recursion">Pattern Matching and Recursion</a></h3>
 <p>As well as putting <em>conditions</em> on the right-hand side of a rule, you can put <em>patterns</em> on the left. This is somewhat like pattern matching in functional languages — the right-hand side of a rule is only entered if its arguments match the pattern on the left.</p>
 <p>Here's a recursive predicate <code>last(List, Item)</code> which succeeds when <code>Item</code> is the last element of <code>List</code>.</p>
 <pre><code class="language-prolog">last(cons(X, nil), X).

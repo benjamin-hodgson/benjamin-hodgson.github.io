@@ -210,7 +210,7 @@ private IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Rule ru
 <h2 id="scope-management"><a href="#scope-management">Scope Management
 
 </a></h2>
-<h3 id="discharging">[Discharging](#discharging</h3>
+<h3 id="discharging"><a href="#discharging"></a></h3>
 <p>Here's another example program which reveals a bug in <code>Query</code>.</p>
 <pre><code class="language-prolog">foo(X).
 bar(baz).
@@ -240,7 +240,7 @@ private static ImmutableDictionary&lt;string, Term&gt; Discharge(ImmutableDictio
         .ToImmutableDictionary();
 </code></pre>
 <p>This fixes the bug. <code>test()</code> now correctly returns an empty substitution.</p>
-<h3 id="freshening">[Freshening](#freshening</h3>
+<h3 id="freshening"><a href="#freshening"></a></h3>
 <p>There's one final bug to fix in the engine.</p>
 <pre><code class="language-prolog">foo(a, X).
 </code></pre>
