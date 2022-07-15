@@ -16,7 +16,7 @@ jobs:
       - uses: haskell/actions/setup@f7b0997283589ea5a6b4f2ade6a239d70a412877
 
       - name: Build deps & executable
-        run: cabal build --ghc-options -O2
+        run: cabal build
       
       - name: Generate website
         run: cabal run benjamin-pizza build
