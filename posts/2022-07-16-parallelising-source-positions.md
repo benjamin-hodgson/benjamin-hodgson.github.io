@@ -1,5 +1,6 @@
 ---
 title: Parallelising Source Positions
+date: 2022-07-16
 ---
 
 My parsing library [Pidgin](https://github.com/benjamin-hodgson/Pidgin) has some infrastructure to track positions in a textual input file, for the purposes of error reporting. The library's written in C#, but for today let's work in Haskell.
