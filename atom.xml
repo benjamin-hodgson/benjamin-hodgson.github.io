@@ -415,10 +415,10 @@ class LocalFreshener : IFreshener
 <p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
 <nav>
     <ol>
-        <li>[Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)</li>
-        <li>[Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)</li>
-        <li>[Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)</li>
-        <li>**The rules engine**</li>
+        <li><a href="/posts/2019-12-01-write-you-a-prolog.html">Introduction &amp; Syntax</a></li>
+        <li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
+        <li><a href="/posts/2019-12-15-generic-unification-with-sawmill.html">Unification</a></li>
+        <li><b>The rules engine</b></li>
     </ol>
 </nav>
 <img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
@@ -700,10 +700,10 @@ private IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Rule ru
 <p>This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
 <nav>
     <ol>
-        <li>[Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)</li>
-        <li>[Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)</li>
-        <li>**Unification**</li>
-        <li>[The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)</li>
+        <li><a href="/posts/2019-12-01-write-you-a-prolog.html">Introduction &amp; Syntax</a></li>
+        <li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
+        <li><b>Unification</b></li>
+        <li><a href="/posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a></li>
     </ol>
 </nav>
 <p>We're getting on to the fun part of writing an interpreter: actually <em>interpreting</em> the input code. In this post we're going to implement a <em>unification</em> algorithm using my generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Unification slots somewhere in the middle or bottom-right of this diagram:</p>
@@ -1089,10 +1089,10 @@ public static ImmutableDictionary&lt;string, T&gt; Solve&lt;T&gt;(T[] left, T[] 
 <p>Happy birthday to my sister! This is part of a series of posts about implementing a miniature Prolog interpreter in C#.</p>
 <nav>
     <ol>
-        <li>[Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)</li>
-        <li>**Parsing**</li>
-        <li>[Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)</li>
-        <li>[The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)</li>
+        <li><a href="/posts/2019-12-01-write-you-a-prolog.html">Introduction &amp; Syntax</a></li>
+        <li><b>Parsing</b></li>
+        <li><a href="/posts/2019-12-15-generic-unification-with-sawmill.html">Unification</a></li>
+        <li><a href="/posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a></li>
     </ol>
 </nav>
 <img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
@@ -1316,10 +1316,10 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 <p>I figured it'd be useful to have some examples of my language tooling libraries <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> and <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> in action. I thought it could be fun to use them to write a miniature <a href="https://en.wikipedia.org/wiki/Prolog">Prolog</a> interpreter!</p>
 <nav>
     <ol>
-        <li>**Introduction & Syntax**</li>
-        <li>[Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)</li>
-        <li>[Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)</li>
-        <li>[The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)</li>
+        <li><b>Introduction &amp; Syntax</b></li>
+        <li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
+        <li><a href="/posts/2019-12-15-generic-unification-with-sawmill.html">Unification</a></li>
+        <li><a href="/posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a></li>
     </ol>
 </nav>
 <p>You'll find all the code for this series <a href="https://github.com/benjamin-hodgson/Amateurlog">on GitHub</a>.</p>
