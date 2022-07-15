@@ -56,8 +56,9 @@
 }
 
 code {
-    font-size: 16px;
+    font-size: 1.1em;
 }
+
 pre {
     overflow-x: auto;
     overflow-wrap: normal;  /* fix scrolling in safari */
