@@ -14,6 +14,14 @@ jobs:
 
       # v2.0.0
       - uses: haskell/actions/setup@f7b0997283589ea5a6b4f2ade6a239d70a412877
+        id: setup-haskell
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ${{ steps.setup-haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ hashFiles('cabal.project.freeze') }}
 
       - name: Build deps & executable
         run: cabal build
