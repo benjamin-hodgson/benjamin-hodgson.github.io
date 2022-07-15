@@ -36,7 +36,7 @@ Assert.Equal("abc1", Identifier.ParseOrThrow("abc1"));
 
 Parser combinators' power comes from their composability. The library comprises a small number of building blocks, which you can put together in rich and varied ways to build a parser which does what you need. The library's level of abstraction is a good fit for small-to-medium sized parsing tasks: it's not as high-level as a full-blown parser generator like Antlr, but it's much simpler to integrate. Rewriting our hand-written [JQL](https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html) parser in Pidgin took around four times less code.
 
-That's the overview --- I won't dive into a full tutorial on parser combinators because there are already [plenty](http://www.lihaoyi.com/post/EasyParsingwithParserCombinators.html) [of](http://webdoc.sub.gwdg.de/ebook/serien/ah/UU-CS/2008-044.pdf) [those](https://news.ycombinator.com/item?id=14600079) a mere Google away.
+That's the overview — I won't dive into a full tutorial on parser combinators because there are already [plenty](http://www.lihaoyi.com/post/EasyParsingwithParserCombinators.html) [of](http://webdoc.sub.gwdg.de/ebook/serien/ah/UU-CS/2008-044.pdf) [those](https://news.ycombinator.com/item?id=14600079) a mere Google away.
 
 ### How it works
 
@@ -142,11 +142,11 @@ var midPrecedence = topPrecedence.Then(Char('*').Then(topPrecedence).Many());
 var lowPrecedence = midPrecedence.Then(Char('+').Then(midPrecedence).Many());
 ```
 
-`topPrecedence` expects a number, or a number followed by a sequence of exponents --- two possibilities. `midPrecedence` therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications --- four possibilities. `lowPrecedence` has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.
+`topPrecedence` expects a number, or a number followed by a sequence of exponents — two possibilities. `midPrecedence` therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications — four possibilities. `lowPrecedence` has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.
 
 I made some attempts to optimise this by using more efficient data structures, but I realised this was a losing proposition and decided to throw it out altogether in v2.0. Error messages are now computed at runtime, when the error actually occurs. This means I can be more precise about what the parser was expecting at that particular point in the input: once a parsing process has committed to a branch I can report expected inputs _from that branch_, rather than reporting all possible expected inputs.
 
-Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the _prioritised choice_ operator `Or` works --- `String("foo").Or(String("bar"))` only tries `bar` if an attempt to parse `foo` failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using `ArrayPool`), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children's error messages adds some interesting complications here, which I've described in a [long comment](https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74).)
+Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the _prioritised choice_ operator `Or` works — `String("foo").Or(String("bar"))` only tries `bar` if an attempt to parse `foo` failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using `ArrayPool`), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children's error messages adds some interesting complications here, which I've described in a [long comment](https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74).)
 
 
 `Span`
@@ -164,7 +164,7 @@ internal interface IParseState<TToken>
 }
 ```
 
-So adding `Span` support basically means implementing `IParseState` on top of a `Span`. In theory this should be quite straightforward --- a class which has a `Span` and keeps track of its current position:
+So adding `Span` support basically means implementing `IParseState` on top of a `Span`. In theory this should be quite straightforward — a class which has a `Span` and keeps track of its current position:
 
 ```csharp
 class SpanTokenStream<TToken> : ITokenStream<TToken>
@@ -183,7 +183,7 @@ class SpanTokenStream<TToken> : ITokenStream<TToken>
 
 But if you try and write this class, you'll find that the compiler turns you away. `Span` is a `ref struct`, which means that it can only be stored on the stack. You can't use a `Span` as a field of a `class`, or put it in an array, or box it (by upcasting it to an `interface` or `object`), or use it as a local variable in an `async` or `yield` method (because behind the scenes such methods copy their stack frame to the heap). (There are good reasons for this restriction, pertaining to memory safety.)
 
-How to implement `IParseState` without storing a `Span` on the heap? Because `IParseState` is an internal interface, I can make certain guarantees about its usage. Instances of `IParseState` have a limited life-span --- each `IParseState` instance becomes garbage before the call to `Parse` returns, and `IParseState` instances are never accessed from multiple threads. So I can store the `Span` in `Parse`'s stack frame and put a pointer to that stack frame in the `IParseState`.
+How to implement `IParseState` without storing a `Span` on the heap? Because `IParseState` is an internal interface, I can make certain guarantees about its usage. Instances of `IParseState` have a limited life-span — each `IParseState` instance becomes garbage before the call to `Parse` returns, and `IParseState` instances are never accessed from multiple threads. So I can store the `Span` in `Parse`'s stack frame and put a pointer to that stack frame in the `IParseState`.
 
 This idea is complicated by the fact that `Span` is a [managed type](https://stackoverflow.com/questions/42154908), so you're not allowed to declare a `Span<T>*`. (This restriction ensures that a managed object can't accidentally become garbage while it's still being referred to by an unmanaged pointer; this needn't trouble us here as the `Span` is guaranteed to be reachable because it's on the stack.)
 
@@ -207,11 +207,11 @@ static class Unsafe
 Assorted Performance Improvements
 ---------------------------------
 
-Performance has always been one of Pidgin's priorities --- I'm proud that Pidgin is C#'s fastest parser combinator library (that I know of!) --- but there's always room for improvement. In my tests Pidgin still runs somewhat slower than F#'s FParsec library, for example. In this release I made some architectural changes to `IParseState` to help close that gap.
+Performance has always been one of Pidgin's priorities — I'm proud that Pidgin is C#'s fastest parser combinator library (that I know of!) — but there's always room for improvement. In my tests Pidgin still runs somewhat slower than F#'s FParsec library, for example. In this release I made some architectural changes to `IParseState` to help close that gap.
 
 ### Buffering Uniformly
 
-As I mentioned earlier, Pidgin has several internal implementations of `IParseState`, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to _backtrack_ on failure (using the `Try` combinator), so you can't always discard a token as soon as you've seen it. Some `IParseState` implementations --- specifically the ones that are built on top of streaming storage (like `Stream`) --- therefore _buffer_ their input into an array. The ones that are backed by in-memory storage like `string` don't need to buffer because their data is already in memory.
+As I mentioned earlier, Pidgin has several internal implementations of `IParseState`, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to _backtrack_ on failure (using the `Try` combinator), so you can't always discard a token as soon as you've seen it. Some `IParseState` implementations — specifically the ones that are built on top of streaming storage (like `Stream`) — therefore _buffer_ their input into an array. The ones that are backed by in-memory storage like `string` don't need to buffer because their data is already in memory.
 
 I decided to move the buffering logic to a shared part of the code. Now _all_ `IParseState` implementations buffer their input, even the in-memory ones. On its own this should make the code slower (it's more expensive to copy a `string` into an array than not to!), but it enables all of the optimisations I'm about to describe.
 
@@ -284,9 +284,9 @@ interface ITokenStream<TToken>
 }
 ```
 
-Why not design this signature as `void ReadInto(Span<TToken> span)`? I'd love to! Sadly that would preclude some implementations of `ITokenStream`. Methods like `stream.Read(Span<byte> span)` are available only on .NET Core, and as far as I'm aware Microsoft has no plans to backport them, so for compatibility with the desktop framework I'm stuck using arrays. This is irksome, as [I've said before](/posts/2018-12-06-zooming-in-on-field-accessors.html) --- what's the point of designing a feature for library authors if you're not going to support it properly?
+Why not design this signature as `void ReadInto(Span<TToken> span)`? I'd love to! Sadly that would preclude some implementations of `ITokenStream`. Methods like `stream.Read(Span<byte> span)` are available only on .NET Core, and as far as I'm aware Microsoft has no plans to backport them, so for compatibility with the desktop framework I'm stuck using arrays. This is irksome, as [I've said before](/posts/2018-12-06-zooming-in-on-field-accessors.html) — what's the point of designing a feature for library authors if you're not going to support it properly?
 
-`ReadInto` allows the `ParseState` to fill its buffer in chunks. But `ParseState`'s interface can also be chunk-ified --- some `Parser`s (like `String`) can predict how many characters they'll pull from the input. I added a `Peek` method to `ParseState` which returns a view into the `ParseState`'s buffer. (This makes `Peek` a little tricky to use correctly --- you have to be careful not to continue using the `Span` after a call to `Advance`, which may mutate the buffer.)
+`ReadInto` allows the `ParseState` to fill its buffer in chunks. But `ParseState`'s interface can also be chunk-ified — some `Parser`s (like `String`) can predict how many characters they'll pull from the input. I added a `Peek` method to `ParseState` which returns a view into the `ParseState`'s buffer. (This makes `Peek` a little tricky to use correctly — you have to be careful not to continue using the `Span` after a call to `Advance`, which may mutate the buffer.)
 
 ```csharp
 public ReadOnlySpan<TToken> Peek(int count);
@@ -318,6 +318,6 @@ Make Your Own Opportunities
 
 Indulge me for a moment while I dispense some unsolicited career advice. For a long time, performance engineering was something that [other](https://twitter.com/marcgravell/), [cleverer](https://twitter.com/davidfowl) [people](https://mattwarren.org/) did while I observed from a distance with awe. Why is ASP.NET fast? Because the guys that wrote it are Actual Wizards.
 
-I've been lucky enough to work with some of those clever people for a few years now, and actually they're not Actual Wizards. They just have more experience than me --- they know how to use and interpret profiles and benchmarks, they've seen enough to know what does and doesn't work, and they've had practice coming up with ideas to improve performance.
+I've been lucky enough to work with some of those clever people for a few years now, and actually they're not Actual Wizards. They just have more experience than me — they know how to use and interpret profiles and benchmarks, they've seen enough to know what does and doesn't work, and they've had practice coming up with ideas to improve performance.
 
-The good news is that performance optimisation usually doesn't involve fiddly low-level programming like this --- simply being aware of when your code performs IO makes a big difference --- and it's never too early or late to start building your experience level, no matter where you are in your career. For me, that meant setting myself the goal of making my open source libraries as fast as I could. For you, it could mean picking a slow part of your codebase at work and trying to make it faster, or pair-programming with a colleague, or thoroughly reading through some unfamiliar code. Making your own opportunities to learn new things is the best way to get better.
+The good news is that performance optimisation usually doesn't involve fiddly low-level programming like this — simply being aware of when your code performs IO makes a big difference — and it's never too early or late to start building your experience level, no matter where you are in your career. For me, that meant setting myself the goal of making my open source libraries as fast as I could. For you, it could mean picking a slow part of your codebase at work and trying to make it faster, or pair-programming with a colleague, or thoroughly reading through some unfamiliar code. Making your own opportunities to learn new things is the best way to get better.

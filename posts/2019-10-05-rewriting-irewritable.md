@@ -18,7 +18,7 @@ interface IRewritable<T> where T : IRewritable<T>
 }
 ```
 
-It's a pleasingly simple interface with two core operations --- `GetChildren` returns the current object's immediate children and `SetChildren` replaces them. But there are also some warts.
+It's a pleasingly simple interface with two core operations — `GetChildren` returns the current object's immediate children and `SetChildren` replaces them. But there are also some warts.
 
 ### Wart 1: `Children<T>`
 
@@ -40,7 +40,7 @@ enum NumberOfChildren
 
 I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So `GetChildren` returns a `Children<T>`, passing up to two children on the stack and the rest in an `ImmutableList`. The `NumberOfChildren` property tells the library how many of the struct's fields are filled in.
 
-This custom collection type is an extra hurdle to understanding `IRewritable`'s API. It also makes certain parts of Sawmill's implementation more complex --- many internal methods have to `switch` on the `NumberOfChildren` they're working with and do the same work in four different ways. It's also relatively large for a `struct` (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.
+This custom collection type is an extra hurdle to understanding `IRewritable`'s API. It also makes certain parts of Sawmill's implementation more complex — many internal methods have to `switch` on the `NumberOfChildren` they're working with and do the same work in four different ways. It's also relatively large for a `struct` (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.
 
 ### Wart 2: Collections
 
@@ -80,7 +80,7 @@ interface IRewritable<T> where T : IRewritable<T>
 }
 ```
 
-With this design, Sawmill passes an array into `GetChildren` (after calling `CountChildren` to find out how big the array needs to be) and asks the object to copy its children into the array. Implementations of `IRewritable` no longer have to allocate memory for their return value. The memory is allocated (and hopefully reused) by the library. But this API is less safe --- if an `IRewritable` implementation stores a reference to the buffer then it could get unexpectedly mutated.
+With this design, Sawmill passes an array into `GetChildren` (after calling `CountChildren` to find out how big the array needs to be) and asks the object to copy its children into the array. Implementations of `IRewritable` no longer have to allocate memory for their return value. The memory is allocated (and hopefully reused) by the library. But this API is less safe — if an `IRewritable` implementation stores a reference to the buffer then it could get unexpectedly mutated.
 
 ```csharp
 class Bad : IRewritable<Bad>
@@ -93,7 +93,7 @@ class Bad : IRewritable<Bad>
 }
 ```
 
-This is not a "pit of success" API --- `SetChildren` looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each `GetChildren`/`SetChildren` call in order to be safe. So this design would end up allocating just as much as the `ImmutableList` version.
+This is not a "pit of success" API — `SetChildren` looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each `GetChildren`/`SetChildren` call in order to be safe. So this design would end up allocating just as much as the `ImmutableList` version.
 
 (Keep the buffer idea in your head, though, because we'll be coming back to it in a minute.)
 
@@ -114,7 +114,7 @@ public static T DefaultRewriteChildren<T>(this T value, Func<T, T> transformer)
 
 ([The real `DefaultRewriteChildren`](https://github.com/benjamin-hodgson/Sawmill/blob/87aea1e5757360b99457c8e2e6a7993fc2176f23/Sawmill/Rewriter.DefaultRewriteChildren.cs) was a bit more complex than this, because it tried to avoid calling `SetChildren` if `transformer` didn't actually change anything.)
 
-In fact, I expect that most `IRewritable`s would just delegate `RewriteChildren` to `DefaultRewriteChildren`. So why did I put `RewriteChildren` on the interface? It's because of Wart 2 --- `GetChildren` can be expensive because it might have to create an `ImmutableList`. (And applying `transformer` to that `ImmutableList` using eg [`ConvertAll`](https://docs.microsoft.com/en-us/dotnet/api/system.collections.immutable.immutablelist-1.convertall?view=netcore-3.0) would have to create another one.) So `DefaultRewriteChildren` is slow; the idea of `RewriteChildren` was for objects to transform their children directly, without going via an `ImmutableList`.
+In fact, I expect that most `IRewritable`s would just delegate `RewriteChildren` to `DefaultRewriteChildren`. So why did I put `RewriteChildren` on the interface? It's because of Wart 2 — `GetChildren` can be expensive because it might have to create an `ImmutableList`. (And applying `transformer` to that `ImmutableList` using eg [`ConvertAll`](https://docs.microsoft.com/en-us/dotnet/api/system.collections.immutable.immutablelist-1.convertall?view=netcore-3.0) would have to create another one.) So `DefaultRewriteChildren` is slow; the idea of `RewriteChildren` was for objects to transform their children directly, without going via an `ImmutableList`.
 
 ```csharp
 class ThreeChildren : IRewritable<ThreeChildren>
@@ -141,7 +141,7 @@ interface IRewritable<T> where T : IRewritable<T>
 }
 ```
 
-This design is almost identical to the one I outlined earlier --- it uses [`Span`](https://docs.microsoft.com/en-us/dotnet/api/system.span-1?view=netcore-3.0)s instead of arrays. (For the uninitiated, a `Span` is basically a "slice" of an array. It can also be backed by _unmanaged_ memory, though, making it more flexible than `ArraySegment`.)
+This design is almost identical to the one I outlined earlier — it uses [`Span`](https://docs.microsoft.com/en-us/dotnet/api/system.span-1?view=netcore-3.0)s instead of arrays. (For the uninitiated, a `Span` is basically a "slice" of an array. It can also be backed by _unmanaged_ memory, though, making it more flexible than `ArraySegment`.)
 
 * `CountChildren` tells Sawmill how much space is needed to copy the children.
 * `GetChildren` copies the current object's immediate children into `buffer`.
@@ -175,7 +175,7 @@ public static T RewriteChildren<T>(this T value, Func<T, T> transformer)
 }
 ```
 
-The main reason for having `RewriteChildren` be a method on the interface was to avoid allocating memory (for the `GetChildren` calls). So we don't need it on the interface any more --- this extension method serves as a single universal implementation. Likewise, `Children<T>`'s purpose was also to avoid allocating memory, so we can do away with it too.
+The main reason for having `RewriteChildren` be a method on the interface was to avoid allocating memory (for the `GetChildren` calls). So we don't need it on the interface any more — this extension method serves as a single universal implementation. Likewise, `Children<T>`'s purpose was also to avoid allocating memory, so we can do away with it too.
 
 
 ## Relieving `ArrayPool` pressure
@@ -198,7 +198,7 @@ The lambda which is passed to `RewriteChildren` contains a recursive call to `Re
 
 Since steps 1-3 are repeated before step 5 happens, you can end up renting many arrays (a number equal to the height of the tree) before returning any of them to the pool. So the array pool could run out of arrays!
 
-To fix this problem, we want to rent a small number of large arrays from the array pool, rather than a large number of small ones. We can lean on the fact that each array only lives as long as a single method --- the array is `Rent`ed at the start of `RewriteChildren` and then `Return`ed at the end. The memory usage is stack-shaped.
+To fix this problem, we want to rent a small number of large arrays from the array pool, rather than a large number of small ones. We can lean on the fact that each array only lives as long as a single method — the array is `Rent`ed at the start of `RewriteChildren` and then `Return`ed at the end. The memory usage is stack-shaped.
 
 So here's the plan. We're going to rent a large array from the pool at `Rewrite`'s beginning, and `RewriteChildren` will take a chunk from that array each time it's called. Each chunk will be freed up before any previously-allocated chunks are freed.
 
@@ -333,7 +333,7 @@ private static T RewriteChildrenInternal<T>(
 }
 ```
 
-Sadly this doesn't work. The compiler complains about the `stackalloc T` line: "Cannot take the address of, get the size of, or declare a pointer to a managed type ('T')". Basically, the CLR doesn't support `stackalloc` with reference types --- you can only use `stackalloc` with primitives or structs containing primitives. (A type parameter `T` _might_ be a reference type, so you still can't use it with `stackalloc`.) Under the hood, `stackalloc` is untyped; the garbage collector doesn't know how to follow pointers that are stored in `stackalloc`ed memory because it doesn't even know there are pointers there.
+Sadly this doesn't work. The compiler complains about the `stackalloc T` line: "Cannot take the address of, get the size of, or declare a pointer to a managed type ('T')". Basically, the CLR doesn't support `stackalloc` with reference types — you can only use `stackalloc` with primitives or structs containing primitives. (A type parameter `T` _might_ be a reference type, so you still can't use it with `stackalloc`.) Under the hood, `stackalloc` is untyped; the garbage collector doesn't know how to follow pointers that are stored in `stackalloc`ed memory because it doesn't even know there are pointers there.
 
 I still think the idea's a good one, though. Can we unsafely hack it up?
 
@@ -349,7 +349,7 @@ struct Four<T>
 }
 ```
 
-A variable of type `Four<T>` has enough room for four `T`s --- so when the variable is a local variable (in an ordinary method) it's functionally equivalent to a `stackalloc T[4]`. We won't be using the `First`, `Second`, `Third` and `Fourth` properties directly --- we'll be (unsafely) addressing them relative to the start of the struct. In this example I'm using [`System.Runtime.CompilerServices.Unsafe`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.0) to address `Third` by looking 2 elements beyond `First`:
+A variable of type `Four<T>` has enough room for four `T`s — so when the variable is a local variable (in an ordinary method) it's functionally equivalent to a `stackalloc T[4]`. We won't be using the `First`, `Second`, `Third` and `Fourth` properties directly — we'll be (unsafely) addressing them relative to the start of the struct. In this example I'm using [`System.Runtime.CompilerServices.Unsafe`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.0) to address `Third` by looking 2 elements beyond `First`:
 
 ```csharp
 var four = new Four<T>();
@@ -469,6 +469,6 @@ private static void KeepAlive<T>(ref Four<T> four)
 }
 ```
 
-As far as I know, the designers of `Span` were thinking primarily about applications such as serialisation and parsing --- the sort of low-level code you'd find in a [high performance web server](https://github.com/aspnet/AspNetCore). But `Span` also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my `IRewritable` abstraction, but I'm also leaning on its flexibility to implement that abstraction as efficiently as possible.
+As far as I know, the designers of `Span` were thinking primarily about applications such as serialisation and parsing — the sort of low-level code you'd find in a [high performance web server](https://github.com/aspnet/AspNetCore). But `Span` also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my `IRewritable` abstraction, but I'm also leaning on its flexibility to implement that abstraction as efficiently as possible.
 
 Sawmill version 3.0 is now available [on Nuget](https://www.nuget.org/packages/Sawmill), and you can read all of this code in [the GitHub repo](https://github.com/benjamin-hodgson/Sawmill).

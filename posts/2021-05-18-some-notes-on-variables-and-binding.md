@@ -19,7 +19,7 @@ A quick look at some prior art
 * Statically encoded patterns with built in type combinators.
     * I like:
         * Statically declare structure of binders
-        * Embed your own datatypes as required by language syntax --- method header can be `[(Name, Type)]`
+        * Embed your own datatypes as required by language syntax — method header can be `[(Name, Type)]`
     * I don't like:
         * Generics magic to find/traverse patterns
         * Type constructor soup, eg `| LetRec (Bind (Rec [(Name, Embed Expr)]) Expr)`. Would be even noisier in C#.
@@ -34,8 +34,8 @@ A quick look at some prior art
     * Library explicitly doesn't manage patterns or names. It just does substitution using your monad. `Scope` doesn't contain a "pattern" object.
     * Me gusta
 * Nested datatype manages de Bruijn depth statically.
-    * Nested datatype is quite awkward in practice --- doesn't play nicely with mutual recursion or Plated.
-    * Clever trick in `Scope` to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees --- but also, not super costly complexity-wise.
+    * Nested datatype is quite awkward in practice — doesn't play nicely with mutual recursion or Plated.
+    * Clever trick in `Scope` to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees — but also, not super costly complexity-wise.
 * Works really nicely with standard classes: `Foldable`/`Traversable` to look at FVs, `Functor` for renaming, `Monad` for substitution. `Eq1` for alpha equivalence, etc. Very pleasing.
     * OTOH, [doesn't work with a non-monadic AST](https://stackoverflow.com/questions/39057576/mutually-recursive-syntaxes-with-bound).
 * Overall, probably not such a good fit for C# since we don't have HKTs, `Monad` etc. Not very library-able.
@@ -118,7 +118,7 @@ readonly struct Bound
 }
 ```
 
-Potential consistency issues --- different mentions of the same variable could end up with different tags.
+Potential consistency issues — different mentions of the same variable could end up with different tags.
 
 **Idea 2**: Store a flat list of original names in the `BindingSite`.
 
@@ -131,7 +131,7 @@ readonly struct BindingSite<T>  // aka Scope (bound/moniker) or Bind (unbound)
 }
 ```
 
-It feels kinda ugly. Also potential consistency issues --- if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you're gonna end up duplicating information. Also, it doesn't seem like this would easily support recursive patterns such as letrec or Agda's dot notation.
+It feels kinda ugly. Also potential consistency issues — if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you're gonna end up duplicating information. Also, it doesn't seem like this would easily support recursive patterns such as letrec or Agda's dot notation.
 
 **Idea 3**: Store the actual pattern in the `BindingSite`. This is more in line with how `unbound`/`moniker` do it.
 
@@ -181,7 +181,7 @@ abstract class Pattern : IRewritable<Pattern>
 Ways this doesn't scale:
 
 * If your language has multiple types of patterns (eg, type variables and value variables) you can't statically distinguish them.
-* The structure of the pattern lives only at runtime --- it all gets stuffed into a `Pattern`-typed variable. You can't _statically_ encode the syntactic structure of the binding site (at which point it's not a whole lot better than Idea 2).
+* The structure of the pattern lives only at runtime — it all gets stuffed into a `Pattern`-typed variable. You can't _statically_ encode the syntactic structure of the binding site (at which point it's not a whole lot better than Idea 2).
 * "Rewrite all the embedded terms" is an ad-hoc affair. Long-standing shortcoming of `IRewritable`, for which I haven't come up with a satisfactorily simple solution.
 
 What should be the advice for implementing `IRewritable` on objects containing a binding site? Should you traverse to the body? (Problematic because de Bruijn indexes from different scopes are not comparable.) Are you meant to unbind the body? That would mean you can't use `IRewritable` as is, because `IRewritable` doesn't have a parameter for a source of fresh names. Perhaps we should be using `IRewriter` and not `IRewritable`, although that's a messier API. 🤔
@@ -233,7 +233,7 @@ class Telescope<L, R>
 
 That unsafe cast really is unsafe, because a `Rewrite` operation is liable to change the type of the pattern. Maybe patterns should be read-only? Do I need to split the read/write parts of `IRewritable`? 🤔
 
-**Idea 4**: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful --- they're hard to reason about and hard to program with. (It's much easier to manipulate values than code.) I'd prefer to come up with a _model_, which you can manipulate directly, and then layer a reflection API on top.
+**Idea 4**: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful — they're hard to reason about and hard to program with. (It's much easier to manipulate values than code.) I'd prefer to come up with a _model_, which you can manipulate directly, and then layer a reflection API on top.
 
 ASTs with Binding Structure
 ---------------------------
@@ -324,7 +324,7 @@ class LocalFreshener : IFreshener
 Traversing the tree
 -------------------
 
-OK, finally we have everything we need to bind and unbind variables in ASTs. Let's suppose we went with **Idea 2** from above --- just storing a flat list of names at the binding site.
+OK, finally we have everything we need to bind and unbind variables in ASTs. Let's suppose we went with **Idea 2** from above — just storing a flat list of names at the binding site.
 
 ```csharp
 static class Binder
@@ -404,6 +404,6 @@ You can develop versions of `Rewrite`, `SelfAndDescendants`, and so on, which ap
 
 There are a couple of design issues regarding the performance of `Bind`/`Unbind`. Each call traverses and rewrites the whole tree and potentially chews through a bunch of fresh names, so if you bind and unbind a lot then you're gonna have performance problems.
 
-There might be room for improvement here --- off the top of my head, you could rewrite everything up to the next binding site and just store a "substitution to be applied" there. You can defer applying the changes until you're asked to open that binding site. I suspect that'd give you asymptotic speedups (quadratic -> linear?) for certain algorithms which do lots of renaming.
+There might be room for improvement here — off the top of my head, you could rewrite everything up to the next binding site and just store a "substitution to be applied" there. You can defer applying the changes until you're asked to open that binding site. I suspect that'd give you asymptotic speedups (quadratic -> linear?) for certain algorithms which do lots of renaming.
 
 Also, some tree operations don't require you to `Unbind` and re-`Bind` every single binding site. If you're doing some sort of operation where you're not generating new names or binding sites, or moving nodes across binding sites, you can just leave `Bound` variables where they are. That's an argument for making (eg) `bindingSite.Body` public, and going under it in `GetChildren`/`SetChildren`. Although in practice that's the sort of thing which is hard to get right and can cause subtle (or not-so-subtle) bugs in your language implementation.

@@ -30,7 +30,7 @@ Pidgin is a _parser combinator library_, meaning it consists of three things:
 
 The power of parser combinators comes from the fact that parsers are treated as ordinary values. You can pass them around as parameters, return them, store them in fields... Programming with parser combinators is _just programming_. Contrast this with "language workbench" tools like Antlr, which are often more powerful than parser combinators but have a separate syntax, toolchain, etc. Parser combinators are great for medium-sized parsing tasks like this one.
 
-It's worth elaborating a bit on what I mean by "consume a sequence". A parser walks left to right along an input sequence, keeping track of its location in the input. Consuming a token means moving the "current location" pointer along to the next token. This is much like how the `Stream` classes work in .NET --- calling a stream's `Read` method moves the stream's current position, so that successive calls to `Read` return different results. (Pidgin indeed lets you feed a `Stream` to a `Parser`.)
+It's worth elaborating a bit on what I mean by "consume a sequence". A parser walks left to right along an input sequence, keeping track of its location in the input. Consuming a token means moving the "current location" pointer along to the next token. This is much like how the `Stream` classes work in .NET — calling a stream's `Read` method moves the stream's current position, so that successive calls to `Read` return different results. (Pidgin indeed lets you feed a `Stream` to a `Parser`.)
 
 When a parser makes a decision about what to do next, that decision is based only on the current character and not on what comes next. If the parser moves further along the string and then realises that decision was wrong, it has to _backtrack_ to the position where it made the decision before it can proceed with a different choice. Backtracking can be catastrophically costly (as described in [a short talk by my esteemed ex-colleague Balpha](https://vimeo.com/112065252)), so you want to code your parser to minimise the amount of backtracking it might have to do. With Pidgin, backtracking is disabled by default; it's enabled by the `Try` function.
 
@@ -58,7 +58,7 @@ static Parser<char, string> Tok(string value)
 
 Why am I using the _backtracking_ function `Try` here? Remember, a parser consumes its input one character at a time, and makes decisions based only on the current character. If the first character of the input looks like it matches `value`, Pidgin will commit to running the `String(value)` parser; if matching the string fails after the first character then the parser needs to return to where it was so that it can try any alternative ways to parse from that location.
 
-For an example of why we need `Try`, consider the parser `String("prolog").Or(String("programming"))`. `Or` is Pidgin's _choice_ function --- it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here's our parser represented pictorally:
+For an example of why we need `Try`, consider the parser `String("prolog").Or(String("programming"))`. `Or` is Pidgin's _choice_ function — it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here's our parser represented pictorally:
 
 ```
              +--Or--+
@@ -117,7 +117,7 @@ static readonly Parser<char, string> _colonDash = Tok(":-");
 Names
 -----
 
-Prolog has two types of names --- _atoms_ start with a lowercase letter and _variables_ start with an uppercase letter or an underscore.
+Prolog has two types of names — _atoms_ start with a lowercase letter and _variables_ start with an uppercase letter or an underscore.
 
 ```csharp
 static readonly Parser<char, string> _atomName = Tok(
@@ -133,7 +133,7 @@ static readonly Parser<char, string> _variableName = Tok(
 );
 ```
 
-One of the fun things about C#'s `from...select` syntax is that it's [_duck-typed_](https://en.wikipedia.org/wiki/Duck_typing). The C# compiler allows you to use `from...select` with any object which has eligible `Select` and `SelectMany` methods, not just `IEnumerable`. Pidgin allows you to (ab)use this notation to sequence parsers --- `from x in p1 from y in p2 select f(x, y)` is equivalent to `p1.Then(p2, (x,y) => f(x,y))`. So when you see a parser defined using `from...select` you should read it from top to bottom as a script.
+One of the fun things about C#'s `from...select` syntax is that it's [_duck-typed_](https://en.wikipedia.org/wiki/Duck_typing). The C# compiler allows you to use `from...select` with any object which has eligible `Select` and `SelectMany` methods, not just `IEnumerable`. Pidgin allows you to (ab)use this notation to sequence parsers — `from x in p1 from y in p2 select f(x, y)` is equivalent to `p1.Then(p2, (x,y) => f(x,y))`. So when you see a parser defined using `from...select` you should read it from top to bottom as a script.
 
 `ManyString` takes a parser and greedily runs it in a loop, then packs all of that parser's results into a string. `Uppercase`, `Lowercase`, `Letter` and `Digit` all consume and return a single character of their respective types.
 
@@ -159,7 +159,7 @@ static Parser<char, string> Name(Parser<char, char> firstLetter)
 Terms
 -----
 
-Terms in Prolog have a recursive structure, as [discussed previously](/posts/2019-12-01-write-you-a-prolog.html). A predicate's arguments can be any term, including another predicate. This circularity poses a problem for our parser code --- the `_predicate` parser needs to call `_term`, but `_term` needs to call `_predicate`, so what order can you put the declarations in?
+Terms in Prolog have a recursive structure, as [discussed previously](/posts/2019-12-01-write-you-a-prolog.html). A predicate's arguments can be any term, including another predicate. This circularity poses a problem for our parser code — the `_predicate` parser needs to call `_term`, but `_term` needs to call `_predicate`, so what order can you put the declarations in?
 
 Pidgin's built-in `Rec` function enables forward references like this. The idea is to use a lambda to delay the access to the field until after it's been initialised.
 
@@ -259,7 +259,7 @@ Here are a couple of exercises you might try:
 * Extend this code to support numbers, building on the exercise from the end of the [last post](/posts/2019-12-01-write-you-a-prolog.html).
 * Extend this code to support lists.
     * Prolog's lists are linked lists; `[]` is an empty list and cons cells look like `[head | tail]`. (`head` and `tail` are both arbitrary terms; though at runtime `tail` should be a list.)
-    * At first you can try pretending that lists are syntactic sugar --- desugar `[]` to a `nil` atom and `[head | tail]` to a `cons(head, tail)` predicate.
+    * At first you can try pretending that lists are syntactic sugar — desugar `[]` to a `nil` atom and `[head | tail]` to a `cons(head, tail)` predicate.
     * How can you avoid clashing with mentions of those names in user code?
       * You could try mangling the names to something which can't be typed by a user.
       * You could try making them reserved words (adjust the parser to reject user-defined mentions of `cons` and `nil`).

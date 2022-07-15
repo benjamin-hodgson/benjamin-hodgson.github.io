@@ -33,7 +33,7 @@ calculateSourcePos sp _ = sp { col = col sp + 1 }
 
 When the parser encounters a new line, the column counter is reset back to 1.
 
-The signature of `calculateSourcePos` poses a performance problem: it takes the previous `SourcePos` as an argument. Each iteration of the loop depends on the result of the previous iteration. This _data dependency_ means the loop can't be parallelised --- you have to wait for each iteration of the loop to finish before you can start the next one.
+The signature of `calculateSourcePos` poses a performance problem: it takes the previous `SourcePos` as an argument. Each iteration of the loop depends on the result of the previous iteration. This _data dependency_ means the loop can't be parallelised — you have to wait for each iteration of the loop to finish before you can start the next one.
 
 This article is about redesigning `SourcePos` to be more parallelisable.
 
@@ -80,7 +80,7 @@ Deltas
 
 If you go hiking, you might bring with you a list of directions on a piece of paper. Directions are monoidal: if you have directions from your house to the beach, and from the beach to the pub, you can follow those directions sequentially to get from your house to the pub. (I'll tolerate hiking as long as the destination is a pub.)
 
-Directions are relative, not absolute. The directions on your paper might tell you how to get from your house to the pub, but if you start somewhere other than your house you can still follow the directions --- you just have to hope you end up in a different pub.
+Directions are relative, not absolute. The directions on your paper might tell you how to get from your house to the pub, but if you start somewhere other than your house you can still follow the directions — you just have to hope you end up in a different pub.
 
 So by analogy, let's stop worrying about absolute locations in a source file and instead think about offsets relative to an arbitrary location.
 
@@ -142,9 +142,9 @@ Hardware Parallelism
 
 [I tested some implementations of `<>` (in C#)](https://github.com/benjamin-hodgson/Pidgin/blob/sourceposdelta/Pidgin.Bench/SourcePosDeltaBench.cs) which made use of modern CPUs' support for _hardware parallelism_ (also known as SIMD, for Single Instruction Multiple Data). Recent versions of .NET come bundled with opt-in SIMD support, to be found in [the `System.Numerics` namespace](https://docs.microsoft.com/en-us/dotnet/api/system.numerics?view=net-6.0).
 
-CPUs with SIMD have extra-wide registers (like, 256 bits) divided into _lanes_. You can stuff four 64-bit integers (or eight 32-bit ones) into a single register, and the CPU supports special instructions to perform the same operation on each of those four integers at once --- so (for example) you can add four sets of two integers with a single instruction. Each SIMD operation is a little bit slower than its corresponding single-target instruction, but since they operate on four times the amount of data you can often get reasonable speedups when you're processing lots of data.
+CPUs with SIMD have extra-wide registers (like, 256 bits) divided into _lanes_. You can stuff four 64-bit integers (or eight 32-bit ones) into a single register, and the CPU supports special instructions to perform the same operation on each of those four integers at once — so (for example) you can add four sets of two integers with a single instruction. Each SIMD operation is a little bit slower than its corresponding single-target instruction, but since they operate on four times the amount of data you can often get reasonable speedups when you're processing lots of data.
 
-[My fastest attempt](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L278) involved packing `SourcePosDelta`'s two integers into [a single 64-bit integer](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L320) and doing some [bit manipulation](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L334) to implement `<>`'s "annihilation" semantics. Then I divided the input array into four chunks --- one per lane --- and ran the bit manipulation algorithm on each lane. Since it's best to load contiguous data into a SIMD register's lanes, I had to [rearrange the input array](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L51) to line the chunks up with their SIMD lanes.
+[My fastest attempt](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L278) involved packing `SourcePosDelta`'s two integers into [a single 64-bit integer](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L320) and doing some [bit manipulation](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L334) to implement `<>`'s "annihilation" semantics. Then I divided the input array into four chunks — one per lane — and ran the bit manipulation algorithm on each lane. Since it's best to load contiguous data into a SIMD register's lanes, I had to [rearrange the input array](https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L51) to line the chunks up with their SIMD lanes.
 
 I decided against putting the SIMD code into the library, because in practice the number of `SourcePosDelta`s which need summing is often not very large. In any case, the SIMD code offered comparable performance to a much simpler algorithm: loop backwards until you find the last newline in a chunk of text, then ignore any non-newline characters to the left of it.
 
@@ -199,7 +199,7 @@ shiftSpan d (Span start width) = Span
     width
 ```
 
-`shift` rebuilds the entire tree! That's asymptotically as bad as re-parsing the entire file --- clearly not something we want to do on every keystroke. Instead, let's annotate the tree with the amount by which it's been shifted. This lets us shift a whole subtree at once without mutating it.
+`shift` rebuilds the entire tree! That's asymptotically as bad as re-parsing the entire file — clearly not something we want to do on every keystroke. Instead, let's annotate the tree with the amount by which it's been shifted. This lets us shift a whole subtree at once without mutating it.
 
 ```haskell
 data Node = Node {
@@ -291,7 +291,7 @@ Basically, these laws assert that you can build actions with `<>` and it'll beha
 
 Here are a couple of examples to help you think about monoid actions.
 
-1. Yes, `SourcePosDelta` is a monoid action on `SourcePos`. Adding a `SourcePosDelta` to a `SourcePos` gives you a new `SourcePos` representing somewhere later in the file --- a `SourcePosDelta` represents the action of moving to a later location. You can convince yourself that the definition of `ract` does indeed satisfy the laws I outlined above:
+1. Yes, `SourcePosDelta` is a monoid action on `SourcePos`. Adding a `SourcePosDelta` to a `SourcePos` gives you a new `SourcePos` representing somewhere later in the file — a `SourcePosDelta` represents the action of moving to a later location. You can convince yourself that the definition of `ract` does indeed satisfy the laws I outlined above:
 
     ```haskell
     instance RAction SourcePos SourcePosDelta where
@@ -348,4 +348,4 @@ I won't prove it here, but these do hold for `Lines`'s action on `Cols`. So we h
 type SourcePosDelta = RSemiDirect Cols Lines
 ```
 
-I first read about semi-direct products a few years ago in [the "twisted functors" paper](http://ozark.hendrix.edu/~yorgey/pub/twisted.pdf). They use semi-direct products to manage pointer arithmetic while writing to buffers --- monoidally building up an offset and using it to act on a base pointer. They also give a couple of other examples.
+I first read about semi-direct products a few years ago in [the "twisted functors" paper](http://ozark.hendrix.edu/~yorgey/pub/twisted.pdf). They use semi-direct products to manage pointer arithmetic while writing to buffers — monoidally building up an offset and using it to act on a base pointer. They also give a couple of other examples.

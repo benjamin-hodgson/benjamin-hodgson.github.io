@@ -24,9 +24,9 @@ class Machine
 }
 ```
 
-It’s important when designing an abstract machine to make something which looks roughly like a real CPU. Our `Machine` class is going to consume programs in the form of a linear stream of instructions, and manipulate word-sized data in a flat address space. We won’t directly use high-level constructs like expressions or objects --- instead we’ll model those from scratch using low-level tools.
+It’s important when designing an abstract machine to make something which looks roughly like a real CPU. Our `Machine` class is going to consume programs in the form of a linear stream of instructions, and manipulate word-sized data in a flat address space. We won’t directly use high-level constructs like expressions or objects — instead we’ll model those from scratch using low-level tools.
 
-Why use an abstract machine at all? In the previous post series, I described Prolog’s semantics in terms of high-level C# constructs like dictionaries, lazy enumerables, `from...select`... That’s all very well if you already have access to those language features, but it doesn’t suffice as a recipe for getting a machine to run Prolog. I want to generate x64 assembly, without building all those high-level and inefficient tools myself. My abstract machine will serve as an intermediate step --- a thinking tool to help go from high-level Prolog to low-level x64.
+Why use an abstract machine at all? In the previous post series, I described Prolog’s semantics in terms of high-level C# constructs like dictionaries, lazy enumerables, `from...select`... That’s all very well if you already have access to those language features, but it doesn’t suffice as a recipe for getting a machine to run Prolog. I want to generate x64 assembly, without building all those high-level and inefficient tools myself. My abstract machine will serve as an intermediate step — a thinking tool to help go from high-level Prolog to low-level x64.
 
 Many production compilers have a similar design: source code is converted into an *intermediate representation* which is then optimised and eventually translated into assembly. LLVM, for example, is an off-the-shelf intermediate representation meant to serve as a stable compilation target for all sorts of language implementations. (I initially thought of using LLVM in this project, but Prolog’s unusual control flow doesn’t map cleanly onto LLVM, so it was easier for me to cut out the middle man.)
 
@@ -76,11 +76,11 @@ wibble(..., ...)        wobble()    wubble()
 address of wobble()  address of wubble()
 ```
 
-Finally let's think about **variables** like `X` and `Y`. We need to choose a representation which supports *binding* --- the act of setting a variable equal to another term during unification. One simple way of binding a variable to a term is with a pointer. Our variables will contain a pointer to another heap object; *unbound* variables will point to themselves by convention. (I could’ve used the null pointer for this purpose, but I didn’t. No real reason.)
+Finally let's think about **variables** like `X` and `Y`. We need to choose a representation which supports *binding* — the act of setting a variable equal to another term during unification. One simple way of binding a variable to a term is with a pointer. Our variables will contain a pointer to another heap object; *unbound* variables will point to themselves by convention. (I could’ve used the null pointer for this purpose, but I didn’t. No real reason.)
 
 Variables in this system are mutable. We bind a variable to a term by updating it in place. (Already-bound variables don’t get re-bound, though. It’s a write-once system.) This is in contrast with [my high-level model](/posts/2019-12-15-generic-unification-with-sawmill.html) which explicitly manipulated an immutable substitution object. Using mutation like this will cause some complications later on when we get around to backtracking.
 
-We also need a way to tell variables apart from structures, so all of our heap objects will start with a *tag* word --- `0` for variables and `1` for structures. I’m going to sprinkle tag words over structures’ fields too, needlessly and wastefully, because it’ll make some tasks simpler down the line. (Specifically, it's convenient for structure fields to have the same representation as bound variables.)
+We also need a way to tell variables apart from structures, so all of our heap objects will start with a *tag* word — `0` for variables and `1` for structures. I’m going to sprinkle tag words over structures’ fields too, needlessly and wastefully, because it’ll make some tasks simpler down the line. (Specifically, it's convenient for structure fields to have the same representation as bound variables.)
 
 Here's how the `wibble(wobble(X), wubble(X, Y))` example looks in the finalised version of its heap representation.
 
@@ -123,16 +123,16 @@ wibble(..., ...)
     (they contain their own addresses)
 ```
 
-In the end, structures have a three-word header consisting of a tag, an ID for the name of the structure, and a length. Then come the fields, each of which consists of a `0` tag followed by the address of a child object. Variables have a one-word header --- the tag --- and a single field.
+In the end, structures have a three-word header consisting of a tag, an ID for the name of the structure, and a length. Then come the fields, each of which consists of a `0` tag followed by the address of a child object. Variables have a one-word header — the tag — and a single field.
 
-Overall this design for heap objects is not so different than that of many industrial-strength languages. In .NET, for example, objects consist of a two-word header followed by a sequence of fields. The header contains information about the object’s type, its virtual methods, and other .NET runtime features like locking. My system is much simpler (and less efficient) in the details, though --- my data cells take up a whole word each (I didn’t want to worry about alignment) and I’m not doing any bit-packing tricks to save space.
+Overall this design for heap objects is not so different than that of many industrial-strength languages. In .NET, for example, objects consist of a two-word header followed by a sequence of fields. The header contains information about the object’s type, its virtual methods, and other .NET runtime features like locking. My system is much simpler (and less efficient) in the details, though — my data cells take up a whole word each (I didn’t want to worry about alignment) and I’m not doing any bit-packing tricks to save space.
 
 
 ## Traversing the Heap
 
 Here are a few functions which process data on the heap.
 
-First up, `Bind`. `Bind` takes two heap objects, at least one of which must be an unbound variable, and sets it to refer to the other object. (If they’re both unbound variables, it prefers to bind the more recently created one --- that is, the one with the higher address.)
+First up, `Bind`. `Bind` takes two heap objects, at least one of which must be an unbound variable, and sets it to refer to the other object. (If they’re both unbound variables, it prefers to bind the more recently created one — that is, the one with the higher address.)
 
 ```csharp
 private void Bind(int addr1, int addr2)
@@ -197,7 +197,7 @@ class Machine
 }
 ```
 
-I have it in mind to use the stack for other things, so `Unify` can’t simply keep going until the stack is empty --- it needs to remember how tall it was previously. That’s what the (suggestively-named) `_frameBase` field is for.
+I have it in mind to use the stack for other things, so `Unify` can’t simply keep going until the stack is empty — it needs to remember how tall it was previously. That’s what the (suggestively-named) `_frameBase` field is for.
 
 As far as `Unify` is concerned, the stack will contain (the addresses of) pairs of terms to be unified.
 

@@ -22,7 +22,7 @@ Whistle-Stop Introduction to Prolog
 
 Prolog is a _logic programming_ language. Prolog code consists of a collection of _rules_. Each rule says "X is true if Y (and Z and...) is true". A rule is a logical axiom, with a set of premises (on the right) and a conclusion you can draw from those premises (on the left).
 
-As an example, you might say that a `Person` wants a certain `Food` if they're hungry and they like that food. And --- I don't know about you --- but I'll eat something I really love even if I'm not hungry.
+As an example, you might say that a `Person` wants a certain `Food` if they're hungry and they like that food. And — I don't know about you — but I'll eat something I really love even if I'm not hungry.
 
 ```prolog
 wants(Person, Food) :- hungry(Person), likes(Person, Food).
@@ -59,19 +59,19 @@ Finally, we can issue a _query_ to the interactive Prolog interpreter to find ou
 false
 ```
 
-No soup for you. What _can_ we eat for dinner? If we replace the atom `soup` --- a specific food --- with a variable `Food` (note the capital letter) --- standing in for any food --- Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. (You can use as many variables as you like in a query. Prolog will try to find a value for all of them.)
+No soup for you. What _can_ we eat for dinner? If we replace the atom `soup` — a specific food — with a variable `Food` (note the capital letter) — standing in for any food — Prolog will try to find a value for `Food` which satisfies the `dinner` predicate. (You can use as many variables as you like in a query. Prolog will try to find a value for all of them.)
 
 ```prolog
 ?- dinner(benjamin, clio, Food).
 Food = pizza
 ```
 
-Even though predicates don't return anything per se --- they either succeed or fail --- you can use variables in this way to get information out of a predicate. Prolog's constraint solving system is **bi-directional** --- a predicate's parameters can serve as both inputs and outputs.
+Even though predicates don't return anything per se — they either succeed or fail — you can use variables in this way to get information out of a predicate. Prolog's constraint solving system is **bi-directional** — a predicate's parameters can serve as both inputs and outputs.
 
 
 ### Pattern Matching and Recursion
 
-As well as putting _conditions_ on the right-hand side of a rule, you can put _patterns_ on the left. This is somewhat like pattern matching in functional languages --- the right-hand side of a rule is only entered if its arguments match the pattern on the left.
+As well as putting _conditions_ on the right-hand side of a rule, you can put _patterns_ on the left. This is somewhat like pattern matching in functional languages — the right-hand side of a rule is only entered if its arguments match the pattern on the left.
 
 Here's a recursive predicate `last(List, Item)` which succeeds when `Item` is the last element of `List`.
 
@@ -84,16 +84,16 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 
 When running a predicate, Prolog tries each of its clauses from top to bottom to see if any of them succeed. So let's review this code line by line.
 
-The first rule has no right hand side, which means it succeeds as long as the predicate's arguments match the pattern on the left. (Rules with no right-hand side are called _facts_.) The first argument on the left hand side is the pattern `cons(X, nil)`. `cons` is a predicate whose two arguments are the head and tail of a list ([the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) comes from Lisp); in this instance its second argument is the atom `nil` (representing an empty list) and its first argument is left indeterminate --- `X` can stand in for any element. The second argument of `last` is `X`. This is the _same_ `X` as appeared in `cons(X, nil)`. So, taken all together, this first line succeeds when its first argument is a single-element list and its second argument is that element.
+The first rule has no right hand side, which means it succeeds as long as the predicate's arguments match the pattern on the left. (Rules with no right-hand side are called _facts_.) The first argument on the left hand side is the pattern `cons(X, nil)`. `cons` is a predicate whose two arguments are the head and tail of a list ([the `cons` nomenclature](https://en.wikipedia.org/wiki/Cons) comes from Lisp); in this instance its second argument is the atom `nil` (representing an empty list) and its first argument is left indeterminate — `X` can stand in for any element. The second argument of `last` is `X`. This is the _same_ `X` as appeared in `cons(X, nil)`. So, taken all together, this first line succeeds when its first argument is a single-element list and its second argument is that element.
 
-The second line of this code is only entered when the first line fails --- that is, when `Xs` is not `nil`. In the pattern on the left, we've replaced the concrete empty list `nil` with a variable `Xs` which can stand in for any list. The right-hand side of the rule recursively calls `last`. So this line says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
+The second line of this code is only entered when the first line fails — that is, when `Xs` is not `nil`. In the pattern on the left, we've replaced the concrete empty list `nil` with a variable `Xs` which can stand in for any list. The right-hand side of the rule recursively calls `last`. So this line says the last item of the list `cons(X, Xs)` is `Y` when the last item of `Xs` is `Y`.
 
 Prolog's bi-directional pattern matching system works by _unification_. Unification is a process of making two terms equal by filling in their variables. When matching a goal like `last(cons(oranges, nil), Y)` to a rule head like `last(cons(X, nil), X)`, Prolog tries to find values to plug in for all the variables in scope so that the goal matches the rule. In this case, it'd determine that `X` and `Y` should both be `oranges`. I'll talk about unification in much more detail in a later post.
 
 It's instructive to work through an example query: `last(cons(apples, cons(oranges, nil)), oranges)`.
 
 1. Prolog first tries the top clause. It tries to unify the goal with `last(cons(X, nil), X)`. This fails because there's no value for `X` which makes this match the goal. In other words, there's one too many elements in the list for this clause to match.
-2. Now it tries the second rule. Prolog tries to unify the goal with `last(cons(X, Xs), Y)`. This succeeds --- the terms match when `X = apples`, `Xs = cons(oranges, nil)`, and `Y = oranges`. So now Prolog creates a sub-goal for each clause on the right, of which there's only one (`last(Xs, Y)`). Since `Xs = cons(oranges, nil)` and `Y = oranges`, the goal is `last(cons(oranges, nil), oranges)`. So now the code has to recursively call `last`.
+2. Now it tries the second rule. Prolog tries to unify the goal with `last(cons(X, Xs), Y)`. This succeeds — the terms match when `X = apples`, `Xs = cons(oranges, nil)`, and `Y = oranges`. So now Prolog creates a sub-goal for each clause on the right, of which there's only one (`last(Xs, Y)`). Since `Xs = cons(oranges, nil)` and `Y = oranges`, the goal is `last(cons(oranges, nil), oranges)`. So now the code has to recursively call `last`.
 3. With this new goal we try the first clause again. Prolog tries to unify `last(cons(oranges, nil), oranges)` with `last(cons(X, nil), X)`. This succeeds when `X = oranges`. Since there are no conditions on the right hand side (this clause is the base case of the recursive function), we're done! The query succeeded; `oranges` is indeed the last element of the list.
 
 
@@ -104,7 +104,7 @@ Hopefully blasting through Prolog's core in only a few paragraphs was enough to 
 
 <img src="/images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
 
-As the name suggests, the exercise is to come up with an abstract representation of Prolog's syntax. Think beyond the specifics of how the language is presented as text (such as where parentheses go and so on); we want to talk about the high-level grammatical constructs and how they relate to one another. This mode of thinking is akin to thinking about English at the level of sentence structure --- subordinate clauses and so on --- rather than spelling and punctuation.
+As the name suggests, the exercise is to come up with an abstract representation of Prolog's syntax. Think beyond the specifics of how the language is presented as text (such as where parentheses go and so on); we want to talk about the high-level grammatical constructs and how they relate to one another. This mode of thinking is akin to thinking about English at the level of sentence structure — subordinate clauses and so on — rather than spelling and punctuation.
 
 I said a Prolog program was a collection of _rules_, so let's start there.
 
@@ -200,9 +200,9 @@ Prolog's rules engine is based entirely on manipulating terms, so these three cl
 Implementing `IRewritable`
 --------------------------
 
-`Term` is an immutable type with a recursive tree-shaped structure --- a predicate's arguments can be any `Term`, including more predicates. My generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) is filled with tools for working with immutable trees! As a Sawmill user, you implement its core `IRewritable` interface on your tree structure, and Sawmill takes care of much of the boilerplate of traversing the tree for you. (See [my earlier post](https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html) for an introduction to Sawmill.)
+`Term` is an immutable type with a recursive tree-shaped structure — a predicate's arguments can be any `Term`, including more predicates. My generic programming library [Sawmill](https://github.com/benjamin-hodgson/Sawmill) is filled with tools for working with immutable trees! As a Sawmill user, you implement its core `IRewritable` interface on your tree structure, and Sawmill takes care of much of the boilerplate of traversing the tree for you. (See [my earlier post](https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html) for an introduction to Sawmill.)
 
-`IRewritable` is all about addressing the immediate children of the current node in a tree. It has three methods, `CountChildren`, `GetChildren`, and `SetChildren`, which we have to implement for each subclass of our `Term` tree. Variables and atoms don't have child terms --- only predicates.
+`IRewritable` is all about addressing the immediate children of the current node in a tree. It has three methods, `CountChildren`, `GetChildren`, and `SetChildren`, which we have to implement for each subclass of our `Term` tree. Variables and atoms don't have child terms — only predicates.
 
 ```csharp
 abstract class Term : IRewritable<Term>

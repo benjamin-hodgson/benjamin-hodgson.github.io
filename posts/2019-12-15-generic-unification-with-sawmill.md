@@ -22,15 +22,15 @@ We're getting on to the fun part of writing an interpreter: actually _interpreti
 Unification
 -----------
 
-Unification is a process for solving equations, much like the equations you'd solve in algebra at school. It's all about plugging holes --- given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a _substitution_ --- a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.
+Unification is a process for solving equations, much like the equations you'd solve in algebra at school. It's all about plugging holes — given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a _substitution_ — a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.
 
-The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term's syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process --- you can't apply domain-specific rules such as "add a number to both sides" like you can in algebra.
+The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term's syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process — you can't apply domain-specific rules such as "add a number to both sides" like you can in algebra.
 
 Let's work through some examples to get a feel for it.
 
 * Unify `f(a, X, Y)` with `f(a, b, g(x))`.
-    * Starting at the outermost part of the two terms' syntax, we see `f` applied to three arguments in each of them --- a match. Now we can match up the arguments and try to unify each of them.
-    * The first argument in each is the atom `a` --- so they match.
+    * Starting at the outermost part of the two terms' syntax, we see `f` applied to three arguments in each of them — a match. Now we can match up the arguments and try to unify each of them.
+    * The first argument in each is the atom `a` — so they match.
     * Unifying the second arguments gives us `X ~ b`. `X` is a variable, and we now know it must be equal to `b`, so that gets added to the output substitution.
     * Unifying the third arguments, we find `Y ~ g(x)`, so that also goes in the output. It's OK to match a variable to a composite term.
     * The resulting substitution is **`X := b; Y := g(x)`**. You can try plugging this substitution back in to the two terms to verify that it does indeed make them equal.
@@ -145,7 +145,7 @@ public static ImmutableHashSet<string> Variables<T>(this T value) where T : IUni
 Substitutions
 -------------
 
-I mentioned that the output of unification is a _substitution_ --- a mapping from variable names to terms. We'll model that using an ordinary dictionary of strings and `T`s. Our signature for `Unify` is going to look like this:
+I mentioned that the output of unification is a _substitution_ — a mapping from variable names to terms. We'll model that using an ordinary dictionary of strings and `T`s. Our signature for `Unify` is going to look like this:
 
 ```csharp
 public static ImmutableDictionary<string, T> Unify<T>(this T left, T right) where T : IUnifiable<T>
@@ -245,7 +245,7 @@ public static ImmutableDictionary<string, T> Unify<T>(this T left, T right) wher
 ```
 
 
-Unifying Children --- Systems of Equations
+Unifying Children — Systems of Equations
 ------------------------------------------
 
 Unifying the children means solving a _system_ of equations. If more than one equation mentions the same variable, they have to agree on what that variable should be.
