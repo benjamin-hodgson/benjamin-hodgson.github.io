@@ -8,6 +8,8 @@ on:
 jobs:
   find_scheduled:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Determine if build should be run
