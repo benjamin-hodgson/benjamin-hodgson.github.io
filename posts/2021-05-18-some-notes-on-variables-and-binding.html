@@ -21,6 +21,17 @@
             gtag('config', 'UA-115911217-1');
         </script>
 
+        <script async id="highlightjs-script" src="https://cdn.jsdelivr.net/npm/highlightjs@9.16.2/highlight.pack.min.js" integrity="sha256-yeMmUlHbk3Q2fuSCxKTJOAcO+KSYnzaHv/phSqz4NLo=" crossorigin="anonymous"></script>
+        <script type="text/javascript">
+            window.addEventListener("DOMContentLoaded", () => {
+                if (window.hljs) {
+                    hljs.initHighlighting();
+                } else {
+                    const script = document.getElementById("highlightjs-script");
+                    script.onload = () => { hljs.initHighlighting(); };
+                }
+            });
+        </script>
         <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     </head>
     <body>
@@ -45,336 +56,393 @@
             </header>
 
             
-<p>I’ve been thinking a bit about how to build a library of tools to handle variables, capture-avoiding substitution, etc, on top of <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Pretty much every compiler needs to deal with variables, and they’re notoriously tricky to handle correctly.</p>
-<p>I’m a way off having a final design, but I thought I’d publish my unfinished notes, hastily written in an afternoon. You’ll see a few Thinking Emojis throughout this article, indicating things I haven’t figured out yet. Please do get in touch if any of this gives you ideas.</p>
-<h2 id="a-quick-look-at-some-prior-art"><a href="#a-quick-look-at-some-prior-art">A quick look at some prior art</a></h2>
+<p>I've been thinking a bit about how to build a library of tools to handle variables, capture-avoiding substitution, etc, on top of <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Pretty much every compiler needs to deal with variables, and they're notoriously tricky to handle correctly.</p>
+<p>I'm a way off having a final design, but I thought I'd publish my unfinished notes, hastily written in an afternoon. You'll see a few Thinking Emojis throughout this article, indicating things I haven't figured out yet. Please do get in touch if any of this gives you ideas.</p>
+<h2 id="a-quick-look-at-some-prior-art"><a href="#a-quick-look-at-some-prior-art">A quick look at some prior art
+
+</a></h2>
 <p><a href="https://hackage.haskell.org/package/unbound"><strong><code>unbound</code></strong></a>/<a href="https://hackage.haskell.org/package/unbound-generics"><strong><code>unbound-generics</code></strong></a></p>
 <ul>
 <li><code>Name</code> is an abstract data type with fixed representation.
 <ul>
-<li><code>Bound</code> is a depth and an index. Requires patterns to have a canonical ordering, and bind each name only once</li>
-<li><code>Bound</code> discards the original name, but library API expects patterns to contain <code>Name</code>s</li>
-</ul></li>
+<li><code>Bound</code> is a depth and an index. Requires patterns to have a canonical ordering, and bind each name only once
+</li>
+<li><code>Bound</code> discards the original name, but library API expects patterns to contain <code>Name</code>s
+</li>
+</ul>
+</li>
 <li>Statically encoded patterns with built in type combinators.
 <ul>
 <li>I like:
 <ul>
-<li>Statically declare structure of binders</li>
-<li>Embed your own datatypes as required by language syntax — method header can be <code>[(Name, Type)]</code></li>
-</ul></li>
-<li>I don’t like:
+<li>Statically declare structure of binders
+</li>
+<li>Embed your own datatypes as required by language syntax --- method header can be <code>[(Name, Type)]</code>
+</li>
+</ul>
+</li>
+<li>I don't like:
 <ul>
-<li>Generics magic to find/traverse patterns</li>
-<li>Type constructor soup, eg <code>| LetRec (Bind (Rec [(Name, Embed Expr)]) Expr)</code>. Would be even noisier in C#.</li>
-</ul></li>
-</ul></li>
+<li>Generics magic to find/traverse patterns
+</li>
+<li>Type constructor soup, eg <code>| LetRec (Bind (Rec [(Name, Embed Expr)]) Expr)</code>. Would be even noisier in C#.
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li>Quite closely integrated with generics libs
 <ul>
-<li>Most users will be using <code>RepLib</code>/<code>GHC.Generics</code></li>
-<li>Lib uses <code>RepLib</code>/<code>GHC.Generics</code> internally to traverse patterns</li>
-</ul></li>
+<li>Most users will be using <code>RepLib</code>/<code>GHC.Generics</code>
+</li>
+<li>Lib uses <code>RepLib</code>/<code>GHC.Generics</code> internally to traverse patterns
+</li>
+</ul>
+</li>
 </ul>
 <p><a href="https://www.schoolofhaskell.com/user/edwardk/bound"><strong><code>bound</code></strong></a></p>
 <ul>
-<li>Choose your own name (<code>data Expr a = Var a | ...</code>).</li>
+<li>Choose your own name (<code>data Expr a = Var a | ...</code>).
+</li>
 <li>Choose your own pattern/index.
 <ul>
-<li>Library explicitly doesn’t manage patterns or names. It just does substitution using your monad. <code>Scope</code> doesn’t contain a “pattern” object.</li>
-<li>Me gusta</li>
-</ul></li>
+<li>Library explicitly doesn't manage patterns or names. It just does substitution using your monad. <code>Scope</code> doesn't contain a &quot;pattern&quot; object.
+</li>
+<li>Me gusta
+</li>
+</ul>
+</li>
 <li>Nested datatype manages de Bruijn depth statically.
 <ul>
-<li>Nested datatype is quite awkward in practice — doesn’t play nicely with mutual recursion or Plated.</li>
-<li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you’re dealing with huge trees — but also, not super costly complexity-wise.</li>
-</ul></li>
+<li>Nested datatype is quite awkward in practice --- doesn't play nicely with mutual recursion or Plated.
+</li>
+<li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees --- but also, not super costly complexity-wise.
+</li>
+</ul>
+</li>
 <li>Works really nicely with standard classes: <code>Foldable</code>/<code>Traversable</code> to look at FVs, <code>Functor</code> for renaming, <code>Monad</code> for substitution. <code>Eq1</code> for alpha equivalence, etc. Very pleasing.
 <ul>
-<li>OTOH, <a href="https://stackoverflow.com/questions/39057576/mutually-recursive-syntaxes-with-bound">doesn’t work with a non-monadic AST</a>.</li>
-</ul></li>
-<li>Overall, probably not such a good fit for C# since we don’t have HKTs, <code>Monad</code> etc. Not very library-able.</li>
+<li>OTOH, <a href="https://stackoverflow.com/questions/39057576/mutually-recursive-syntaxes-with-bound">doesn't work with a non-monadic AST</a>.
+</li>
+</ul>
+</li>
+<li>Overall, probably not such a good fit for C# since we don't have HKTs, <code>Monad</code> etc. Not very library-able.
+</li>
 </ul>
 <p><a href="https://github.com/brendanzab/moniker"><strong><code>moniker</code></strong></a></p>
 <ul>
-<li>More or less a port of <code>unbound</code>.</li>
-<li>Choose your own name (<code>Free&lt;N&gt;</code>/<code>Bound&lt;N&gt;</code>; <code>trait BoundTerm&lt;N&gt;</code>).</li>
-<li>Library defines a couple of traits (<code>BoundTerm</code>/<code>BoundPattern</code>) to locate variables, do substitution, etc. <code>unbound</code> uses generics for this.</li>
-<li>Traverse your own terms, but <code>derive</code> magic assists with implementing the library’s traits.</li>
+<li>More or less a port of <code>unbound</code>.
+</li>
+<li>Choose your own name (<code>Free&lt;N&gt;</code>/<code>Bound&lt;N&gt;</code>; <code>trait BoundTerm&lt;N&gt;</code>).
+</li>
+<li>Library defines a couple of traits (<code>BoundTerm</code>/<code>BoundPattern</code>) to locate variables, do substitution, etc. <code>unbound</code> uses generics for this.
+</li>
+<li>Traverse your own terms, but <code>derive</code> magic assists with implementing the library's traits.
+</li>
 </ul>
-<h2 id="representing-names"><a href="#representing-names">Representing Names</a></h2>
+<h2 id="representing-names"><a href="#representing-names">Representing Names
+
+</a></h2>
 <p>I definitely want to use de Bruijn indexes (managed by the library) for bound variables.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> Bound</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Depth <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span>  <span class="co">// how many binding sites up should I look?</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Index <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span>  <span class="co">// where inside the binding site should I look?</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>For now, I’m not storing names in <code>Bound</code>. If you want to know the original name, go and find it in the pattern. Use of <code>int</code> for <code>Index</code> requires patterns to have a canonical ordering (and bind each variable only once).</p>
+<pre><code class="language-csharp">readonly struct Bound
+{
+    public int Depth { get; }  // how many binding sites up should I look?
+    public int Index { get; }  // where inside the binding site should I look?
+}
+</code></pre>
+<p>For now, I'm not storing names in <code>Bound</code>. If you want to know the original name, go and find it in the pattern. Use of <code>int</code> for <code>Index</code> requires patterns to have a canonical ordering (and bind each variable only once).</p>
 <p>Free variables: need an easy way to freshen them.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> Free</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> OriginalName <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Freshness <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">readonly struct Free
+{
+    public string OriginalName { get; }
+    public int Freshness { get; }
+}
+</code></pre>
 <p>Now just union them to represent names.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> Name</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Bound Bound <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Free Free <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="fu">Name</span><span class="op">(</span>Bound bound<span class="op">)</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        Bound <span class="op">=</span> bound<span class="op">;</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        Free <span class="op">=</span> <span class="kw">default</span><span class="op">;</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="fu">Name</span><span class="op">(</span>Free free<span class="op">)</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        Bound <span class="op">=</span> <span class="kw">default</span><span class="op">;</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        Free <span class="op">=</span> free<span class="op">;</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">bool</span> IsBound <span class="op">=&gt;</span> free<span class="op">.</span><span class="fu">OriginalName</span> <span class="op">==</span> <span class="kw">null</span><span class="op">;</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">bool</span> IsFree <span class="op">=&gt;</span> free<span class="op">.</span><span class="fu">OriginalName</span> <span class="op">!=</span> <span class="kw">null</span><span class="op">;</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">readonly struct Name
+{
+    public Bound Bound { get; }
+    public Free Free { get; }
+    public Name(Bound bound)
+    {
+        Bound = bound;
+        Free = default;
+    }
+    public Name(Free free)
+    {
+        Bound = default;
+        Free = free;
+    }
+    public bool IsBound =&gt; free.OriginalName == null;
+    public bool IsFree =&gt; free.OriginalName != null;
+}
+</code></pre>
 <p>How much of this should be public? Should these be structs or classes? (<code>Name</code> is like 4 words.) 🤔</p>
-<h2 id="representing-scopes"><a href="#representing-scopes">Representing Scopes</a></h2>
+<h2 id="representing-scopes"><a href="#representing-scopes">Representing Scopes
+
+</a></h2>
 <p>I definitely want an explicit type to represent a scope. I personally think <code>BindingSite</code> is a slightly better name, although perhaps that should be reserved for names inside patterns? 🤔</p>
 <p>The idea is to treat <code>BindingSite</code> as an abstract data type. To create a <code>BindingSite</code> (such as when parsing a lambda expression), you call <code>Binder.Bind(variables, body)</code>. The binder traverses the <code>body</code> AST, looking for variables which are bound by the lambda and converting them to <code>Bound</code> de Bruijn indexes. Likewise, when you need to go inside a <code>BindingSite</code>, you have to explicitly unbind it.</p>
-<p>Don’t want to discard the original names, of course.</p>
+<p>Don't want to discard the original names, of course.</p>
 <p><strong>Idea 1</strong>: Store the original name with the <code>Bound</code> variable (just as an annotation, ignore in alpha-equivalence etc).</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> Bound</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Depth <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Index <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Free OriginalName <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Potential consistency issues — different mentions of the same variable could end up with different tags.</p>
+<pre><code class="language-csharp">readonly struct Bound
+{
+    public int Depth { get; }
+    public int Index { get; }
+    public Free OriginalName { get; }
+}
+</code></pre>
+<p>Potential consistency issues --- different mentions of the same variable could end up with different tags.</p>
 <p><strong>Idea 2</strong>: Store a flat list of original names in the <code>BindingSite</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span>  <span class="co">// aka Scope (bound/moniker) or Bind (unbound)</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// How much of this should be public? 🤔</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableArray<span class="op">&lt;</span>Name<span class="op">&gt;</span> OriginalNames <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Body <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>It feels kinda ugly. Also potential consistency issues — if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you’re gonna end up duplicating information. Also, it doesn’t seem like this would easily support recursive patterns such as letrec or Agda’s dot notation.</p>
+<pre><code class="language-csharp">readonly struct BindingSite&lt;T&gt;  // aka Scope (bound/moniker) or Bind (unbound)
+{
+    // How much of this should be public? 🤔
+    public ImmutableArray&lt;Name&gt; OriginalNames { get; }
+    public T Body { get; }
+}
+</code></pre>
+<p>It feels kinda ugly. Also potential consistency issues --- if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you're gonna end up duplicating information. Also, it doesn't seem like this would easily support recursive patterns such as letrec or Agda's dot notation.</p>
 <p><strong>Idea 3</strong>: Store the actual pattern in the <code>BindingSite</code>. This is more in line with how <code>unbound</code>/<code>moniker</code> do it.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Pattern Pattern <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Body <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Pattern <span class="op">{}</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Variable <span class="op">:</span> Pattern  <span class="co">// Do I need to support &quot;anonymous&quot; variables? 🤔</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Name Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Embed<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> Pattern</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Embedded <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Telescope <span class="op">:</span> Pattern  <span class="co">// known as Rebind in other libs</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> BindingSite<span class="op">&lt;</span>Pattern<span class="op">&gt;</span> BindingSite <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Rec <span class="op">:</span> Pattern</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="co">// technically this is a binding site too. 🤔</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Pattern Body <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">readonly struct BindingSite&lt;T&gt;
+{
+    public Pattern Pattern { get; }
+    public T Body { get; }
+}
+abstract class Pattern {}
+class Variable : Pattern  // Do I need to support &quot;anonymous&quot; variables? 🤔
+{
+    public Name Name { get; }
+}
+class Embed&lt;T&gt; : Pattern
+{
+    public T Embedded { get; }
+}
+class Telescope : Pattern  // known as Rebind in other libs
+{
+    public BindingSite&lt;Pattern&gt; BindingSite { get; }
+}
+class Rec : Pattern
+{
+    // technically this is a binding site too. 🤔
+    public Pattern Body { get; }
+}
+</code></pre>
 <p>Some things about this work really well. We can make <code>Pattern</code> extensible by having it implement <code>IRewritable</code> abstractly. I define a few base patterns which my library recognises, and you can add your own. To (eg) find the variables in a pattern I just need to be able to traverse your custom pattern types with <code>GetChildren</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Pattern <span class="op">:</span> IRewritable<span class="op">&lt;</span>Pattern<span class="op">&gt;</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> IEnumerable<span class="op">&lt;</span>Free<span class="op">&gt;</span> <span class="fu">GetNames</span><span class="op">()</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">this</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">SelfAndDescendants</span><span class="op">()</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">OfType</span><span class="op">&lt;</span>Variable<span class="op">&gt;()</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>            <span class="co">// names which aren't free in a pattern are recursive</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>            <span class="co">// references to other names bound in this pattern</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Where</span><span class="op">(</span>v <span class="op">=&gt;</span> v<span class="op">.</span><span class="fu">Name</span><span class="op">.</span><span class="fu">IsFree</span><span class="op">)</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>x <span class="op">=&gt;</span> x<span class="op">.</span><span class="fu">Name</span><span class="op">.</span><span class="fu">Free</span><span class="op">);</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Ways this doesn’t scale:</p>
+<pre><code class="language-csharp">abstract class Pattern : IRewritable&lt;Pattern&gt;
+{
+    // ...
+    public IEnumerable&lt;Free&gt; GetNames()
+        =&gt; this
+            .SelfAndDescendants()
+            .OfType&lt;Variable&gt;()
+            // names which aren't free in a pattern are recursive
+            // references to other names bound in this pattern
+            .Where(v =&gt; v.Name.IsFree)
+            .Select(x =&gt; x.Name.Free);
+}
+</code></pre>
+<p>Ways this doesn't scale:</p>
 <ul>
-<li>If your language has multiple types of patterns (eg, type variables and value variables) you can’t statically distinguish them.</li>
-<li>The structure of the pattern lives only at runtime — it all gets stuffed into a <code>Pattern</code>-typed variable. You can’t <em>statically</em> encode the syntactic structure of the binding site (at which point it’s not a whole lot better than Idea 2).</li>
-<li>“Rewrite all the embedded terms” is an ad-hoc affair. Long-standing shortcoming of <code>IRewritable</code>, for which I haven’t come up with a satisfactorily simple solution.</li>
+<li>If your language has multiple types of patterns (eg, type variables and value variables) you can't statically distinguish them.
+</li>
+<li>The structure of the pattern lives only at runtime --- it all gets stuffed into a <code>Pattern</code>-typed variable. You can't <em>statically</em> encode the syntactic structure of the binding site (at which point it's not a whole lot better than Idea 2).
+</li>
+<li>&quot;Rewrite all the embedded terms&quot; is an ad-hoc affair. Long-standing shortcoming of <code>IRewritable</code>, for which I haven't come up with a satisfactorily simple solution.
+</li>
 </ul>
-<p>What should be the advice for implementing <code>IRewritable</code> on objects containing a binding site? Should you traverse to the body? (Problematic because de Bruijn indexes from different scopes are not comparable.) Are you meant to unbind the body? That would mean you can’t use <code>IRewritable</code> as is, because <code>IRewritable</code> doesn’t have a parameter for a source of fresh names. Perhaps we should be using <code>IRewriter</code> and not <code>IRewritable</code>, although that’s a messier API. 🤔</p>
+<p>What should be the advice for implementing <code>IRewritable</code> on objects containing a binding site? Should you traverse to the body? (Problematic because de Bruijn indexes from different scopes are not comparable.) Are you meant to unbind the body? That would mean you can't use <code>IRewritable</code> as is, because <code>IRewritable</code> doesn't have a parameter for a source of fresh names. Perhaps we should be using <code>IRewriter</code> and not <code>IRewritable</code>, although that's a messier API. 🤔</p>
 <blockquote>
 <p>This ☝🏻 is a pressing concern because <code>Telescope</code> features a <code>BindingSite</code>!</p>
 </blockquote>
 <p><strong>Idea 3.1</strong>: Statically type the <code>Pattern</code> using generics.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> BindingSite<span class="op">&lt;</span>TPattern<span class="op">,</span> T<span class="op">&gt;</span> where TPattern <span class="op">:</span> Pattern</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> TPattern Pattern <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Body <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Telescope<span class="op">&lt;</span>L<span class="op">,</span> R<span class="op">&gt;</span> <span class="op">:</span> Pattern</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    where L <span class="op">:</span> Pattern</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    where R <span class="op">:</span> Pattern</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// open question on how to treat BindingSite with IRewritable</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> BindingSite<span class="op">&lt;</span>L<span class="op">,</span> R<span class="op">&gt;</span> BindingSite <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Rec<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> Pattern</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    where T <span class="op">:</span> Pattern</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Body <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Some things about this work really well too, as evidenced by its use in <code>unbound</code>/<code>moniker</code>. I find the “type soup” usability issue a bit concerning, but more pressingly it doesn’t play nicely with <code>IRewritable</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Telescope<span class="op">&lt;</span>L<span class="op">,</span> R<span class="op">&gt;</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">()</span> <span class="op">=&gt;</span> <span class="dv">2</span><span class="op">;</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>Span<span class="op">&lt;</span>Pattern<span class="op">&gt;</span> children<span class="op">)</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">// debatably we should only be descending to the Pattern,</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        <span class="co">// because the Body is in a different scope</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        children<span class="op">[</span><span class="dv">0</span><span class="op">]</span> <span class="op">=</span> BindingSite<span class="op">.</span><span class="fu">Pattern</span><span class="op">;</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        children<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="op">=</span> BindingSite<span class="op">.</span><span class="fu">Body</span><span class="op">;</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Pattern <span class="fu">SetChildren</span><span class="op">(</span>ReadOnlySpan<span class="op">&lt;</span>Pattern<span class="op">&gt;</span> children<span class="op">)</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> Telescope<span class="op">&lt;</span>L<span class="op">,</span> R<span class="op">&gt;((</span>L<span class="op">)</span>children<span class="op">[</span><span class="dv">0</span><span class="op">],</span> <span class="op">(</span>R<span class="op">)</span>children<span class="op">[</span><span class="dv">1</span><span class="op">]);</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        <span class="co">//                      ^ damn!</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">readonly struct BindingSite&lt;TPattern, T&gt; where TPattern : Pattern
+{
+    public TPattern Pattern { get; }
+    public T Body { get; }
+}
+class Telescope&lt;L, R&gt; : Pattern
+    where L : Pattern
+    where R : Pattern
+{
+    // open question on how to treat BindingSite with IRewritable
+    public BindingSite&lt;L, R&gt; BindingSite { get; }
+}
+class Rec&lt;T&gt; : Pattern
+    where T : Pattern
+{
+    public T Body { get; }
+}
+</code></pre>
+<p>Some things about this work really well too, as evidenced by its use in <code>unbound</code>/<code>moniker</code>. I find the &quot;type soup&quot; usability issue a bit concerning, but more pressingly it doesn't play nicely with <code>IRewritable</code>.</p>
+<pre><code class="language-csharp">class Telescope&lt;L, R&gt;
+{
+    // ...
+    public int CountChildren() =&gt; 2;
+    public void GetChildren(Span&lt;Pattern&gt; children)
+    {
+        // debatably we should only be descending to the Pattern,
+        // because the Body is in a different scope
+        children[0] = BindingSite.Pattern;
+        children[1] = BindingSite.Body;
+    }
+    public Pattern SetChildren(ReadOnlySpan&lt;Pattern&gt; children)
+        =&gt; new Telescope&lt;L, R&gt;((L)children[0], (R)children[1]);
+        //                      ^ damn!
+}
+</code></pre>
 <p>That unsafe cast really is unsafe, because a <code>Rewrite</code> operation is liable to change the type of the pattern. Maybe patterns should be read-only? Do I need to split the read/write parts of <code>IRewritable</code>? 🤔</p>
-<p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful — they’re hard to reason about and hard to program with. (It’s much easier to manipulate values than code.) I’d prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
-<h2 id="asts-with-binding-structure"><a href="#asts-with-binding-structure">ASTs with Binding Structure</a></h2>
-<p>This part is fairly worked out I think. I’m assuming that your syntax tree has a case for variables, containing a <code>Name</code> (and no children) and a case for binding sites, containing a <code>BindingSite</code> (and no children). So all we need to add to <code>IRewritable</code> is a way to identify those nodes:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IBindable<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span> where T <span class="op">:</span> IBindable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span> <span class="fu">TryGetName</span><span class="op">(</span><span class="kw">out</span> Name name<span class="op">);</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">SetName</span><span class="op">(</span>Name newName<span class="op">);</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span> <span class="fu">TryGetBindingSite</span><span class="op">(</span><span class="kw">out</span> BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span> bindingSite<span class="op">);</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">SetBindingSite</span><span class="op">(</span>BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span> newBindingSite<span class="op">);</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful --- they're hard to reason about and hard to program with. (It's much easier to manipulate values than code.) I'd prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
+<h2 id="asts-with-binding-structure"><a href="#asts-with-binding-structure">ASTs with Binding Structure
+
+</a></h2>
+<p>This part is fairly worked out I think. I'm assuming that your syntax tree has a case for variables, containing a <code>Name</code> (and no children) and a case for binding sites, containing a <code>BindingSite</code> (and no children). So all we need to add to <code>IRewritable</code> is a way to identify those nodes:</p>
+<pre><code class="language-csharp">interface IBindable&lt;T&gt; : IRewritable&lt;T&gt; where T : IBindable&lt;T&gt;
+{
+    bool TryGetName(out Name name);
+    T SetName(Name newName);
+
+    bool TryGetBindingSite(out BindingSite&lt;T&gt; bindingSite);
+    T SetBindingSite(BindingSite&lt;T&gt; newBindingSite);
+}
+</code></pre>
 <p>Not so different than <a href="../posts/2019-12-15-generic-unification-with-sawmill.html"><code>IUnifiable</code></a>.</p>
-<h2 id="freshening"><a href="#freshening">Freshening</a></h2>
+<h2 id="freshening"><a href="#freshening">Freshening
+
+</a></h2>
 <p>When you go under a binder you (usually) want to replace the de Bruijn indexes in there with named variables. Those variables need to be <em>fresh</em>, that is, they need to not clash with (or <em>capture</em>) any other variables in scope. As a UX concern, you probably want the fresh name to be somewhat similar to the name the programmer typed.</p>
 <p>So we have <code>IFreshener</code>:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IFreshener</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    Free <span class="fu">Freshen</span><span class="op">(</span>Free name<span class="op">);</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">interface IFreshener
+{
+    Free Freshen(Free name);
+}
+</code></pre>
 <p>And a straightforward implementation with a global counter.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Freshener <span class="op">:</span> IFreshener</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="dt">int</span> _counter <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Free <span class="fu">Freshen</span><span class="op">(</span>Free name<span class="op">)</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        _counter<span class="op">++;</span>  <span class="co">// Interlocked.Increment if you need thread safety</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">new</span> <span class="fu">Free</span><span class="op">(</span>name<span class="op">.</span><span class="fu">OriginalName</span><span class="op">,</span> _counter<span class="op">);</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>As an optimisation (and as a UX improvement), you can avoid freshening variables if you’re sure they don’t clash with any other names which are in scope. That means keeping track of the set of names we want to avoid:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IFreshener</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    Free <span class="fu">Freshen</span><span class="op">(</span>Free name<span class="op">);</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">EnterScope</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>Free<span class="op">&gt;</span> names<span class="op">);</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">ExitScope</span><span class="op">();</span>  <span class="co">// free up the names from the last EnterScope call</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Freshener <span class="op">:</span> IFreshener</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Free <span class="fu">Freshen</span><span class="op">(</span>Free name<span class="op">)</span> <span class="op">{</span> <span class="co">/* ... */</span> <span class="op">}</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">EnterScope</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>Free<span class="op">&gt;</span> names<span class="op">)</span> <span class="op">{}</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">ExitScope</span><span class="op">()</span> <span class="op">{}</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LocalFreshener <span class="op">:</span> IFreshener</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">// use a better data structure in practice, obv</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">readonly</span> Stack<span class="op">&lt;</span>IEnumerable<span class="op">&lt;</span>Free<span class="op">&gt;&gt;</span> _names <span class="op">=</span> <span class="kw">new</span><span class="op">();</span></span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Free <span class="fu">Freshen</span><span class="op">(</span>Free name<span class="op">)</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>        <span class="kw">while</span> <span class="op">(</span>_names<span class="op">.</span><span class="fu">Any</span><span class="op">(</span>ns <span class="op">=&gt;</span> ns<span class="op">.</span><span class="fu">Contains</span><span class="op">(</span>name<span class="op">)))</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>            name <span class="op">=</span> name<span class="op">.</span><span class="fu">IncrementFreshness</span><span class="op">();</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> name<span class="op">;</span></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">EnterScope</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>Free<span class="op">&gt;</span> names<span class="op">)</span></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>        _names<span class="op">.</span><span class="fu">Push</span><span class="op">(</span>names<span class="op">);</span></span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">ExitScope</span><span class="op">()</span></span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>        _names<span class="op">.</span><span class="fu">Pop</span><span class="op">();</span></span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h2 id="traversing-the-tree"><a href="#traversing-the-tree">Traversing the tree</a></h2>
-<p>OK, finally we have everything we need to bind and unbind variables in ASTs. Let’s suppose we went with <strong>Idea 2</strong> from above — just storing a flat list of names at the binding site.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">class</span> Binder</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span> Bind<span class="op">&lt;</span>T<span class="op">&gt;(</span>ImmutableArray<span class="op">&lt;</span>Free<span class="op">&gt;</span> variables<span class="op">,</span> T body<span class="op">)</span> where T <span class="op">:</span> IBindable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> variablesLookup <span class="op">=</span> variables</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Select</span><span class="op">((</span>x<span class="op">,</span> i<span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">new</span> KeyValuePair<span class="op">&lt;</span>Free<span class="op">,</span> <span class="dt">int</span><span class="op">&gt;(</span>x<span class="op">,</span> i<span class="op">))</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">ToImmutableDictionary</span><span class="op">();</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> level <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        T <span class="fu">Go</span><span class="op">(</span>T x<span class="op">)</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> <span class="op">(</span>x<span class="op">.</span><span class="fu">TryGetName</span><span class="op">(</span><span class="kw">out</span> <span class="dt">var</span> name<span class="op">))</span>  <span class="co">// x is a variable</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                <span class="kw">if</span> <span class="op">(</span>name<span class="op">.</span><span class="fu">IsFree</span> <span class="op">&amp;&amp;</span> variablesLookup<span class="op">.</span><span class="fu">TryGetValue</span><span class="op">(</span>name<span class="op">.</span><span class="fu">Free</span><span class="op">,</span> <span class="kw">out</span> <span class="dt">var</span> ix<span class="op">))</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                <span class="op">{</span></span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> x<span class="op">.</span><span class="fu">SetName</span><span class="op">(</span><span class="kw">new</span> <span class="fu">Name</span><span class="op">(</span><span class="kw">new</span> <span class="fu">Bound</span><span class="op">(</span>level<span class="op">,</span> ix<span class="op">)));</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                <span class="kw">return</span> x<span class="op">;</span></span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>            <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span>x<span class="op">.</span><span class="fu">TryGetBindingSite</span><span class="op">(</span><span class="kw">out</span> <span class="dt">var</span> bs<span class="op">))</span>  <span class="co">// x is a binding site</span></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>                level<span class="op">++;</span></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>                <span class="dt">var</span> newBody <span class="op">=</span> <span class="fu">Go</span><span class="op">(</span>bs<span class="op">.</span><span class="fu">Body</span><span class="op">);</span></span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>                level<span class="op">--;</span></span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>                <span class="kw">return</span> x<span class="op">.</span><span class="fu">SetBindingSite</span><span class="op">(</span>bs<span class="op">.</span><span class="fu">WithBody</span><span class="op">(</span>newBody<span class="op">));</span></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>            <span class="kw">else</span></span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>                <span class="kw">return</span> x<span class="op">.</span><span class="fu">RewriteChildren</span><span class="op">(</span>Go<span class="op">);</span></span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">new</span> BindingSite<span class="op">&lt;</span>T<span class="op">&gt;(</span>variables<span class="op">,</span> <span class="fu">Go</span><span class="op">(</span>body<span class="op">));</span></span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> <span class="op">(</span>ImmutableArray<span class="op">&lt;</span>Free<span class="op">&gt;,</span> T<span class="op">)</span> Unbind<span class="op">&lt;</span>T<span class="op">&gt;(</span>BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span> bindingSite<span class="op">,</span> IFreshener freshener<span class="op">)</span> where T <span class="op">:</span> IBindable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
-<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> variables <span class="op">=</span> bindingSite</span>
-<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Variables</span></span>
-<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>freshener<span class="op">.</span><span class="fu">Freshen</span><span class="op">)</span></span>
-<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">ToImmutableArray</span><span class="op">();</span></span>
-<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> level <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>        T <span class="fu">Go</span><span class="op">(</span>T x<span class="op">)</span></span>
-<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
-<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> <span class="op">(</span>x<span class="op">.</span><span class="fu">TryGetName</span><span class="op">(</span><span class="kw">out</span> <span class="dt">var</span> name<span class="op">))</span></span>
-<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
-<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>                <span class="kw">if</span> <span class="op">(</span>name<span class="op">.</span><span class="fu">IsBound</span> <span class="op">&amp;&amp;</span> name<span class="op">.</span><span class="fu">Bound</span><span class="op">.</span><span class="fu">Level</span> <span class="op">==</span> level<span class="op">)</span></span>
-<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>                <span class="op">{</span></span>
-<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> x<span class="op">.</span><span class="fu">SetName</span><span class="op">(</span><span class="kw">new</span> <span class="fu">Name</span><span class="op">(</span>variables<span class="op">[</span>name<span class="op">.</span><span class="fu">Bound</span><span class="op">.</span><span class="fu">Index</span><span class="op">]));</span></span>
-<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
-<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>                <span class="kw">return</span> x<span class="op">;</span></span>
-<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>            <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span>x<span class="op">.</span><span class="fu">TryGetBindingSite</span><span class="op">(</span><span class="kw">out</span> <span class="dt">var</span> bs<span class="op">))</span></span>
-<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
-<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>                level<span class="op">++;</span></span>
-<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>                <span class="dt">var</span> newBody <span class="op">=</span> <span class="fu">Go</span><span class="op">(</span>bs<span class="op">.</span><span class="fu">Body</span><span class="op">);</span></span>
-<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a>                level<span class="op">--;</span></span>
-<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a>                <span class="kw">if</span> <span class="op">(!</span><span class="fu">ReferenceEquals</span><span class="op">(</span>bs<span class="op">.</span><span class="fu">Body</span><span class="op">,</span> newBody<span class="op">))</span></span>
-<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a>                <span class="op">{</span></span>
-<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">return</span> x<span class="op">.</span><span class="fu">SetBindingSite</span><span class="op">(</span>bs<span class="op">.</span><span class="fu">WithBody</span><span class="op">(</span>newBody<span class="op">));</span></span>
-<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
-<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a>                <span class="kw">return</span> x<span class="op">;</span></span>
-<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>            <span class="kw">else</span></span>
-<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
-<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>                <span class="kw">return</span> x<span class="op">.</span><span class="fu">RewriteChildren</span><span class="op">(</span>Go<span class="op">);</span></span>
-<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="op">(</span>variables<span class="op">,</span> <span class="fu">Go</span><span class="op">(</span>bindingSite<span class="op">.</span><span class="fu">Body</span><span class="op">));</span></span>
-<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">class Freshener : IFreshener
+{
+    private int _counter = 0;
+    public Free Freshen(Free name)
+    {
+        _counter++;  // Interlocked.Increment if you need thread safety
+        return new Free(name.OriginalName, _counter);
+    }
+}
+</code></pre>
+<p>As an optimisation (and as a UX improvement), you can avoid freshening variables if you're sure they don't clash with any other names which are in scope. That means keeping track of the set of names we want to avoid:</p>
+<pre><code class="language-csharp">interface IFreshener
+{
+    Free Freshen(Free name);
+    void EnterScope(IEnumerable&lt;Free&gt; names);
+    void ExitScope();  // free up the names from the last EnterScope call
+}
+class Freshener : IFreshener
+{
+    public Free Freshen(Free name) { /* ... */ }
+    public void EnterScope(IEnumerable&lt;Free&gt; names) {}
+    public void ExitScope() {}
+}
+class LocalFreshener : IFreshener
+{
+    // use a better data structure in practice, obv
+    private readonly Stack&lt;IEnumerable&lt;Free&gt;&gt; _names = new();
+    public Free Freshen(Free name)
+    {
+        while (_names.Any(ns =&gt; ns.Contains(name)))
+        {
+            name = name.IncrementFreshness();
+        }
+        return name;
+    }
+    public void EnterScope(IEnumerable&lt;Free&gt; names)
+    {
+        _names.Push(names);
+    }
+    public void ExitScope()
+    {
+        _names.Pop();
+    }
+}
+</code></pre>
+<h2 id="traversing-the-tree"><a href="#traversing-the-tree">Traversing the tree
+
+</a></h2>
+<p>OK, finally we have everything we need to bind and unbind variables in ASTs. Let's suppose we went with <strong>Idea 2</strong> from above --- just storing a flat list of names at the binding site.</p>
+<pre><code class="language-csharp">static class Binder
+{
+    public static BindingSite&lt;T&gt; Bind&lt;T&gt;(ImmutableArray&lt;Free&gt; variables, T body) where T : IBindable&lt;T&gt;
+    {
+        var variablesLookup = variables
+            .Select((x, i) =&gt; new KeyValuePair&lt;Free, int&gt;(x, i))
+            .ToImmutableDictionary();
+
+        var level = 0;
+        T Go(T x)
+        {
+            if (x.TryGetName(out var name))  // x is a variable
+            {
+                if (name.IsFree &amp;&amp; variablesLookup.TryGetValue(name.Free, out var ix))
+                {
+                    return x.SetName(new Name(new Bound(level, ix)));
+                }
+                return x;
+            }
+            else if (x.TryGetBindingSite(out var bs))  // x is a binding site
+            {
+                level++;
+                var newBody = Go(bs.Body);
+                level--;
+                return x.SetBindingSite(bs.WithBody(newBody));
+            }
+            else
+            {
+                return x.RewriteChildren(Go);
+            }
+        }
+        return new BindingSite&lt;T&gt;(variables, Go(body));
+    }
+
+    public static (ImmutableArray&lt;Free&gt;, T) Unbind&lt;T&gt;(BindingSite&lt;T&gt; bindingSite, IFreshener freshener) where T : IBindable&lt;T&gt;
+    {
+        var variables = bindingSite
+            .Variables
+            .Select(freshener.Freshen)
+            .ToImmutableArray();
+
+        var level = 0;
+        T Go(T x)
+        {
+            if (x.TryGetName(out var name))
+            {
+                if (name.IsBound &amp;&amp; name.Bound.Level == level)
+                {
+                    return x.SetName(new Name(variables[name.Bound.Index]));
+                }
+                return x;
+            }
+            else if (x.TryGetBindingSite(out var bs))
+            {
+                level++;
+                var newBody = Go(bs.Body);
+                level--;
+                if (!ReferenceEquals(bs.Body, newBody))
+                {
+                    return x.SetBindingSite(bs.WithBody(newBody));
+                }
+                return x;
+            }
+            else
+            {
+                return x.RewriteChildren(Go);
+            }
+        }
+        return (variables, Go(bindingSite.Body));
+    }
+}
+</code></pre>
 <p>You can develop versions of <code>Rewrite</code>, <code>SelfAndDescendants</code>, and so on, which appropriately <code>Bind</code> and <code>Unbind</code> variables inside the tree.</p>
-<p>There are a couple of design issues regarding the performance of <code>Bind</code>/<code>Unbind</code>. Each call traverses and rewrites the whole tree and potentially chews through a bunch of fresh names, so if you bind and unbind a lot then you’re gonna have performance problems.</p>
-<p>There might be room for improvement here — off the top of my head, you could rewrite everything up to the next binding site and just store a “substitution to be applied” there. You can defer applying the changes until you’re asked to open that binding site. I suspect that’d give you asymptotic speedups (quadratic -&gt; linear?) for certain algorithms which do lots of renaming.</p>
-<p>Also, some tree operations don’t require you to <code>Unbind</code> and re-<code>Bind</code> every single binding site. If you’re doing some sort of operation where you’re not generating new names or binding sites, or moving nodes across binding sites, you can just leave <code>Bound</code> variables where they are. That’s an argument for making (eg) <code>bindingSite.Body</code> public, and going under it in <code>GetChildren</code>/<code>SetChildren</code>. Although in practice that’s the sort of thing which is hard to get right and can cause subtle (or not-so-subtle) bugs in your language implementation.</p>
+<p>There are a couple of design issues regarding the performance of <code>Bind</code>/<code>Unbind</code>. Each call traverses and rewrites the whole tree and potentially chews through a bunch of fresh names, so if you bind and unbind a lot then you're gonna have performance problems.</p>
+<p>There might be room for improvement here --- off the top of my head, you could rewrite everything up to the next binding site and just store a &quot;substitution to be applied&quot; there. You can defer applying the changes until you're asked to open that binding site. I suspect that'd give you asymptotic speedups (quadratic -&gt; linear?) for certain algorithms which do lots of renaming.</p>
+<p>Also, some tree operations don't require you to <code>Unbind</code> and re-<code>Bind</code> every single binding site. If you're doing some sort of operation where you're not generating new names or binding sites, or moving nodes across binding sites, you can just leave <code>Bound</code> variables where they are. That's an argument for making (eg) <code>bindingSite.Body</code> public, and going under it in <code>GetChildren</code>/<code>SetChildren</code>. Although in practice that's the sort of thing which is hard to get right and can cause subtle (or not-so-subtle) bugs in your language implementation.</p>
+
 
         </article>
 

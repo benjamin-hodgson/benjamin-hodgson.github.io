@@ -21,6 +21,17 @@
             gtag('config', 'UA-115911217-1');
         </script>
 
+        <script async id="highlightjs-script" src="https://cdn.jsdelivr.net/npm/highlightjs@9.16.2/highlight.pack.min.js" integrity="sha256-yeMmUlHbk3Q2fuSCxKTJOAcO+KSYnzaHv/phSqz4NLo=" crossorigin="anonymous"></script>
+        <script type="text/javascript">
+            window.addEventListener("DOMContentLoaded", () => {
+                if (window.hljs) {
+                    hljs.initHighlighting();
+                } else {
+                    const script = document.getElementById("highlightjs-script");
+                    script.onload = () => { hljs.initHighlighting(); };
+                }
+            });
+        </script>
         <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     </head>
     <body>
@@ -47,296 +58,327 @@
             </header>
 
             
-<p>If you visit <a href="https://www.stackoverflow.com/jobs">Stack Overflow Jobs</a> you’ll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type <a href="https://stackoverflow.com/jobs?sort=i&amp;q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)"><code>[c#] and (not [javascript] or salary:50000gbp)</code></a> into the search box. This advanced search syntax is called JQL, for <em>Jobs Query Language</em>.</p>
-<p>It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there’s a parser which produces an abstract syntax tree (hereafter <em>AST</em>), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)</p>
-<p><img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" /></p>
-<p>In this post I’m going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.</p>
-<h2 id="asts-and-operations"><a href="#asts-and-operations">ASTs and operations</a></h2>
+<p>If you visit <a href="https://www.stackoverflow.com/jobs">Stack Overflow Jobs</a> you'll see that our job search form supports a simple advanced search syntax, including Boolean operators and a number of custom filters such as technology tags and minimum salary. For example, I hate writing JavaScript, but my loyalties can be bought, so I might type <a href="https://stackoverflow.com/jobs?sort=i&amp;q=%5Bc%23%5D+and+(not+%5Bjavascript%5D+or+salary%3A50000gbp)"><code>[c#] and (not [javascript] or salary:50000gbp)</code></a> into the search box. This advanced search syntax is called JQL, for <em>Jobs Query Language</em>.</p>
+<p>It should come as no surprise that our codebase contains a miniature compiler for our miniature query language. Our compiler looks much like any other compiler: there's a parser which produces an abstract syntax tree (hereafter <em>AST</em>), a pipeline of analysers and transformations which operate on that AST, and a code generator which turns the JQL into an ElasticSearch query. (Actually, queries that are simple enough end up skipping the Elastic code generation step, instead being used by an interpreter to search an in-memory cache of jobs.)</p>
+<img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
+<p>In this post I'm going to focus on the middle part of that pipeline: how to write operations traversing a tree with a minimum of boilerplate.</p>
+<h2 id="asts-and-operations"><a href="#asts-and-operations">ASTs and operations
+
+</a></h2>
 <p>The JQL AST looks roughly like this:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> JqlNode <span class="op">{}</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> AndNode <span class="op">:</span> JqlNode</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> JqlNode Left <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> JqlNode Right <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> OrNode <span class="op">:</span> JqlNode</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> JqlNode Left <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> JqlNode Right <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> NotNode <span class="op">:</span> JqlNode</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> JqlNode Operand <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SalaryNode <span class="op">:</span> JqlNode</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Amount <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Currency <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TagNode <span class="op">:</span> JqlNode</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Tag <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">abstract class JqlNode {}
+class AndNode : JqlNode
+{
+    public JqlNode Left { get; }
+    public JqlNode Right { get; }
+}
+class OrNode : JqlNode
+{
+    public JqlNode Left { get; }
+    public JqlNode Right { get; }
+}
+class NotNode : JqlNode
+{
+    public JqlNode Operand { get; }
+}
+class SalaryNode : JqlNode
+{
+    public int Amount { get; }
+    public string Currency { get; }
+}
+class TagNode : JqlNode
+{
+    public string Tag { get; }
+}
+</code></pre>
 <p>Each syntactic form in the source language is represented as a subclass of <code>JqlNode</code>. Using the example I gave above, the input string <code>[c#] and (not [javascript] or salary:50000gbp)</code> would be represented as:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">new</span> <span class="fu">AndNode</span><span class="op">(</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;c#&quot;</span><span class="op">),</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span><span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;javascript&quot;</span><span class="op">)),</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">SalaryNode</span><span class="op">(</span><span class="dv">50000</span><span class="op">,</span> <span class="st">&quot;gbp&quot;</span><span class="op">)</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
-<p><img src="../images/2017-11-13-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" /></p>
-<p>When you need to analyse a <code>JqlNode</code>, you use pattern matching to see what type of node you have, and recursively query the operands of <code>And</code>/<code>Or</code>/<code>Not</code> nodes. Here’s a function which searches for the <code>TagNode</code>s in a tree:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>IEnumerable<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> <span class="fu">ExtractTags</span><span class="op">(</span>JqlNode node<span class="op">)</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">switch</span> <span class="op">(</span>node<span class="op">)</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> TagNode t<span class="op">:</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> t<span class="op">.</span><span class="fu">Tag</span> <span class="op">};</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> AndNode a<span class="op">:</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>            <span class="co">// recursively extract the tags from the two operands</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="fu">ExtractTags</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Left</span><span class="op">).</span><span class="fu">Concat</span><span class="op">(</span><span class="fu">ExtractTags</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Right</span><span class="op">));</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> OrNode o<span class="op">:</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="fu">ExtractTags</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Left</span><span class="op">).</span><span class="fu">Concat</span><span class="op">(</span><span class="fu">ExtractTags</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Right</span><span class="op">));</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> NotNode n<span class="op">:</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="fu">ExtractTags</span><span class="op">(</span>n<span class="op">.</span><span class="fu">Operand</span><span class="op">);</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> SalaryNode s<span class="op">:</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> Enumerable<span class="op">.</span><span class="fu">Empty</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;();</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        <span class="kw">default</span><span class="op">:</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span><span class="op">(</span><span class="fu">nameof</span><span class="op">(</span>node<span class="op">));</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Transforming a <code>JqlNode</code> to produce a new <code>JqlNode</code> is a similar story: you recursively traverse the tree, taking it apart and putting it back together. Here’s an example of an optimisation step which never doesn’t remove double-negatives, so a query like <code>not (not [java])</code> gets simplified to <code>[java]</code>:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>JqlNode <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>JqlNode node<span class="op">)</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">switch</span> <span class="op">(</span>node<span class="op">)</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> NotNode n1 when n1<span class="op">.</span><span class="fu">Operand</span> <span class="kw">is</span> NotNode n2<span class="op">:</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>n2<span class="op">.</span><span class="fu">Operand</span><span class="op">);</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> TagNode t<span class="op">:</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> t<span class="op">;</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> SalaryNode s<span class="op">:</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> s<span class="op">;</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> AndNode a<span class="op">:</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>            <span class="co">// recursively process the operands and rebuild the node</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span><span class="op">(</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Left</span><span class="op">),</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Right</span><span class="op">)</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>            <span class="op">);</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> OrNode o<span class="op">:</span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>                <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Left</span><span class="op">),</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Right</span><span class="op">)</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>            <span class="op">);</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> NotNode n<span class="op">:</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>                <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>n<span class="op">.</span><span class="fu">Operand</span><span class="op">)</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>            <span class="op">);</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        <span class="kw">default</span><span class="op">:</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span><span class="op">(</span><span class="fu">nameof</span><span class="op">(</span>node<span class="op">));</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the <code>case</code>s was interesting (<code>case TagNode t</code> in <code>ExtractTags</code> and <code>case NotNode n1 when n1.Operand is NotNode n2</code> in <code>SimplifyDoubleNegatives</code>); the rest of each function was just boilerplate to recursively operate on nodes’ children. You’re interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of <code>JqlNode</code>, so around 90% of the code in each operation is boilerplate!</p>
-<h2 id="easier-querying"><a href="#easier-querying">Easier Querying</a></h2>
-<p>Here’s the first insight that’ll help us improve on this situation. In <code>ExtractTags</code> we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you’re looking for. We’ll call the function which extracts the list of subtrees <code>SelfAndDescendants</code>.</p>
+<pre><code class="language-csharp">new AndNode(
+    new TagNode(&quot;c#&quot;),
+    new OrNode(
+        new NotNode(new TagNode(&quot;javascript&quot;)),
+        new SalaryNode(50000, &quot;gbp&quot;)
+    )
+)
+</code></pre>
+<img src="../images/2017-11-13-recursion-without-recursion/ast.jpg" alt="The abstract syntax tree" />
+<p>When you need to analyse a <code>JqlNode</code>, you use pattern matching to see what type of node you have, and recursively query the operands of <code>And</code>/<code>Or</code>/<code>Not</code> nodes. Here's a function which searches for the <code>TagNode</code>s in a tree:</p>
+<pre><code class="language-csharp">IEnumerable&lt;string&gt; ExtractTags(JqlNode node)
+{
+    switch (node)
+    {
+        case TagNode t:
+            return new[] { t.Tag };
+        case AndNode a:
+            // recursively extract the tags from the two operands
+            return ExtractTags(a.Left).Concat(ExtractTags(a.Right));
+        case OrNode o:
+            return ExtractTags(o.Left).Concat(ExtractTags(o.Right));
+        case NotNode n:
+            return ExtractTags(n.Operand);
+        case SalaryNode s:
+            return Enumerable.Empty&lt;string&gt;();
+        default:
+            throw new ArgumentOutOfRangeException(nameof(node));
+    }
+}
+</code></pre>
+<p>Transforming a <code>JqlNode</code> to produce a new <code>JqlNode</code> is a similar story: you recursively traverse the tree, taking it apart and putting it back together. Here's an example of an optimisation step which never doesn't remove double-negatives, so a query like <code>not (not [java])</code> gets simplified to <code>[java]</code>:</p>
+<pre><code class="language-csharp">JqlNode SimplifyDoubleNegatives(JqlNode node)
+{
+    switch (node)
+    {
+        case NotNode n1 when n1.Operand is NotNode n2:
+            return SimplifyDoubleNegatives(n2.Operand);
+        case TagNode t:
+            return t;
+        case SalaryNode s:
+            return s;
+        case AndNode a:
+            // recursively process the operands and rebuild the node
+            return new AndNode(
+                SimplifyDoubleNegatives(a.Left),
+                SimplifyDoubleNegatives(a.Right)
+            );
+        case OrNode o:
+            return new OrNode(
+                SimplifyDoubleNegatives(o.Left),
+                SimplifyDoubleNegatives(o.Right)
+            );
+        case NotNode n:
+            return new NotNode(
+                SimplifyDoubleNegatives(n.Operand)
+            );
+        default:
+            throw new ArgumentOutOfRangeException(nameof(node));
+    }
+}
+</code></pre>
+<p>This type of code gets pretty tedious pretty quickly! In both of these functions, only one of the <code>case</code>s was interesting (<code>case TagNode t</code> in <code>ExtractTags</code> and <code>case NotNode n1 when n1.Operand is NotNode n2</code> in <code>SimplifyDoubleNegatives</code>); the rest of each function was just boilerplate to recursively operate on nodes' children. You're interested in a particular syntactic pattern, but searching the whole tree for that pattern requires more code than finding the pattern does. In the real JQL compiler we have about a dozen subclasses of <code>JqlNode</code>, so around 90% of the code in each operation is boilerplate!</p>
+<h2 id="easier-querying"><a href="#easier-querying">Easier Querying
+
+</a></h2>
+<p>Here's the first insight that'll help us improve on this situation. In <code>ExtractTags</code> we were searching the tree for nodes satisfying a particular pattern. But supposing you had a list of every possible subtree - the root node, all of its children, all of their children, and so on - you could use LINQ to query that list to find nodes satisfying the pattern you're looking for. We'll call the function which extracts the list of subtrees <code>SelfAndDescendants</code>.</p>
 <p>Given a tree like the example from above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>), <code>SelfAndDescendants</code> will yield every subtree in a depth-first, left-to-right manner:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">new</span> JqlNode<span class="op">[]</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">AndNode</span><span class="op">(</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;c#&quot;</span><span class="op">),</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span><span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;javascript&quot;</span><span class="op">)),</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> <span class="fu">SalaryNode</span><span class="op">(</span><span class="dv">50000</span><span class="op">,</span> <span class="st">&quot;gbp&quot;</span><span class="op">)</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">)</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;c#&quot;</span><span class="op">),</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span><span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;javascript&quot;</span><span class="op">)),</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">SalaryNode</span><span class="op">(</span><span class="dv">50000</span><span class="op">,</span> <span class="st">&quot;gbp&quot;</span><span class="op">)</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span><span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;javascript&quot;</span><span class="op">)),</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;javascript&quot;</span><span class="op">),</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> <span class="fu">SalaryNode</span><span class="op">(</span><span class="dv">50000</span><span class="op">,</span> <span class="st">&quot;gbp&quot;</span><span class="op">)</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Here’s <code>SelfAndDescendants</code> in use:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>IEnumerable<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> <span class="fu">ExtractTags</span><span class="op">(</span>JqlNode node<span class="op">)</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> node</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">SelfAndDescendants</span><span class="op">()</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">OfType</span><span class="op">&lt;</span>TagNode<span class="op">&gt;()</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>n <span class="op">=&gt;</span> n<span class="op">.</span><span class="fu">Tag</span><span class="op">);</span></span></code></pre></div>
-<p>What an improvement! This code is much shorter, but more importantly it’s clearer and more direct. You can directly read off the intention of the code, rather than having to decipher the pattern of recursive calls. It’s also harder to get wrong - I personally am rather prone to forgetting to make a recursive call when I’m writing these sorts of functions. What’s more, <code>SelfAndDescendants</code> is totally reusable. If you can write a LINQ query, you can get whatever information you need from a <code>JqlNode</code>.</p>
+<pre><code class="language-csharp">new JqlNode[]
+{
+    new AndNode(
+        new TagNode(&quot;c#&quot;),
+        new OrNode(
+            new NotNode(new TagNode(&quot;javascript&quot;)),
+            new SalaryNode(50000, &quot;gbp&quot;)
+        )
+    ),
+    new TagNode(&quot;c#&quot;),
+    new OrNode(
+        new NotNode(new TagNode(&quot;javascript&quot;)),
+        new SalaryNode(50000, &quot;gbp&quot;)
+    ),
+    new NotNode(new TagNode(&quot;javascript&quot;)),
+    new TagNode(&quot;javascript&quot;),
+    new SalaryNode(50000, &quot;gbp&quot;)
+}
+</code></pre>
+<p>Here's <code>SelfAndDescendants</code> in use:</p>
+<pre><code class="language-csharp">IEnumerable&lt;string&gt; ExtractTags(JqlNode node)
+    =&gt; node
+        .SelfAndDescendants()
+        .OfType&lt;TagNode&gt;()
+        .Select(n =&gt; n.Tag);
+</code></pre>
+<p>What an improvement! This code is much shorter, but more importantly it's clearer and more direct. You can directly read off the intention of the code, rather than having to decipher the pattern of recursive calls. It's also harder to get wrong - I personally am rather prone to forgetting to make a recursive call when I'm writing these sorts of functions. What's more, <code>SelfAndDescendants</code> is totally reusable. If you can write a LINQ query, you can get whatever information you need from a <code>JqlNode</code>.</p>
 <p>Of course, the pattern-matching and recursion has to go somewhere, and that somewhere is the reusable <code>SelfAndDescendants</code> function.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> <span class="fu">SelfAndDescendants</span><span class="op">(</span><span class="kw">this</span> JqlNode node<span class="op">)</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">yield</span> <span class="kw">return</span> node<span class="op">;</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">switch</span> <span class="op">(</span>node<span class="op">)</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> TagNode t<span class="op">:</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>            <span class="kw">yield</span> <span class="kw">break</span><span class="op">;</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> SalaryNode s<span class="op">:</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">yield</span> <span class="kw">break</span><span class="op">;</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> AndNode a<span class="op">:</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Left</span><span class="op">))</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                <span class="kw">yield</span> <span class="kw">return</span> descendant<span class="op">;</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Right</span><span class="op">))</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                <span class="kw">yield</span> <span class="kw">return</span> descendant<span class="op">;</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> OrNode o<span class="op">:</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>            <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Left</span><span class="op">))</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>                <span class="kw">yield</span> <span class="kw">return</span> descendant<span class="op">;</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>            <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Right</span><span class="op">))</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>                <span class="kw">yield</span> <span class="kw">return</span> descendant<span class="op">;</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> NotNode n<span class="op">:</span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>            <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span><span class="op">(</span>n<span class="op">.</span><span class="fu">Operand</span><span class="op">))</span></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>                <span class="kw">yield</span> <span class="kw">return</span> descendant<span class="op">;</span></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        <span class="kw">default</span><span class="op">:</span></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span><span class="op">(</span><span class="fu">nameof</span><span class="op">(</span>node<span class="op">));</span></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<pre><code class="language-csharp">public static IEnumerable&lt;JqlNode&gt; SelfAndDescendants(this JqlNode node)
+{
+    yield return node;
+    switch (node)
+    {
+        case TagNode t:
+            yield break;
+        case SalaryNode s:
+            yield break;
+        case AndNode a:
+            foreach (var descendant in SelfAndDescendants(a.Left))
+                yield return descendant;
+            foreach (var descendant in SelfAndDescendants(a.Right))
+                yield return descendant;
+        case OrNode o:
+            foreach (var descendant in SelfAndDescendants(o.Left))
+                yield return descendant;
+            foreach (var descendant in SelfAndDescendants(o.Right))
+                yield return descendant;
+        case NotNode n:
+            foreach (var descendant in SelfAndDescendants(n.Operand))
+                yield return descendant;
+        default:
+            throw new ArgumentOutOfRangeException(nameof(node));
+    }
+}
+</code></pre>
 <p>Google crawls links between pages for you, so you can search the Web for a specific piece of information; <code>SelfAndDescendants</code> crawls pointers between nodes for you, so you can search a tree for a specific piece of information. Programming tree traversals by hand is like manually clicking every link on the Web!</p>
-<h2 id="a-reusable-transformer"><a href="#a-reusable-transformer">A Reusable Transformer</a></h2>
+<h2 id="a-reusable-transformer"><a href="#a-reusable-transformer">A Reusable Transformer
+
+</a></h2>
 <p>How about transforming a JQL AST? <code>SimplifyDoubleNegatives</code> searches a JQL tree for a pattern and rebuilds a new version of the tree. Can this be extracted into a reusable function?</p>
-<p>To rewrite a tree, you search the tree for nodes satisfying the pattern you’re looking for and replace them. As with <code>SelfAndDescendants</code>, the trick is to separate the responsibilities of <em>looking at every node in the tree</em> and <em>deciding whether to replace a given node</em>. You can write a higher-order function - let’s call it <code>Rewrite</code> - which applies a <code>Func</code> to every node in a JQL tree from bottom to top; then it’s the <code>Func</code>’s job to decide what to do with each node.</p>
+<p>To rewrite a tree, you search the tree for nodes satisfying the pattern you're looking for and replace them. As with <code>SelfAndDescendants</code>, the trick is to separate the responsibilities of <em>looking at every node in the tree</em> and <em>deciding whether to replace a given node</em>. You can write a higher-order function - let's call it <code>Rewrite</code> - which applies a <code>Func</code> to every node in a JQL tree from bottom to top; then it's the <code>Func</code>'s job to decide what to do with each node.</p>
 <p>For example, <code>Rewrite</code> will take the query above (<code>[c#] and (not [javascript] or salary:50000gbp)</code>) and a function <code>transformer</code>, and compute the expression:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">transformer</span><span class="op">(</span><span class="kw">new</span> <span class="fu">AndNode</span><span class="op">(</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transformer</span><span class="op">(</span><span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;c#&quot;</span><span class="op">)),</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transformer</span><span class="op">(</span><span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">transformer</span><span class="op">(</span><span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">transformer</span><span class="op">(</span><span class="kw">new</span> <span class="fu">TagNode</span><span class="op">(</span><span class="st">&quot;javascript&quot;</span><span class="op">))</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">)),</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">transformer</span><span class="op">(</span><span class="kw">new</span> <span class="fu">SalaryNode</span><span class="op">(</span><span class="dv">50000</span><span class="op">,</span> <span class="st">&quot;gbp&quot;</span><span class="op">))</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">))</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="op">))</span></span></code></pre></div>
-<p>So <code>transformer</code> gets applied to every subtree exactly once. <code>Rewrite</code> is a mapping operation, like LINQ’s <code>Select</code>. Here’s how it’s implemented.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> JqlNode <span class="fu">Rewrite</span><span class="op">(</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> JqlNode node<span class="op">,</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>JqlNode<span class="op">,</span> JqlNode<span class="op">&gt;</span> transformer</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">switch</span> <span class="op">(</span>node<span class="op">)</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> TagNode t<span class="op">:</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="fu">transformer</span><span class="op">(</span>t<span class="op">);</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> SalaryNode s<span class="op">:</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="fu">transformer</span><span class="op">(</span>s<span class="op">);</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> AndNode a<span class="op">:</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">AndNode</span><span class="op">(</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>                <span class="fu">transformer</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Left</span><span class="op">),</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                <span class="fu">transformer</span><span class="op">(</span>a<span class="op">.</span><span class="fu">Right</span><span class="op">)</span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>            <span class="op">);</span></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> OrNode o<span class="op">:</span></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>                <span class="fu">transformer</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Left</span><span class="op">),</span></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>                <span class="fu">transformer</span><span class="op">(</span>o<span class="op">.</span><span class="fu">Right</span><span class="op">)</span></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>            <span class="op">);</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>        <span class="kw">case</span> NotNode n<span class="op">:</span></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span><span class="fu">transformer</span><span class="op">(</span>n<span class="op">.</span><span class="fu">Operand</span><span class="op">));</span></span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>        <span class="kw">default</span><span class="op">:</span></span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>            <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentOutOfRangeException</span><span class="op">(</span><span class="fu">nameof</span><span class="op">(</span>node<span class="op">));</span></span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>To use this <code>Rewrite</code> method, you write a transformation function which calculates a replacement for each node. If there’s no replacing to do, it just returns the same node. Like this:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>JqlNode <span class="fu">SimplifyDoubleNegatives</span><span class="op">(</span>JqlNode node<span class="op">)</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> node<span class="op">.</span><span class="fu">Rewrite</span><span class="op">(</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>        n <span class="op">=&gt;</span> n <span class="kw">is</span> NotNode n1 <span class="op">&amp;&amp;</span> n1<span class="op">.</span><span class="fu">Operand</span> <span class="kw">is</span> NotNode n2</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>            <span class="op">?</span> n2<span class="op">.</span><span class="fu">Operand</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>            <span class="op">:</span> n</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div>
-<p>Once again, this code is a huge improvement over the verbose version which used <code>switch</code> and recursion. <code>Rewrite</code> allows us to get straight to the point and only think about the parts of the tree we’re interested in.</p>
-<h2 id="from-pattern-to-library"><a href="#from-pattern-to-library">From Pattern to Library</a></h2>
-<p><code>Rewrite</code> and <code>SelfAndDescendants</code> wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don’t constitute a library. <code>SelfAndDescendants</code> and <code>Rewrite</code>, as written above, have knowledge of <code>JqlNode</code> baked in to them; you have to hand-write equivalent functions to work on your own datatypes.</p>
+<pre><code class="language-csharp">transformer(new AndNode(
+    transformer(new TagNode(&quot;c#&quot;)),
+    transformer(new OrNode(
+        transformer(new NotNode(
+            transformer(new TagNode(&quot;javascript&quot;))
+        )),
+        transformer(new SalaryNode(50000, &quot;gbp&quot;))
+    ))
+))
+</code></pre>
+<p>So <code>transformer</code> gets applied to every subtree exactly once. <code>Rewrite</code> is a mapping operation, like LINQ's <code>Select</code>. Here's how it's implemented.</p>
+<pre><code class="language-csharp">static JqlNode Rewrite(
+    this JqlNode node,
+    Func&lt;JqlNode, JqlNode&gt; transformer
+)
+{
+    switch (node)
+    {
+        case TagNode t:
+            return transformer(t);
+        case SalaryNode s:
+            return transformer(s);
+        case AndNode a:
+            return new AndNode(
+                transformer(a.Left),
+                transformer(a.Right)
+            );
+        case OrNode o:
+            return new OrNode(
+                transformer(o.Left),
+                transformer(o.Right)
+            );
+        case NotNode n:
+            return new NotNode(transformer(n.Operand));
+        default:
+            throw new ArgumentOutOfRangeException(nameof(node));
+    }
+}
+</code></pre>
+<p>To use this <code>Rewrite</code> method, you write a transformation function which calculates a replacement for each node. If there's no replacing to do, it just returns the same node. Like this:</p>
+<pre><code class="language-csharp">JqlNode SimplifyDoubleNegatives(JqlNode node)
+    =&gt; node.Rewrite(
+        n =&gt; n is NotNode n1 &amp;&amp; n1.Operand is NotNode n2
+            ? n2.Operand
+            : n
+    );
+</code></pre>
+<p>Once again, this code is a huge improvement over the verbose version which used <code>switch</code> and recursion. <code>Rewrite</code> allows us to get straight to the point and only think about the parts of the tree we're interested in.</p>
+<h2 id="from-pattern-to-library"><a href="#from-pattern-to-library">From Pattern to Library
+
+</a></h2>
+<p><code>Rewrite</code> and <code>SelfAndDescendants</code> wrap up two particular types of recursion, for reuse in a wide variety of operations. This is a powerful way to program - gone are the days of writing a bespoke traversal for every operation! - and these two functions form the basis of most of the operations in the production JQL compiler, but in this form they don't constitute a library. <code>SelfAndDescendants</code> and <code>Rewrite</code>, as written above, have knowledge of <code>JqlNode</code> baked in to them; you have to hand-write equivalent functions to work on your own datatypes.</p>
 <p>We can turn this design into something generic, though, by abstracting over tree-shaped structures. What do we mean when we say a datatype is tree-shaped? The distinguishing feature which makes a tree a tree, unlike any other datatype, is recursion: each node in a tree has <em>children</em> which are also nodes.</p>
-<p><img src="../images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" /></p>
-<p>As the picture shows, you can reach every node in a tree just by looking at each node’s children. If you can show me how to replace your children, I can replace your children’s children and so on. So let’s use an interface to model the notion of an object with a collection of children.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    IEnumerable<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">();</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">SetChildren</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>T<span class="op">&gt;</span> newChildren<span class="op">);</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>A type <code>T</code> is <em>rewritable</em> if it knows how to access its immediate children - in other words, if you can get and set an <code>IEnumerable&lt;T&gt;</code> representing a node’s children. We’re working with immutable trees, remember, so <code>SetChildren</code> doesn’t modify the current instance - it returns a new <code>T</code> the same as the current instance but with different children. Part of the contract of <code>IRewritable</code> is that you shouldn’t call <code>SetChildren</code> with a different number of children to what you got from <code>GetChildren</code>. For example, an <code>And</code> node always has two children, so you shouldn’t try to call <code>SetChildren</code> with only one child (because, how would the <code>And</code> node rebuild itself?).</p>
-<p>Now we can package up those <code>Rewrite</code> and <code>SelfAndDescendants</code> functions for any rewritable object, once and for all. If you show me how to reach each node’s immediate children, I can recursively apply that recipe to look at the children’s children and so on.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> IEnumerable<span class="op">&lt;</span>T<span class="op">&gt;</span> SelfAndDescendants<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T node<span class="op">)</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">yield</span> <span class="kw">return</span> node<span class="op">;</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> child <span class="kw">in</span> node<span class="op">.</span><span class="fu">GetChildren</span><span class="op">())</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> descendant <span class="kw">in</span> <span class="fu">SelfAndDescendants</span><span class="op">(</span>child<span class="op">))</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>            <span class="kw">yield</span> <span class="kw">return</span> descendant<span class="op">;</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> T Rewrite<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T node<span class="op">,</span> Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">)</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> children <span class="op">=</span> node<span class="op">.</span><span class="fu">GetChildren</span><span class="op">();</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> newChildren <span class="op">=</span> children<span class="op">.</span><span class="fu">Select</span><span class="op">(</span>c <span class="op">=&gt;</span> c<span class="op">.</span><span class="fu">Rewrite</span><span class="op">(</span>transformer<span class="op">)).</span><span class="fu">ToList</span><span class="op">();</span></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> nodeWithNewChildren <span class="op">=</span> node<span class="op">.</span><span class="fu">SetChildren</span><span class="op">(</span>newChildren<span class="op">);</span></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="fu">transformer</span><span class="op">(</span>nodeWithNewChildren<span class="op">);</span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<img src="../images/2017-11-13-recursion-without-recursion/children.jpg" alt="Nodes and their children" />
+<p>As the picture shows, you can reach every node in a tree just by looking at each node's children. If you can show me how to replace your children, I can replace your children's children and so on. So let's use an interface to model the notion of an object with a collection of children.</p>
+<pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
+{
+    IEnumerable&lt;T&gt; GetChildren();
+    T SetChildren(IEnumerable&lt;T&gt; newChildren);
+}
+</code></pre>
+<p>A type <code>T</code> is <em>rewritable</em> if it knows how to access its immediate children - in other words, if you can get and set an <code>IEnumerable&lt;T&gt;</code> representing a node's children. We're working with immutable trees, remember, so <code>SetChildren</code> doesn't modify the current instance - it returns a new <code>T</code> the same as the current instance but with different children. Part of the contract of <code>IRewritable</code> is that you shouldn't call <code>SetChildren</code> with a different number of children to what you got from <code>GetChildren</code>. For example, an <code>And</code> node always has two children, so you shouldn't try to call <code>SetChildren</code> with only one child (because, how would the <code>And</code> node rebuild itself?).</p>
+<p>Now we can package up those <code>Rewrite</code> and <code>SelfAndDescendants</code> functions for any rewritable object, once and for all. If you show me how to reach each node's immediate children, I can recursively apply that recipe to look at the children's children and so on.</p>
+<pre><code class="language-csharp">static IEnumerable&lt;T&gt; SelfAndDescendants&lt;T&gt;(this T node)
+    where T : IRewritable&lt;T&gt;
+{
+    yield return node;
+    foreach (var child in node.GetChildren())
+        foreach (var descendant in SelfAndDescendants(child))
+            yield return descendant;
+}
+static T Rewrite&lt;T&gt;(this T node, Func&lt;T, T&gt; transformer)
+    where T : IRewritable&lt;T&gt;
+{
+    var children = node.GetChildren();
+    var newChildren = children.Select(c =&gt; c.Rewrite(transformer)).ToList();
+    var nodeWithNewChildren = node.SetChildren(newChildren);
+    return transformer(nodeWithNewChildren);
+}
+</code></pre>
 <p>You typically implement <code>IRewritable</code> abstractly on the base type, using overrides on each subclass to find the children.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> JqlNode <span class="op">:</span> IRewritable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">abstract</span> IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">();</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">abstract</span> JqlNode <span class="fu">SetChildren</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> newChildren<span class="op">);</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> AndNode <span class="op">:</span> JqlNode</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// fields as before</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">()</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> Left<span class="op">,</span> Right <span class="op">};</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> newChildren<span class="op">)</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">AndNode</span><span class="op">(</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>            newChildren<span class="op">.</span><span class="fu">ElementAt</span><span class="op">(</span><span class="dv">0</span><span class="op">),</span> </span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>            newChildren<span class="op">.</span><span class="fu">ElementAt</span><span class="op">(</span><span class="dv">1</span><span class="op">)</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">);</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> OrNode <span class="op">:</span> JqlNode</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">()</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> Left<span class="op">,</span> Right <span class="op">};</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> newChildren<span class="op">)</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">OrNode</span><span class="op">(</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>            newChildren<span class="op">.</span><span class="fu">ElementAt</span><span class="op">(</span><span class="dv">0</span><span class="op">),</span> </span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>            newChildren<span class="op">.</span><span class="fu">ElementAt</span><span class="op">(</span><span class="dv">1</span><span class="op">)</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>        <span class="op">);</span></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> NotNode <span class="op">:</span> JqlNode</span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">()</span></span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> Operand <span class="op">};</span></span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> newChildren<span class="op">)</span></span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">NotNode</span><span class="op">(</span>newChildren<span class="op">.</span><span class="fu">Single</span><span class="op">());</span></span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SalaryNode <span class="op">:</span> JqlNode</span>
-<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">()</span></span>
-<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> Enumerable<span class="op">.</span><span class="fu">Empty</span><span class="op">&lt;</span>JqlNode<span class="op">&gt;();</span></span>
-<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> newChildren<span class="op">)</span></span>
-<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">this</span><span class="op">;</span></span>
-<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TagNode <span class="op">:</span> JqlNode</span>
-<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">()</span></span>
-<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> Enumerable<span class="op">.</span><span class="fu">Empty</span><span class="op">&lt;</span>JqlNode<span class="op">&gt;();</span></span>
-<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">override</span> JqlNode <span class="fu">SetChildren</span><span class="op">(</span>IEnumerable<span class="op">&lt;</span>JqlNode<span class="op">&gt;</span> newChildren<span class="op">)</span></span>
-<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">this</span><span class="op">;</span></span>
-<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Note that there isn’t a single line of recursion in the JQL-specific code. It’s all wrapped up in the <code>SelfAndDescendants</code> and <code>Rewrite</code> functions, which are totally generic and reusable for any type of tree.</p>
+<pre><code class="language-csharp">abstract class JqlNode : IRewritable&lt;JqlNode&gt;
+{
+    public abstract IEnumerable&lt;JqlNode&gt; GetChildren();
+    public abstract JqlNode SetChildren(IEnumerable&lt;JqlNode&gt; newChildren);
+}
+class AndNode : JqlNode
+{
+    // fields as before
+    public override IEnumerable&lt;JqlNode&gt; GetChildren()
+        =&gt; new[] { Left, Right };
+    public override JqlNode SetChildren(IEnumerable&lt;JqlNode&gt; newChildren)
+        =&gt; new AndNode(
+            newChildren.ElementAt(0), 
+            newChildren.ElementAt(1)
+        );
+}
+class OrNode : JqlNode
+{
+    public override IEnumerable&lt;JqlNode&gt; GetChildren()
+        =&gt; new[] { Left, Right };
+    public override JqlNode SetChildren(IEnumerable&lt;JqlNode&gt; newChildren)
+        =&gt; new OrNode(
+            newChildren.ElementAt(0), 
+            newChildren.ElementAt(1)
+        );
+}
+class NotNode : JqlNode
+{
+    public override IEnumerable&lt;JqlNode&gt; GetChildren()
+        =&gt; new[] { Operand };
+    public override JqlNode SetChildren(IEnumerable&lt;JqlNode&gt; newChildren)
+        =&gt; new NotNode(newChildren.Single());
+}
+class SalaryNode : JqlNode
+{
+    public override IEnumerable&lt;JqlNode&gt; GetChildren()
+        =&gt; Enumerable.Empty&lt;JqlNode&gt;();
+    public override JqlNode SetChildren(IEnumerable&lt;JqlNode&gt; newChildren)
+        =&gt; this;
+}
+class TagNode : JqlNode
+{
+    public override IEnumerable&lt;JqlNode&gt; GetChildren()
+        =&gt; Enumerable.Empty&lt;JqlNode&gt;();
+    public override JqlNode SetChildren(IEnumerable&lt;JqlNode&gt; newChildren)
+        =&gt; this;
+}
+</code></pre>
+<p>Note that there isn't a single line of recursion in the JQL-specific code. It's all wrapped up in the <code>SelfAndDescendants</code> and <code>Rewrite</code> functions, which are totally generic and reusable for any type of tree.</p>
 <p>The old-fashioned way of writing reusable tree traversals is the Visitor pattern: you put the recursive traversal code in a base class, with virtual methods for each type of node that can be overridden to carry out specific operations. (This is how the Roslyn API works, for example.) <code>IRewritable</code> is a clear improvement over the Visitor pattern. Being designed around base classes and overriding, the Visitor pattern is far clunkier to use than the functional API I outlined above; and <code>IRewritable</code> allows operations like <code>Rewrite</code> can be written totally generically, whereas with the Visitor pattern every type of tree has its own Visitor base class.</p>
-<h2 id="sawmill"><a href="#sawmill">Sawmill</a></h2>
-<p>I’ve named this generic tree-processing library Sawmill - because it’s all about taking trees apart! - and it’s available on <a href="https://www.nuget.org/packages/Sawmill">NuGet</a> and <a href="https://github.com/benjamin-hodgson/Sawmill">GitHub</a>. I’ll outline some improvements on the design I demonstrated above, which you’ll find in Sawmill.</p>
+<h2 id="sawmill"><a href="#sawmill">Sawmill
+
+</a></h2>
+<p>I've named this generic tree-processing library Sawmill - because it's all about taking trees apart! - and it's available on <a href="https://www.nuget.org/packages/Sawmill">NuGet</a> and <a href="https://github.com/benjamin-hodgson/Sawmill">GitHub</a>. I'll outline some improvements on the design I demonstrated above, which you'll find in Sawmill.</p>
 <p>First, what I find remarkable about this design is its power-to-weight ratio. <code>IRewritable</code> is a very simple interface with an easily-grasped meaning, but you can build a load of rich, generic tools on top of it. Sawmill contains versions of <code>SelfAndDescendants</code> and <code>Rewrite</code>, but also a bunch of other extension methods at varying levels of nicheness, all getting squeezed through the <code>IRewritable</code> interface:</p>
 <ul>
-<li>A family of versions of <code>SelfAndDescendants</code> capturing a variety of traversal orders (preorder, postorder and breadth-first), in both eager and lazy form</li>
-<li>A <code>Fold</code> method for reducing a whole tree to a value, like LINQ’s <code>Aggregate</code></li>
-<li>An iterative version of <code>Rewrite</code> which rewrites an expression repeatedly until it reaches a normal form</li>
-<li>Functions for replacing one node at a time</li>
-<li>A method to get an efficient mutable view of a node and its neighbours, which supports complex sequences of edits to a localised part of a tree</li>
-<li>Tools to help you implement <code>IRewriter</code>, either using a typed fluent interface or using reflection and code generation.</li>
-<li>Some minor API changes to the outline above, to enable greater efficiency for certain common cases.</li>
+<li>A family of versions of <code>SelfAndDescendants</code> capturing a variety of traversal orders (preorder, postorder and breadth-first), in both eager and lazy form
+</li>
+<li>A <code>Fold</code> method for reducing a whole tree to a value, like LINQ's <code>Aggregate</code>
+</li>
+<li>An iterative version of <code>Rewrite</code> which rewrites an expression repeatedly until it reaches a normal form
+</li>
+<li>Functions for replacing one node at a time
+</li>
+<li>A method to get an efficient mutable view of a node and its neighbours, which supports complex sequences of edits to a localised part of a tree
+</li>
+<li>Tools to help you implement <code>IRewriter</code>, either using a typed fluent interface or using reflection and code generation.
+</li>
+<li>Some minor API changes to the outline above, to enable greater efficiency for certain common cases.
+</li>
 </ul>
-<p>I’ve also had success implementing <code>IRewritable</code> for a variety of tree-like types. Sawmill comes bundled with versions of all of these extension methods for some well-known tree types - <code>Expression</code>, <code>XmlNode</code>, and <code>XElement</code> - and I’ve written extension packages which do the same for <code>Newtonsoft.Json.Linq</code> and Roslyn’s syntax trees. (These implementations actually use a separate <code>IRewriter</code> interface, because of course I can’t add a new interface to the above types.) Realising that I could use Sawmill to layer a simple, uniform API on top of preexisting objects felt like a real validation of the design.</p>
-<p>Sawmill’s version of <code>Rewrite</code> also makes an important optimisation which I glossed over above: parts of the tree which the <code>transformer</code> function didn’t change are <em>shared</em> between the new and old versions of the tree. If you change a single node, you only have to rebuild that node’s ancestors (because their children have changed), not the parts of the tree you didn’t touch.</p>
-<p><img src="../images/2017-11-13-recursion-without-recursion/sharing.jpg" alt="The sharing optimisation" /></p>
+<p>I've also had success implementing <code>IRewritable</code> for a variety of tree-like types. Sawmill comes bundled with versions of all of these extension methods for some well-known tree types - <code>Expression</code>, <code>XmlNode</code>, and <code>XElement</code> - and I've written extension packages which do the same for <code>Newtonsoft.Json.Linq</code> and Roslyn's syntax trees. (These implementations actually use a separate <code>IRewriter</code> interface, because of course I can't add a new interface to the above types.) Realising that I could use Sawmill to layer a simple, uniform API on top of preexisting objects felt like a real validation of the design.</p>
+<p>Sawmill's version of <code>Rewrite</code> also makes an important optimisation which I glossed over above: parts of the tree which the <code>transformer</code> function didn't change are <em>shared</em> between the new and old versions of the tree. If you change a single node, you only have to rebuild that node's ancestors (because their children have changed), not the parts of the tree you didn't touch.</p>
+<img src="../images/2017-11-13-recursion-without-recursion/sharing.jpg" alt="The sharing optimisation" />
 <p>(This is safe for immutable trees like those in Roslyn; for mutable trees like <code>XmlNode</code> the whole tree has to be copied if any part of it changes. This makes me sad - in my view those types should have been immutable all along.)</p>
-<p>Finally and most importantly, I want to acknowledge Neil Mitchell’s great work in his <a href="https://hackage.haskell.org/package/uniplate"><code>uniplate</code> Haskell library</a> (and <a href="https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html">its modernised port in <code>lens</code></a>), upon which Sawmill is based. I wouldn’t even have thought of this C# library if I hadn’t already encountered it in Haskell. It’s weird to think that <a href="http://ndmitchell.com/downloads/paper-uniform_boilerplate_and_list_processing-30_sep_2007.pdf"><code>uniplate</code>’s accompanying article</a> was published in 2007! Someone - my mum, if you must know - once told me that in the field of medicine it takes a decade for new research to reach mainstream practice. I think that process might take even longer in computer science, but I hope that in writing this I’ve helped these ideas along a little.</p>
+<p>Finally and most importantly, I want to acknowledge Neil Mitchell's great work in his <a href="https://hackage.haskell.org/package/uniplate"><code>uniplate</code> Haskell library</a> (and <a href="https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Plated.html">its modernised port in <code>lens</code></a>), upon which Sawmill is based. I wouldn't even have thought of this C# library if I hadn't already encountered it in Haskell. It's weird to think that <a href="http://ndmitchell.com/downloads/paper-uniform_boilerplate_and_list_processing-30_sep_2007.pdf"><code>uniplate</code>'s accompanying article</a> was published in 2007! Someone - my mum, if you must know - once told me that in the field of medicine it takes a decade for new research to reach mainstream practice. I think that process might take even longer in computer science, but I hope that in writing this I've helped these ideas along a little.</p>
+
 
         </article>
 
