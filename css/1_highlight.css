@@ -68,12 +68,12 @@
     }
 }
 
+.hljs-built_in,
 .hljs-doctag,
 .hljs-keyword,
 .hljs-meta .hljs-keyword,
 .hljs-template-tag,
 .hljs-template-variable,
-.hljs-type,
 .hljs-variable.language_ {
     color: var(--keyword);
 }
@@ -81,7 +81,8 @@
 .hljs-title,
 .hljs-title.class_,
 .hljs-title.class_.inherited__,
-.hljs-title.function_ {
+.hljs-title.function_,
+.hljs-type {
     color: var(--entity);
 }
 
@@ -104,7 +105,6 @@
     color: var(--string);
 }
 
-.hljs-built_in,
 .hljs-symbol {
     color: var(--variable);
 }
