@@ -39,6 +39,10 @@ main = do
 
         match "css/*" $ do
             compile getResourceBody
+            
+        match "js/**" $ do
+            route   idRoute
+            compile getResourceBody
 
         create ["all.css"] $ do
             route   idRoute
