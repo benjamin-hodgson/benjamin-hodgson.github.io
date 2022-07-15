@@ -12,7 +12,7 @@ import System.Environment (getArgs)
 
 import Commonmark
 import Commonmark.Blocks (BlockParser, BPState(nodeStack), BlockData(..), BlockSpec(blockType))
-import Commonmark.Extensions (footnoteSpec, attributesSpec, autoIdentifiersAsciiSpec, implicitHeadingReferencesSpec)
+import Commonmark.Extensions (footnoteSpec, attributesSpec, autoIdentifiersAsciiSpec, implicitHeadingReferencesSpec, strikethroughSpec)
 import Hakyll
 import Text.Parsec (getState, updateState)
 
@@ -155,7 +155,8 @@ commonmarkCompiler = cached "Benjamin.Pizza.commonmarkCompiler" $ do
 
 benjaminFlavouredMarkdown :: SyntaxSpec Identity (Html ()) (Html ())
 benjaminFlavouredMarkdown = 
-    attributesSpec
+    strikethroughSpec
+    <> attributesSpec
     <> autoIdentifiersAsciiSpec
     <> footnoteSpec
     <> implicitHeadingReferencesSpec
