@@ -7,10 +7,10 @@ I figured it'd be useful to have some examples of my language tooling libraries 
 
 <nav>
     <ol>
-        <li>**Introduction & Syntax**</li>
-        <li>[Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)</li>
-        <li>[Unification](/posts/2019-12-15-generic-unification-with-sawmill.html)</li>
-        <li>[The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)</li>
+        <li><b>Introduction &amp; Syntax</b></li>
+        <li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
+        <li><a href="/posts/2019-12-15-generic-unification-with-sawmill.html">Unification</a></li>
+        <li><a href="/posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a></li>
     </ol>
 </nav>
 

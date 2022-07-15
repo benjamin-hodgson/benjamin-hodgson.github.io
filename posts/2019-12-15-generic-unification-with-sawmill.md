@@ -7,10 +7,10 @@ This is part of a series of posts about implementing a miniature Prolog interpre
 
 <nav>
     <ol>
-        <li>[Introduction & Syntax](/posts/2019-12-01-write-you-a-prolog.html)</li>
-        <li>[Parsing](/posts/2019-12-08-parsing-prolog-with-pidgin.html)</li>
-        <li>**Unification**</li>
-        <li>[The rules engine](/posts/2019-12-22-building-prologs-rules-engine.html)</li>
+        <li><a href="/posts/2019-12-01-write-you-a-prolog.html">Introduction &amp; Syntax</a></li>
+        <li><a href="/posts/2019-12-08-parsing-prolog-with-pidgin.html">Parsing</a></li>
+        <li><b>Unification</b></li>
+        <li><a href="/posts/2019-12-22-building-prologs-rules-engine.html">The rules engine</a></li>
     </ol>
 </nav>
 
