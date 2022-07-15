@@ -2472,7 +2472,7 @@ class Product
     return l.Set(order, newPostcode);
 }
 </code></pre>
-<p>Lenses work without reference to any particular instance. (This is called ~~<em>pointless</em>~~ <a href="https://stackoverflow.com/questions/944446/what-is-point-free-style-in-functional-programming"><em>point-free</em></a> programming.) <code>order.Customer.Address.Postcode</code> becomes <code>new CustomerL()._(new AddressL())._(new PostcodeL())</code> — the path of properties is sort of detached from the object itself. Treating a path through a datatype as a first class value is the big idea behind lenses.</p>
+<p>Lenses work without reference to any particular instance. (This is called <del><em>pointless</em></del> <a href="https://stackoverflow.com/questions/944446/what-is-point-free-style-in-functional-programming"><em>point-free</em></a> programming.) <code>order.Customer.Address.Postcode</code> becomes <code>new CustomerL()._(new AddressL())._(new PostcodeL())</code> — the path of properties is sort of detached from the object itself. Treating a path through a datatype as a first class value is the big idea behind lenses.</p>
 <p>Here's how <code>_</code> is implemented. It returns a new <code>ILens</code> (an instance of a private class) which delegates to the two smaller lenses.</p>
 <pre><code class="language-csharp">static class LensExtensions
 {
@@ -2769,7 +2769,7 @@ class List&lt;T&gt; : IEnumerable&lt;T&gt;
     <published>2018-07-16T00:00:00Z</published>
     <updated>2018-07-16T00:00:00Z</updated>
     <summary type="html"><![CDATA[
-<p>My esteemed colleague <a href="https://twitter.com/g3rv4?lang=en">Gervasio</a> and I have arranged to live-stream some programming ~~this Friday, the 20th of July~~ <strong>Update</strong>: we've decided to move it to next <strong>Tuesday, the 24th</strong>, at 2PM BST. We're going to be working on adding some basic <code>Span</code> support to <a href="https://github.com/benjamin-hodgson/Pidgin">my parsing library</a>, and it's going to involve <code>unsafe</code> and custom IL, which should be a bit of fun.</p>
+<p>My esteemed colleague <a href="https://twitter.com/g3rv4?lang=en">Gervasio</a> and I have arranged to live-stream some programming <del>this Friday, the 20th of July</del> <strong>Update</strong>: we've decided to move it to next <strong>Tuesday, the 24th</strong>, at 2PM BST. We're going to be working on adding some basic <code>Span</code> support to <a href="https://github.com/benjamin-hodgson/Pidgin">my parsing library</a>, and it's going to involve <code>unsafe</code> and custom IL, which should be a bit of fun.</p>
 <p>The stream will be <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">on YouTube</a> and we're planning to start at 2PM BST. Hope to see you there with your questions!</p>
 
 ]]></summary>

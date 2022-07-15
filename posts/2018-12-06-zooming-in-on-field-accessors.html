@@ -128,7 +128,7 @@ class Product
     return l.Set(order, newPostcode);
 }
 </code></pre>
-<p>Lenses work without reference to any particular instance. (This is called ~~<em>pointless</em>~~ <a href="https://stackoverflow.com/questions/944446/what-is-point-free-style-in-functional-programming"><em>point-free</em></a> programming.) <code>order.Customer.Address.Postcode</code> becomes <code>new CustomerL()._(new AddressL())._(new PostcodeL())</code> — the path of properties is sort of detached from the object itself. Treating a path through a datatype as a first class value is the big idea behind lenses.</p>
+<p>Lenses work without reference to any particular instance. (This is called <del><em>pointless</em></del> <a href="https://stackoverflow.com/questions/944446/what-is-point-free-style-in-functional-programming"><em>point-free</em></a> programming.) <code>order.Customer.Address.Postcode</code> becomes <code>new CustomerL()._(new AddressL())._(new PostcodeL())</code> — the path of properties is sort of detached from the object itself. Treating a path through a datatype as a first class value is the big idea behind lenses.</p>
 <p>Here's how <code>_</code> is implemented. It returns a new <code>ILens</code> (an instance of a private class) which delegates to the two smaller lenses.</p>
 <pre><code class="language-csharp">static class LensExtensions
 {
