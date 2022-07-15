@@ -1,0 +1,23 @@
+name: Find scheduled posts
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  find_scheduled:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine if build should be run
+        id: should_run
+        run: |
+          lastBuild=$(gh run list -w Build --json conclusion,createdAt -q "map(select(.conclusion == \"success\")).[0].createdAt")
+          python build/find_new_posts.py $lastBuild
+  
+  trigger_build:
+    needs: find_scheduled
+    uses: ./.github/workflows/build.yml
+    if: needs.find_scheduled.outputs.result == 'true'
+
