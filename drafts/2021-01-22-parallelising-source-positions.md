@@ -9,6 +9,9 @@ data SourcePos = SourcePos {
     line :: Natural,
     col :: Natural
 } deriving (Eq, Ord)
+
+startOfFile :: SourcePos
+startOfFile = SourcePos 1 1
 ```
 
 The parser keeps track of the current `SourcePos` by looping over the characters in the input file and calling a method called `calculateSourcePos`. `calculateSourcePos`'s job is to update the current `SourcePos` for a single character.
@@ -188,7 +191,12 @@ shift d (Node span data) = Node (shiftSpan d span) (shiftData data)
         shiftData (Add l r) = Add (shift d l) (shift d r)
 
 shiftSpan :: SourcePosDelta -> Span -> Span
-shiftSpan d (Span start width) = Span (add start d) width
+shiftSpan d (Span start width) = Span
+    -- we need to add `d` on the _left_ of `start`,
+    -- so we can't use `add start d`. Instead,
+    -- round-trip via `SourcePosDelta`.
+    (add startOfFile (d <> subtract startOfFile start))
+    width
 ```
 
 `shift` rebuilds the entire tree! That's asymptotically as bad as re-parsing the entire file --- clearly not something we want to do on every keystroke. Instead, let's annotate the tree with the amount by which it's been shifted. This lets us shift a whole subtree at once without mutating it.
