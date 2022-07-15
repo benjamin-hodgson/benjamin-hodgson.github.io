@@ -6,3 +6,5 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTR
     && echo "source ~/.ghcup/env" >> ~/.zshrc_local
 
 RUN npm install -g live-server
+
+ENV PATH="$HOME/.ghcup/bin:$PATH"

@@ -12,23 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: haskell/actions/setup@v1
-        with:
-          enable-stack: true
+      # v2.0.0
+      - uses: haskell/actions/setup@f7b0997283589ea5a6b4f2ade6a239d70a412877
 
-      - uses: actions/cache@v2
-        with:
-          path: ~/.stack
-          key: cache
-
-      - name: Install dependencies
-        run: stack --no-terminal --install-ghc build --ghc-options -O2 --only-dependencies
-
-      - name: Build executable
-        run: stack --no-terminal build --ghc-options -O2 --copy-bins --local-bin-path ./bin
+      - name: Build deps & executable
+        run: cabal build --ghc-options -O2
       
       - name: Generate website
-        run: stack exec benjamin-pizza build
+        run: cabal run benjamin-pizza build
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.1

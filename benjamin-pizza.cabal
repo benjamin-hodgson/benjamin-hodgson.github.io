@@ -15,7 +15,7 @@ executable benjamin-pizza
     default-language: GHC2021
     ghc-options: -threaded
     build-depends:
-        base,
+        base >= 4.16.0,
         hakyll,
         pandoc,
         pandoc-types,
