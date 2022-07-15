@@ -1,18 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
+import Data.Functor.Identity (Identity(runIdentity))
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Monoid (mappend)
 import qualified Data.Time as Time
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.Text.Lazy as Text.Lazy
+import Data.Traversable (for)
 import System.Environment (getArgs)
-import Text.Pandoc
-import Text.Pandoc.Shared (stringify)
-import Text.Pandoc.Walk (walk)
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.KeyMap as Aeson
+
+import Commonmark
+import Commonmark.Blocks (BlockParser, BPState(nodeStack), BlockData(..), BlockSpec(blockType))
+import Commonmark.Extensions (footnoteSpec, attributesSpec, autoIdentifiersAsciiSpec, implicitHeadingReferencesSpec)
 import Hakyll
+import Text.Parsec (getState, updateState)
 
 
 --------------------------------------------------------------------------------
@@ -46,14 +48,14 @@ main = do
 
         match "contact.md" $ do
             route   $ setExtension "html"
-            compile $ pandocCompiler
+            compile $ commonmarkCompiler
                 >>= loadAndApplyTemplate "templates/default.html" defaultContext
                 >>= relativizeUrls
 
         matchMetadata postsPattern metadataMatcher $ do
             route $ setExtension "html"
             compile $
-                pandocCompilerWithTransform defaultHakyllReaderOptions defaultHakyllWriterOptions linkifyHeaders
+                commonmarkCompiler
                     >>= loadAndApplyTemplate "templates/post.html" postCtx
                     >>= saveSnapshot "content"
                     >>= loadAndApplyTemplate "templates/default.html" postCtx
@@ -118,33 +120,11 @@ metadataMatcherForCommand _ = do
 parseDate = Time.parseTimeOrError True Time.defaultTimeLocale "%Y-%m-%d"
 
 
-showTOC :: Compiler Bool
-showTOC = do
-    meta <- getMetadata =<< getUnderlying
-    return $ case Aeson.lookup "toc" meta of
-        Just (Aeson.Bool True) -> True
-        _ -> False
-
-
-
 postCtx :: Context String
 postCtx =
-    tocFields `mappend`
     dateField "date" "%Y-%m-%d" `mappend`
     dateField "englishDate" "%B %e, %Y" `mappend`
     defaultContext
-    where
-        tocFields = 
-            listField "tocItems" tocCtx (do
-                toc <- showTOC
-                if toc then do
-                    pandoc <- readPandocWith defaultHakyllReaderOptions =<< getResourceBody
-                    return $ makeTOC (itemBody pandoc)
-                else return []
-            )
-        tocCtx =
-            field "sectionHash" (pure . sectionHash . itemBody) `mappend`
-            field "sectionTitle" (pure . sectionTitle . itemBody)
 
 
 atomCtx :: Context String
@@ -160,17 +140,46 @@ feedConfig = FeedConfiguration {
     feedRoot = "http://www.benjamin.pizza"
 }
 
-data TOCEntry = TOCEntry { sectionHash :: String, sectionTitle :: String }
-    deriving (Eq, Ord, Show, Read)
+commonmarkCompiler :: Compiler (Item String)
+commonmarkCompiler = cached "Benjamin.Pizza.commonmarkCompiler" $ do
+    body <- fmap Text.pack <$> getResourceBody
+    path <- getResourceFilePath
+    for body $ \md -> case runIdentity $ commonmarkWith benjaminFlavouredMarkdown path md of
+        Left err -> fail (show err)
+        Right html -> return $ Text.Lazy.unpack (renderHtml html)
 
-makeTOC :: Pandoc -> [Item TOCEntry]
-makeTOC (Pandoc _ blocks) = [
-    Item (fromFilePath hash) (TOCEntry hash (Text.unpack $ stringify content))
-        | Header 2 (Text.unpack -> hash, _, _) content <- blocks
-    ]
 
-linkifyHeaders :: Pandoc -> Pandoc
-linkifyHeaders pandoc = walk linkify pandoc
+benjaminFlavouredMarkdown :: SyntaxSpec Identity (Html ()) (Html ())
+benjaminFlavouredMarkdown = 
+    attributesSpec
+    <> autoIdentifiersAsciiSpec
+    <> footnoteSpec
+    <> implicitHeadingReferencesSpec
+    <> linkifyHeadersSpec
+    <> defaultSyntaxSpec
+
+linkifyHeadersSpec :: SyntaxSpec Identity (Html ()) (Html ())
+linkifyHeadersSpec = mempty {
+        syntaxFinalParsers = [linkifyHeaders]
+    }
+
+linkifyHeaders :: BlockParser Identity (Html ()) (Html ()) (Html ())
+linkifyHeaders = do
+    nodes <- nodeStack <$> getState
+    updateState $ \st -> st { nodeStack = [fmap setLink t | t <- nodes] }
+    return mempty
+
     where
-        linkify (Header lvl attr@(ident, _, _) is) = Header lvl attr [Link nullAttr is ("#" <> ident, "")]
-        linkify i = i
+        setLink bd
+            | blockType (blockSpec bd) `elem` ["ATXHeading", "SetextHeading"] =
+                case lookup "id" (blockAttributes bd) of
+                    Nothing -> bd
+                    Just ident -> bd { blockLines = addLink (blockLines bd) ident }
+            | otherwise = bd
+
+        addLink [line@(_:_)] ident =
+            let (start, end) = (tokPos (head line), tokPos (last line))
+                linkDest = [Tok (Symbol '(') end "(", Tok WordChars end ("#" <> ident)]
+                newLine = [Tok (Symbol '[') start "["] ++ line ++ [Tok (Symbol ']') end "]"] ++ linkDest
+            in [newLine]
+        addLink lines _ = lines

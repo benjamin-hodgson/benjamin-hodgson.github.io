@@ -1,6 +1,5 @@
 ---
 title: Compiling Prolog
-toc: true
 ---
 
 > **Work in progress**: This article is gonna be lo-o-ong. I initially thought about splitting it into separate posts, but instead I decided to write a single article and post it section by section.

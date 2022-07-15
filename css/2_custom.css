@@ -62,20 +62,6 @@ pre {
     overflow-x: auto;
     overflow-wrap: normal;  /* fix scrolling in safari */
 }
-pre code {
-    counter-reset: lineNumber;
-}
-pre code>span::before {
-    counter-increment: lineNumber;
-    content: counter(lineNumber);
-    width: 1.25em;
-    display: inline-block;
-    border-right: 1px solid var(--border);
-    margin-right: 0.3em;
-    padding-right: 0.3em;
-    color: var(--text-muted);
-    text-align: right;
-}
 
 /* pasting blockquote styles from water.css */
 aside {
@@ -84,22 +70,6 @@ aside {
     margin: 1.5em 0;
     padding: 0.5em 1em;
     font-style: italic;
-}
-
-.toc {
-    background-color: #efefef;
-    background-color: var(--background);
-    border-radius: 6px;
-    float: right;
-    padding: 0px 12px;
-    max-width: 40%;
-    min-width: 30%;
-}
-.toc h2 {
-    margin-top: 12px;
-}
-.toc ol, .toc ul {
-    padding-left: 2em;
 }
 
 

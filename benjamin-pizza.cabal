@@ -17,9 +17,10 @@ executable benjamin-pizza
     build-depends:
         base >= 4.16.0,
         hakyll,
-        pandoc,
-        pandoc-types,
+        containers,
+        commonmark,
+        commonmark-extensions,
+        parsec,
         time,
         text,
-        unordered-containers,
-        aeson
+        unordered-containers
