@@ -15,6 +15,7 @@ import Commonmark.Blocks (BlockParser, BPState(nodeStack), BlockData(..), BlockS
 import Commonmark.Extensions (footnoteSpec, attributesSpec, autoIdentifiersAsciiSpec, implicitHeadingReferencesSpec, strikethroughSpec)
 import Hakyll
 import Text.Parsec (getState, updateState)
+import Debug.Trace
 
 
 --------------------------------------------------------------------------------
@@ -179,12 +180,12 @@ linkifyHeaders = do
             | blockType (blockSpec bd) `elem` ["ATXHeading", "SetextHeading"] =
                 case lookup "id" (blockAttributes bd) of
                     Nothing -> bd
-                    Just ident -> bd { blockLines = addLink (blockLines bd) ident }
+                    Just ident -> traceShowId $ bd { blockLines = addLink (blockLines bd) ident }
             | otherwise = bd
 
         addLink [line@(_:_)] ident =
             let (start, end) = (tokPos (head line), tokPos (last line))
-                linkDest = [Tok (Symbol '(') end "(", Tok WordChars end ("#" <> ident)]
+                linkDest = [Tok (Symbol '(') end "(", Tok (Symbol '#') end "#"] ++ tokenize "" ident ++ [Tok (Symbol ')') end ")"]
                 newLine = [Tok (Symbol '[') start "["] ++ line ++ [Tok (Symbol ']') end "]"] ++ linkDest
             in [newLine]
         addLink lines _ = lines
