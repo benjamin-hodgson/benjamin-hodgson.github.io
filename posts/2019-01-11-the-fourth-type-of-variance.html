@@ -202,7 +202,7 @@ instance Phantom Proxy where
 val catProxy = Proxy[Cat]()
 val dogProxy : Proxy[Dog] = catProxy
 </code></pre>
-<p><code>Proxy[A]</code> is always a subtype of <code>Proxy[B]</code> (and vice versa!), even when <code>A</code> and <code>B</code> are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry --- two different types can both be a subtype of each other --- so subtyping is no longer a partial order. As a language feature, phantom variance probably isn't actually all that desirable.</p>
+<p><code>Proxy[A]</code> is always a subtype of <code>Proxy[B]</code> (and vice versa!), even when <code>A</code> and <code>B</code> are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry — two different types can both be a subtype of each other — so subtyping is no longer a partial order. As a language feature, phantom variance probably isn't actually all that desirable.</p>
 
 
         </article>

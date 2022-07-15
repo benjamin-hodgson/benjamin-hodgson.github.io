@@ -60,16 +60,16 @@
 <h2 id="unification"><a href="#unification">Unification
 
 </a></h2>
-<p>Unification is a process for solving equations, much like the equations you'd solve in algebra at school. It's all about plugging holes --- given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a <em>substitution</em> --- a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.</p>
-<p>The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term's syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process --- you can't apply domain-specific rules such as &quot;add a number to both sides&quot; like you can in algebra.</p>
+<p>Unification is a process for solving equations, much like the equations you'd solve in algebra at school. It's all about plugging holes — given a pair of terms with variables inside them, what subterms can I plug in for the variables to make the terms equal? Unifying two terms produces a <em>substitution</em> — a mapping from variables to terms. If you plug the terms in for the variables (on both sides of the equation), then the equation should be satisfied.</p>
+<p>The algorithm works by examining the syntactic structure of the two terms. It tries to match up each node in one term's syntax tree with a corresponding node in the other. When you find yourself matching a term against a variable, you know that the variable must equal the term. Unification is a purely syntactic process — you can't apply domain-specific rules such as &quot;add a number to both sides&quot; like you can in algebra.</p>
 <p>Let's work through some examples to get a feel for it.</p>
 <ul>
 <li>
 <p>Unify <code>f(a, X, Y)</code> with <code>f(a, b, g(x))</code>.</p>
 <ul>
-<li>Starting at the outermost part of the two terms' syntax, we see <code>f</code> applied to three arguments in each of them --- a match. Now we can match up the arguments and try to unify each of them.
+<li>Starting at the outermost part of the two terms' syntax, we see <code>f</code> applied to three arguments in each of them — a match. Now we can match up the arguments and try to unify each of them.
 </li>
-<li>The first argument in each is the atom <code>a</code> --- so they match.
+<li>The first argument in each is the atom <code>a</code> — so they match.
 </li>
 <li>Unifying the second arguments gives us <code>X ~ b</code>. <code>X</code> is a variable, and we now know it must be equal to <code>b</code>, so that gets added to the output substitution.
 </li>
@@ -208,7 +208,7 @@ class Atom : Term
 <h2 id="substitutions"><a href="#substitutions">Substitutions
 
 </a></h2>
-<p>I mentioned that the output of unification is a <em>substitution</em> --- a mapping from variable names to terms. We'll model that using an ordinary dictionary of strings and <code>T</code>s. Our signature for <code>Unify</code> is going to look like this:</p>
+<p>I mentioned that the output of unification is a <em>substitution</em> — a mapping from variable names to terms. We'll model that using an ordinary dictionary of strings and <code>T</code>s. Our signature for <code>Unify</code> is going to look like this:</p>
 <pre><code class="language-csharp">public static ImmutableDictionary&lt;string, T&gt; Unify&lt;T&gt;(this T left, T right) where T : IUnifiable&lt;T&gt;
 </code></pre>
 <p>The main thing you can do with a substitution is <em>apply</em> it to a term. That means replacing all the variables in the term with the sub-terms they're mapped to by the substitution. This should eliminate any variables in the term which are bound by the substitution.</p>
@@ -289,7 +289,7 @@ class Atom : Term
     return Solve(leftChildren, rightChildren);
 }
 </code></pre>
-<h2 id="unifying-children-----systems-of-equations"><a href="#unifying-children-----systems-of-equations">Unifying Children --- Systems of Equations
+<h2 id="unifying-children--systems-of-equations"><a href="#unifying-children--systems-of-equations">Unifying Children — Systems of Equations
 
 </a></h2>
 <p>Unifying the children means solving a <em>system</em> of equations. If more than one equation mentions the same variable, they have to agree on what that variable should be.</p>

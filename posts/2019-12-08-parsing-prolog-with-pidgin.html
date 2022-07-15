@@ -70,7 +70,7 @@
 </li>
 </ol>
 <p>The power of parser combinators comes from the fact that parsers are treated as ordinary values. You can pass them around as parameters, return them, store them in fields... Programming with parser combinators is <em>just programming</em>. Contrast this with &quot;language workbench&quot; tools like Antlr, which are often more powerful than parser combinators but have a separate syntax, toolchain, etc. Parser combinators are great for medium-sized parsing tasks like this one.</p>
-<p>It's worth elaborating a bit on what I mean by &quot;consume a sequence&quot;. A parser walks left to right along an input sequence, keeping track of its location in the input. Consuming a token means moving the &quot;current location&quot; pointer along to the next token. This is much like how the <code>Stream</code> classes work in .NET --- calling a stream's <code>Read</code> method moves the stream's current position, so that successive calls to <code>Read</code> return different results. (Pidgin indeed lets you feed a <code>Stream</code> to a <code>Parser</code>.)</p>
+<p>It's worth elaborating a bit on what I mean by &quot;consume a sequence&quot;. A parser walks left to right along an input sequence, keeping track of its location in the input. Consuming a token means moving the &quot;current location&quot; pointer along to the next token. This is much like how the <code>Stream</code> classes work in .NET — calling a stream's <code>Read</code> method moves the stream's current position, so that successive calls to <code>Read</code> return different results. (Pidgin indeed lets you feed a <code>Stream</code> to a <code>Parser</code>.)</p>
 <p>When a parser makes a decision about what to do next, that decision is based only on the current character and not on what comes next. If the parser moves further along the string and then realises that decision was wrong, it has to <em>backtrack</em> to the position where it made the decision before it can proceed with a different choice. Backtracking can be catastrophically costly (as described in <a href="https://vimeo.com/112065252">a short talk by my esteemed ex-colleague Balpha</a>), so you want to code your parser to minimise the amount of backtracking it might have to do. With Pidgin, backtracking is disabled by default; it's enabled by the <code>Try</code> function.</p>
 <h2 id="handling-tokens-and-whitespace"><a href="#handling-tokens-and-whitespace">Handling Tokens and Whitespace
 
@@ -86,7 +86,7 @@
     =&gt; Try(String(value)).Before(SkipWhitespaces);
 </code></pre>
 <p>Why am I using the <em>backtracking</em> function <code>Try</code> here? Remember, a parser consumes its input one character at a time, and makes decisions based only on the current character. If the first character of the input looks like it matches <code>value</code>, Pidgin will commit to running the <code>String(value)</code> parser; if matching the string fails after the first character then the parser needs to return to where it was so that it can try any alternative ways to parse from that location.</p>
-<p>For an example of why we need <code>Try</code>, consider the parser <code>String(&quot;prolog&quot;).Or(String(&quot;programming&quot;))</code>. <code>Or</code> is Pidgin's <em>choice</em> function --- it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here's our parser represented pictorally:</p>
+<p>For an example of why we need <code>Try</code>, consider the parser <code>String(&quot;prolog&quot;).Or(String(&quot;programming&quot;))</code>. <code>Or</code> is Pidgin's <em>choice</em> function — it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here's our parser represented pictorally:</p>
 <pre><code>             +--Or--+
              |      |
 String(&quot;prolog&quot;)  String(&quot;programming&quot;)
@@ -125,7 +125,7 @@ static readonly Parser&lt;char, string&gt; _colonDash = Tok(&quot;:-&quot;);
 <h2 id="names"><a href="#names">Names
 
 </a></h2>
-<p>Prolog has two types of names --- <em>atoms</em> start with a lowercase letter and <em>variables</em> start with an uppercase letter or an underscore.</p>
+<p>Prolog has two types of names — <em>atoms</em> start with a lowercase letter and <em>variables</em> start with an uppercase letter or an underscore.</p>
 <pre><code class="language-csharp">static readonly Parser&lt;char, string&gt; _atomName = Tok(
     from first in Lowercase
     // OneOf is like Or, but it works with more than two parsers
@@ -138,7 +138,7 @@ static readonly Parser&lt;char, string&gt; _variableName = Tok(
     select first + rest
 );
 </code></pre>
-<p>One of the fun things about C#'s <code>from...select</code> syntax is that it's <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers --- <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
+<p>One of the fun things about C#'s <code>from...select</code> syntax is that it's <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers — <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
 <p><code>ManyString</code> takes a parser and greedily runs it in a loop, then packs all of that parser's results into a string. <code>Uppercase</code>, <code>Lowercase</code>, <code>Letter</code> and <code>Digit</code> all consume and return a single character of their respective types.</p>
 <p>So, taken as a whole, <code>_atomName</code> consumes and returns a string as long as it's a valid Prolog atom. Here's how it works:</p>
 <ol>
@@ -162,7 +162,7 @@ static readonly Parser&lt;char, string&gt; _variableName = Tok(
 <h2 id="terms"><a href="#terms">Terms
 
 </a></h2>
-<p>Terms in Prolog have a recursive structure, as <a href="../posts/2019-12-01-write-you-a-prolog.html">discussed previously</a>. A predicate's arguments can be any term, including another predicate. This circularity poses a problem for our parser code --- the <code>_predicate</code> parser needs to call <code>_term</code>, but <code>_term</code> needs to call <code>_predicate</code>, so what order can you put the declarations in?</p>
+<p>Terms in Prolog have a recursive structure, as <a href="../posts/2019-12-01-write-you-a-prolog.html">discussed previously</a>. A predicate's arguments can be any term, including another predicate. This circularity poses a problem for our parser code — the <code>_predicate</code> parser needs to call <code>_term</code>, but <code>_term</code> needs to call <code>_predicate</code>, so what order can you put the declarations in?</p>
 <p>Pidgin's built-in <code>Rec</code> function enables forward references like this. The idea is to use a lambda to delay the access to the field until after it's been initialised.</p>
 <pre><code class="language-csharp">static readonly Parser&lt;char, Term&gt; _term = Rec(() =&gt; OneOf(
     _variable,
@@ -245,7 +245,7 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 <ul>
 <li>Prolog's lists are linked lists; <code>[]</code> is an empty list and cons cells look like <code>[head | tail]</code>. (<code>head</code> and <code>tail</code> are both arbitrary terms; though at runtime <code>tail</code> should be a list.)
 </li>
-<li>At first you can try pretending that lists are syntactic sugar --- desugar <code>[]</code> to a <code>nil</code> atom and <code>[head | tail]</code> to a <code>cons(head, tail)</code> predicate.
+<li>At first you can try pretending that lists are syntactic sugar — desugar <code>[]</code> to a <code>nil</code> atom and <code>[head | tail]</code> to a <code>cons(head, tail)</code> predicate.
 </li>
 <li>How can you avoid clashing with mentions of those names in user code?
 <ul>

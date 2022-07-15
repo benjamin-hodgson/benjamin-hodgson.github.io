@@ -69,7 +69,7 @@
 <ul>
 <li>Tags are created using (lower-case) methods like <code>p()</code> and <code>i()</code>.
 </li>
-<li>Attributes are passed as optional named arguments: <code>a(href: &quot;benjamin.pizza&quot;, @class: &quot;website-link&quot;)</code>. I can't force you to name your arguments --- you could pass them positionally --- but that's not a good idea.
+<li>Attributes are passed as optional named arguments: <code>a(href: &quot;benjamin.pizza&quot;, @class: &quot;website-link&quot;)</code>. I can't force you to name your arguments — you could pass them positionally — but that's not a good idea.
 </li>
 <li>A tag's children are introduced using the <code>_</code> character, which can appear at the end of a method name or as a method name all by itself. <code>a(href: &quot;benjamin.pizza&quot;)._(&quot;Visit my website&quot;)</code> creates an <code>a</code> tag with an <code>href</code> attribute and some text inside it; <code>p_(&quot;a paragraph of text&quot;)</code> represents a <code>p</code> tag with some text but no attributes. I chose <code>_</code> because it's the least noisy character that can be used as an identifier in C#.
 </li>
@@ -79,7 +79,7 @@
 <h2 id="eighty-vs-razor"><a href="#eighty-vs-razor">Eighty vs Razor
 
 </a></h2>
-<p>Of course, C# code will only ever look <em>a bit</em> like HTML. Razor code looks much more like HTML than this! This can be a drawback when you're working with designers who want to read and write HTML --- I'm planning to write a tool to convert HTML text into an Eighty expression to partially ease this pain point. But Eighty has two big advantages which make it simpler and easier than Razor to program with:</p>
+<p>Of course, C# code will only ever look <em>a bit</em> like HTML. Razor code looks much more like HTML than this! This can be a drawback when you're working with designers who want to read and write HTML — I'm planning to write a tool to convert HTML text into an Eighty expression to partially ease this pain point. But Eighty has two big advantages which make it simpler and easier than Razor to program with:</p>
 <ol>
 <li>It plugs into your existing system. You don't require any extra tools to work with Eighty: if you can compile C#, you can use Eighty.
 </li>
@@ -88,7 +88,7 @@
 </ol>
 <p>To illustrate the second point, here are some examples of how you might emulate some of Razor's programming constructs using Eighty. In many of these cases Eighty does a better job than Razor of allowing abstraction and code reuse, because Eighty is embedded within C# rather than layered on top of C#.</p>
 <h3 id="models">[Models](#models</h3>
-<p>In Razor, each view file you write declares a <em>model type</em> --- the type of object it expects you to pass in to direct the generation of HTML. You use the <code>@model</code> directive at the top of your file, and then you can access members of the model in your Razor code.</p>
+<p>In Razor, each view file you write declares a <em>model type</em> — the type of object it expects you to pass in to direct the generation of HTML. You use the <code>@model</code> directive at the top of your file, and then you can access members of the model in your Razor code.</p>
 <pre><code class="language-cshtml">@model ExampleModel
 
 &lt;h1&gt;@Model.Title&lt;/h1&gt;
@@ -99,7 +99,7 @@
     =&gt; h1_(model.Title);
 </code></pre>
 <p>Since a template is a regular C# method, it's much easier to run in a unit test harness than Razor. You can just call the method and make assertions about the generated HTML, either by looking at the string directly or by parsing it and traversing the resultant DOM.</p>
-<p>Eighty includes <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.IHtmlRenderer-1.html">an <code>IHtmlRenderer&lt;TModel&gt;</code> interface</a>, which captures this pattern of parameterising a chunk of HTML by a model, but its use is optional --- it's used primarily by Eighty's ASP.NET integration packages.</p>
+<p>Eighty includes <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.IHtmlRenderer-1.html">an <code>IHtmlRenderer&lt;TModel&gt;</code> interface</a>, which captures this pattern of parameterising a chunk of HTML by a model, but its use is optional — it's used primarily by Eighty's ASP.NET integration packages.</p>
 <h3 id="control-flow">[Control flow](#control-flow</h3>
 <p>Razor allows you to mix markup with C#'s control flow constructs such as <code>foreach</code> and <code>if</code>. Here's a simple example of populating a <code>ul</code> based on a list of values:</p>
 <pre><code class="language-cshtml">&lt;ul&gt;
@@ -235,7 +235,7 @@ Html SomeHtmlContainingANote()
 <ul>
 <li>You mustn't forget a <code>using</code> statement, or call <code>Dispose</code> more than once, or Twenty will output malformed HTML. Eighty, on the other hand, will never generate bad HTML (notwithstanding the use of <code>Raw</code>).
 </li>
-<li>There's no <code>Html</code> object --- you can't pass around chunks of HTML as first class values. This makes code reuse and abstraction somewhat more difficult.
+<li>There's no <code>Html</code> object — you can't pass around chunks of HTML as first class values. This makes code reuse and abstraction somewhat more difficult.
 </li>
 <li><code>HtmlBuilder</code> is not re-entrant. You can't use the same <code>HtmlBuilder</code> from multiple threads.
 </li>
@@ -246,7 +246,7 @@ Html SomeHtmlContainingANote()
 <h2 id="performance"><a href="#performance">Performance
 
 </a></h2>
-<p>Eighty is pretty fast. I wrote a benchmark testing how long it takes to spit out around 30kB of HTML (with some encoding characters thrown in for good measure) while running in an in-memory hosted MVC application. Eighty's synchronous code path does this around three times faster than Razor, and Twenty runs about 30% faster than that --- so, four times faster than Razor.</p>
+<p>Eighty is pretty fast. I wrote a benchmark testing how long it takes to spit out around 30kB of HTML (with some encoding characters thrown in for good measure) while running in an in-memory hosted MVC application. Eighty's synchronous code path does this around three times faster than Razor, and Twenty runs about 30% faster than that — so, four times faster than Razor.</p>
 <p>What have I done to make Eighty fast? Honestly, not a huge amount. There are a only few interesting optimisations in Eighty's codebase.</p>
 <ul>
 <li>Each call to <code>TextWriter</code>'s <code>Write</code> method is comparatively expensive, so rather than write individual snippets of HTML into the <code>TextWriter</code> directly, Eighty builds up a 4kB buffer and empties it out into the <code>TextWriter</code> when it fills up. The code to fill this buffer is a little fiddly, because you don't know how long your input string is going to be after HTML-encoding it, so the HTML encoder has to write the encoded HTML in chunks. I toyed with a hand-written encoder, but I wanted to interoperate with ASP.NET's pluggable <code>HtmlEncoder</code>, so I ended up calling that class's low-level API.
@@ -257,7 +257,7 @@ Html SomeHtmlContainingANote()
 </li>
 </ul>
 </li>
-<li>Calling an <code>async</code> method is comparatively expensive, even if it never goes async, because of the way <code>async</code> methods are translated by the compiler into code which builds and then executes a state machine. In the case of Eighty's frequently-called <a href="https://github.com/benjamin-hodgson/Eighty/blob/3c431c13200022bb34ee3de635cce305384abef5/Eighty/AsyncHtmlEncodingTextWriter.cs#L149"><code>WriteRawImpl</code> method</a>, it's predictable whether a call will complete synchronously (that is, without calling the underlying <code>TextWriter</code>'s <code>WriteAsync</code> method). <a href="https://github.com/benjamin-hodgson/Eighty/commit/1d6b5f45919363c978de05a5a849835cec6a773b#diff-c3aed398c4361803494b9d59237185e2">I split the <code>async</code> method into two parts</a> --- a fast wrapper which synchronously returns a <code>Task</code> and an <code>async</code> method which is only called when necessary --- and got a ~15% speedup in my end-to-end benchmarks.
+<li>Calling an <code>async</code> method is comparatively expensive, even if it never goes async, because of the way <code>async</code> methods are translated by the compiler into code which builds and then executes a state machine. In the case of Eighty's frequently-called <a href="https://github.com/benjamin-hodgson/Eighty/blob/3c431c13200022bb34ee3de635cce305384abef5/Eighty/AsyncHtmlEncodingTextWriter.cs#L149"><code>WriteRawImpl</code> method</a>, it's predictable whether a call will complete synchronously (that is, without calling the underlying <code>TextWriter</code>'s <code>WriteAsync</code> method). <a href="https://github.com/benjamin-hodgson/Eighty/commit/1d6b5f45919363c978de05a5a849835cec6a773b#diff-c3aed398c4361803494b9d59237185e2">I split the <code>async</code> method into two parts</a> — a fast wrapper which synchronously returns a <code>Task</code> and an <code>async</code> method which is only called when necessary — and got a ~15% speedup in my end-to-end benchmarks.
 </li>
 <li><code>Html</code> values make use of <code>ImmutableArray</code>s to store their children. <code>ImmutableArray</code> is a thin wrapper over a regular array, so if you have a <code>T[]</code> you should be able to turn it into an <code>ImmutableArray</code> in-place without copying the contents, as long as you're careful never to modify the original array after freezing it. There are several places in Eighty where this is a safe optimisation, but <code>ImmutableArray</code> doesn't have a public API to do this. However, since <code>ImmutableArray&lt;T&gt;</code> is a struct with a single private <code>T[]</code> field, its runtime representation is the same as <code>T[]</code>'s. This makes it possible to <a href="https://github.com/benjamin-hodgson/Eighty/blob/3c431c13200022bb34ee3de635cce305384abef5/Eighty/ImmutableArrayFactory.cs#L45">unsafely coerce a <code>T[]</code> to an <code>ImmutableArray&lt;T&gt;</code></a> with no runtime cost.
 <ul>
@@ -266,7 +266,7 @@ Html SomeHtmlContainingANote()
 </ul>
 </li>
 </ul>
-<p>I'm not sure exactly why Razor is slower by comparison. My guess is that Razor's template compiler just tends to generate comparatively slow C# code --- so there's probably some room for improvement --- but I would like to investigate this more.</p>
+<p>I'm not sure exactly why Razor is slower by comparison. My guess is that Razor's template compiler just tends to generate comparatively slow C# code — so there's probably some room for improvement — but I would like to investigate this more.</p>
 <hr />
 <p>HTML generators are an example of a problem where the spectrum of possible solutions is very broad indeed. Just within the C# ecosystem there exists a menagerie of different templating languages, as well as imperative object-oriented APIs like <code>TagBuilder</code> and streaming APIs like <code>XmlWriter</code>. Even Eighty and Twenty, two implementations of the same idea, are substantially different. You can often find yourself somewhere quite interesting if you appreach a common problem from a different direction than the established solutions. What parts of the library ecosystem do you think you could do with a fresh perspective?</p>
 <p>Eighty is available <a href="https://www.nuget.org/packages/Eighty">on Nuget</a>, along with some helpers to integrate Eighty with <a href="https://www.nuget.org/packages/Eighty.AspNet.Mvc">MVC</a> and <a href="https://www.nuget.org/packages/Eighty.AspNetCore">ASP.NET Core</a>. API docs are hosted <a href="https://www.benjamin.pizza/Eighty/v1.2.0/api/Eighty.html">on this very domain</a>, and the code's all <a href="https://github.com/benjamin-hodgson/Eighty">on GitHub</a> where contributions and bug reports are very welcome!</p>

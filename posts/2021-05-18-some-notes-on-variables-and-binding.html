@@ -67,7 +67,7 @@
 <ul>
 <li>Statically declare structure of binders
 </li>
-<li>Embed your own datatypes as required by language syntax --- method header can be <code>[(Name, Type)]</code>
+<li>Embed your own datatypes as required by language syntax — method header can be <code>[(Name, Type)]</code>
 </li>
 </ul>
 </li>
@@ -104,9 +104,9 @@
 </li>
 <li>Nested datatype manages de Bruijn depth statically.
 <ul>
-<li>Nested datatype is quite awkward in practice --- doesn't play nicely with mutual recursion or Plated.
+<li>Nested datatype is quite awkward in practice — doesn't play nicely with mutual recursion or Plated.
 </li>
-<li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees --- but also, not super costly complexity-wise.
+<li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees — but also, not super costly complexity-wise.
 </li>
 </ul>
 </li>
@@ -182,7 +182,7 @@
     public Free OriginalName { get; }
 }
 </code></pre>
-<p>Potential consistency issues --- different mentions of the same variable could end up with different tags.</p>
+<p>Potential consistency issues — different mentions of the same variable could end up with different tags.</p>
 <p><strong>Idea 2</strong>: Store a flat list of original names in the <code>BindingSite</code>.</p>
 <pre><code class="language-csharp">readonly struct BindingSite&lt;T&gt;  // aka Scope (bound/moniker) or Bind (unbound)
 {
@@ -191,7 +191,7 @@
     public T Body { get; }
 }
 </code></pre>
-<p>It feels kinda ugly. Also potential consistency issues --- if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you're gonna end up duplicating information. Also, it doesn't seem like this would easily support recursive patterns such as letrec or Agda's dot notation.</p>
+<p>It feels kinda ugly. Also potential consistency issues — if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you're gonna end up duplicating information. Also, it doesn't seem like this would easily support recursive patterns such as letrec or Agda's dot notation.</p>
 <p><strong>Idea 3</strong>: Store the actual pattern in the <code>BindingSite</code>. This is more in line with how <code>unbound</code>/<code>moniker</code> do it.</p>
 <pre><code class="language-csharp">readonly struct BindingSite&lt;T&gt;
 {
@@ -235,7 +235,7 @@ class Rec : Pattern
 <ul>
 <li>If your language has multiple types of patterns (eg, type variables and value variables) you can't statically distinguish them.
 </li>
-<li>The structure of the pattern lives only at runtime --- it all gets stuffed into a <code>Pattern</code>-typed variable. You can't <em>statically</em> encode the syntactic structure of the binding site (at which point it's not a whole lot better than Idea 2).
+<li>The structure of the pattern lives only at runtime — it all gets stuffed into a <code>Pattern</code>-typed variable. You can't <em>statically</em> encode the syntactic structure of the binding site (at which point it's not a whole lot better than Idea 2).
 </li>
 <li>&quot;Rewrite all the embedded terms&quot; is an ad-hoc affair. Long-standing shortcoming of <code>IRewritable</code>, for which I haven't come up with a satisfactorily simple solution.
 </li>
@@ -281,7 +281,7 @@ class Rec&lt;T&gt; : Pattern
 }
 </code></pre>
 <p>That unsafe cast really is unsafe, because a <code>Rewrite</code> operation is liable to change the type of the pattern. Maybe patterns should be read-only? Do I need to split the read/write parts of <code>IRewritable</code>? 🤔</p>
-<p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful --- they're hard to reason about and hard to program with. (It's much easier to manipulate values than code.) I'd prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
+<p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful — they're hard to reason about and hard to program with. (It's much easier to manipulate values than code.) I'd prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
 <h2 id="asts-with-binding-structure"><a href="#asts-with-binding-structure">ASTs with Binding Structure
 
 </a></h2>
@@ -355,7 +355,7 @@ class LocalFreshener : IFreshener
 <h2 id="traversing-the-tree"><a href="#traversing-the-tree">Traversing the tree
 
 </a></h2>
-<p>OK, finally we have everything we need to bind and unbind variables in ASTs. Let's suppose we went with <strong>Idea 2</strong> from above --- just storing a flat list of names at the binding site.</p>
+<p>OK, finally we have everything we need to bind and unbind variables in ASTs. Let's suppose we went with <strong>Idea 2</strong> from above — just storing a flat list of names at the binding site.</p>
 <pre><code class="language-csharp">static class Binder
 {
     public static BindingSite&lt;T&gt; Bind&lt;T&gt;(ImmutableArray&lt;Free&gt; variables, T body) where T : IBindable&lt;T&gt;
@@ -430,7 +430,7 @@ class LocalFreshener : IFreshener
 </code></pre>
 <p>You can develop versions of <code>Rewrite</code>, <code>SelfAndDescendants</code>, and so on, which appropriately <code>Bind</code> and <code>Unbind</code> variables inside the tree.</p>
 <p>There are a couple of design issues regarding the performance of <code>Bind</code>/<code>Unbind</code>. Each call traverses and rewrites the whole tree and potentially chews through a bunch of fresh names, so if you bind and unbind a lot then you're gonna have performance problems.</p>
-<p>There might be room for improvement here --- off the top of my head, you could rewrite everything up to the next binding site and just store a &quot;substitution to be applied&quot; there. You can defer applying the changes until you're asked to open that binding site. I suspect that'd give you asymptotic speedups (quadratic -&gt; linear?) for certain algorithms which do lots of renaming.</p>
+<p>There might be room for improvement here — off the top of my head, you could rewrite everything up to the next binding site and just store a &quot;substitution to be applied&quot; there. You can defer applying the changes until you're asked to open that binding site. I suspect that'd give you asymptotic speedups (quadratic -&gt; linear?) for certain algorithms which do lots of renaming.</p>
 <p>Also, some tree operations don't require you to <code>Unbind</code> and re-<code>Bind</code> every single binding site. If you're doing some sort of operation where you're not generating new names or binding sites, or moving nodes across binding sites, you can just leave <code>Bound</code> variables where they are. That's an argument for making (eg) <code>bindingSite.Body</code> public, and going under it in <code>GetChildren</code>/<code>SetChildren</code>. Although in practice that's the sort of thing which is hard to get right and can cause subtle (or not-so-subtle) bugs in your language implementation.</p>
 
 
