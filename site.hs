@@ -185,7 +185,9 @@ linkifyHeaders = do
 
         addLink [line@(_:_)] ident =
             let (start, end) = (tokPos (head line), tokPos (last line))
-                linkDest = [Tok (Symbol '(') end "(", Tok (Symbol '#') end "#"] ++ tokenize "" ident ++ [Tok (Symbol ')') end ")"]
-                newLine = [Tok (Symbol '[') start "["] ++ line ++ [Tok (Symbol ']') end "]"] ++ linkDest
+                linkDest = [sym '(' end, sym '#' end] ++ tokenize "" ident ++ [sym ')' end]
+                newLine = [sym '[' start] ++ line ++ [sym ']' end] ++ linkDest
             in [newLine]
         addLink lines _ = lines
+
+        sym s loc = Tok (Symbol s) loc (Text.singleton s)
