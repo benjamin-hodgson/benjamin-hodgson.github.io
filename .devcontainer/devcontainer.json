@@ -23,5 +23,5 @@
 
     "forwardPorts": [8888],
     "postCreateCommand": ". ~/.ghcup/env && cabal build",
-    "postStartCommand": "nohup zsh -lic 'cabal run benjamin-pizza watch --no-server & live-server _site --port=8888'"
+    "postStartCommand": "nohup zsh -lic 'cabal run benjamin-pizza watch --no-server & live-server _site --port=8888 &'"
 }
