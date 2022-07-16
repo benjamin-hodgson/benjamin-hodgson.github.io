@@ -8,8 +8,12 @@ on:
 jobs:
   find_scheduled:
     runs-on: ubuntu-latest
+    
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+    outputs:
+      should_run: ${{ steps.should_run.outputs.result }}
 
     steps:
       - uses: actions/checkout@v3
@@ -22,5 +26,5 @@ jobs:
   trigger_build:
     needs: find_scheduled
     uses: ./.github/workflows/build.yml
-    if: needs.find_scheduled.outputs.result == 'true'
+    if: needs.find_scheduled.outputs.should_run == 'true'
 
