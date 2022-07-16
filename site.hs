@@ -12,10 +12,9 @@ import System.Environment (getArgs)
 
 import Commonmark
 import Commonmark.Blocks (BlockParser, BPState(nodeStack), BlockData(..), BlockSpec(blockType))
-import Commonmark.Extensions (footnoteSpec, attributesSpec, autoIdentifiersAsciiSpec, implicitHeadingReferencesSpec, strikethroughSpec)
+import Commonmark.Extensions (footnoteSpec, attributesSpec, autoIdentifiersAsciiSpec, implicitHeadingReferencesSpec, strikethroughSpec, smartPunctuationSpec)
 import Hakyll
 import Text.Parsec (getState, updateState)
-import Debug.Trace
 
 
 --------------------------------------------------------------------------------
@@ -155,14 +154,16 @@ commonmarkCompiler = cached "Benjamin.Pizza.commonmarkCompiler" $ do
 
 
 benjaminFlavouredMarkdown :: SyntaxSpec Identity (Html ()) (Html ())
-benjaminFlavouredMarkdown = 
-    strikethroughSpec
-    <> attributesSpec
-    <> autoIdentifiersAsciiSpec
-    <> footnoteSpec
-    <> implicitHeadingReferencesSpec
-    <> linkifyHeadersSpec
-    <> defaultSyntaxSpec
+benjaminFlavouredMarkdown = mconcat [
+    smartPunctuationSpec,
+    strikethroughSpec,
+    attributesSpec,
+    autoIdentifiersAsciiSpec,
+    footnoteSpec,
+    implicitHeadingReferencesSpec,
+    linkifyHeadersSpec,
+    defaultSyntaxSpec
+    ]
 
 linkifyHeadersSpec :: SyntaxSpec Identity (Html ()) (Html ())
 linkifyHeadersSpec = mempty {
@@ -180,7 +181,7 @@ linkifyHeaders = do
             | blockType (blockSpec bd) `elem` ["ATXHeading", "SetextHeading"] =
                 case lookup "id" (blockAttributes bd) of
                     Nothing -> bd
-                    Just ident -> traceShowId $ bd { blockLines = addLink (blockLines bd) ident }
+                    Just ident -> bd { blockLines = addLink (blockLines bd) ident }
             | otherwise = bd
 
         addLink [line@(_:_)] ident =

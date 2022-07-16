@@ -28,7 +28,7 @@ calculateSourcePos :: SourcePos -> Char -> SourcePos
 calculateSourcePos sp '\n' = SourcePos {
     line = line sp + 1,  -- increment the line count
     col = 1  -- and reset the column count
-    }
+}
 calculateSourcePos sp _ = sp { col = col sp + 1 }
 ```
 
@@ -225,7 +225,7 @@ editSpan :: Span  -- ^ The location and amount the user typed
          -> Span  -- ^ The original span
          -> Maybe Span  -- ^ The span with the edit applied
 editSpan edit span
-    | not (span `containsPos` (start edit)) = Nothing
+    | not (span `containsPos` start edit) = Nothing
     | otherwise = Just $ Span
         (start span)
         -- insert `edit`'s `SourcePosDelta` into `span`'s
@@ -245,8 +245,10 @@ edit s replacement node = Node
     where
         editExpr (Lit _) = replacement
         editExpr (Add l r)
-            | span l `containsPos` start s = Add (edit s replacement l) (shift (width s) r)
-            | span r `containsPos` start s = Add l (edit s replacement r)
+            | span l `containsPos` start s =
+                Add (edit s replacement l) (shift (width s) r)
+            | span r `containsPos` start s =
+                Add l (edit s replacement r)
             | otherwise = replacement
 ```
 
