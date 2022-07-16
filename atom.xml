@@ -8,8 +8,298 @@
         <name>Benjamin Hodgson</name>
         <email>bhodgson@stackoverflow.com</email>
     </author>
-    <updated>2021-05-18T00:00:00Z</updated>
+    <updated>2022-07-16T00:00:00Z</updated>
     <entry>
+    <title>Parallelising Source Positions</title>
+    <link href="http://www.benjamin.pizza/posts/2022-07-16-parallelising-source-positions.html" />
+    <id>http://www.benjamin.pizza/posts/2022-07-16-parallelising-source-positions.html</id>
+    <published>2022-07-16T00:00:00Z</published>
+    <updated>2022-07-16T00:00:00Z</updated>
+    <summary type="html"><![CDATA[
+<p>My parsing library <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> has some infrastructure to track positions in a textual input file, for the purposes of error reporting. The library's written in C#, but for today let's work in Haskell.</p>
+<pre><code class="language-haskell">data SourcePos = SourcePos {
+    line :: Natural,
+    col :: Natural
+} deriving (Eq, Ord)
+
+startOfFile :: SourcePos
+startOfFile = SourcePos 1 1
+</code></pre>
+<p>The parser keeps track of the current <code>SourcePos</code> by looping over the characters in the input file and calling a method called <code>calculateSourcePos</code>. <code>calculateSourcePos</code>'s job is to update the current <code>SourcePos</code> for a single character.</p>
+<pre><code class="language-haskell">newSourcePos = foldl' calculateSourcePos oldSourcePos inputText
+</code></pre>
+<p>You can supply your own <code>calculateSourcePos</code> implementation, but the default one looks roughly like this:</p>
+<pre><code class="language-haskell">calculateSourcePos :: SourcePos -&gt; Char -&gt; SourcePos
+calculateSourcePos sp '\n' = SourcePos {
+    line = line sp + 1,  -- increment the line count
+    col = 1  -- and reset the column count
+    }
+calculateSourcePos sp _ = sp { col = col sp + 1 }
+</code></pre>
+<p>When the parser encounters a new line, the column counter is reset back to 1.</p>
+<p>The signature of <code>calculateSourcePos</code> poses a performance problem: it takes the previous <code>SourcePos</code> as an argument. Each iteration of the loop depends on the result of the previous iteration. This <em>data dependency</em> means the loop can't be parallelised — you have to wait for each iteration of the loop to finish before you can start the next one.</p>
+<p>This article is about redesigning <code>SourcePos</code> to be more parallelisable.</p>
+<h2 id="monoids-are-embarrassingly-parallel"><a href="#monoids-are-embarrassingly-parallel">Monoids are Embarrassingly Parallel
+
+</a></h2>
+<p><em>Monoid</em> is the high-falutin' mathsy name for a certain variety of composable objects. Composability is very important in programming, and consequently monoids show up all over the place. There are plenty of introductions to monoids out there (mostly by <a href="https://blog.ploeh.dk/2017/10/06/monoids/">better</a> <a href="https://www.youtube.com/watch?v=-mnA8_DWfik">teachers</a> than me), so I'll keep it brief.</p>
+<p>For an object to be a monoid you need two things:</p>
+<ol>
+<li>
+<p>An operator <code>&lt;&gt;</code> which combines two values of your type into a bigger value.</p>
+<ul>
+<li>It shouldn't matter how you nest a sequence of <code>&lt;&gt;</code> operations: <code>(x &lt;&gt; y) &lt;&gt; z == x &lt;&gt; (y &lt;&gt; z)</code>.
+</li>
+</ul>
+</li>
+<li>
+<p>A <code>mempty</code> value, representing some notion of &quot;zero&quot;.</p>
+<ul>
+<li>Combining <code>mempty</code> with another value should leave that value unchanged: <code>mempty &lt;&gt; x == x == x &lt;&gt; mempty</code>.
+</li>
+</ul>
+</li>
+</ol>
+<pre><code class="language-haskell">class Monoid m where
+    mempty :: m
+    (&lt;&gt;) :: m -&gt; m -&gt; m
+</code></pre>
+<p>The rule about nesting <code>&lt;&gt;</code> is what makes monoids good for parallelism. Suppose you have a big array of monoidal values, and you want to combine them all into a single value using <code>&lt;&gt;</code>. It doesn't matter what order you perform the additions in, so you can safely divide your array into chunks, sum up each chunk in parallel, and then combine the results. (This is the basic idea behind MapReduce.)</p>
+<pre><code class="language-haskell">mconcat :: Monoid m =&gt; Vector m -&gt; m
+mconcat = Vector.foldr (&lt;&gt;) mempty
+
+-- performs the same computation but in parallel
+pmconcat :: Monoid m =&gt; Vector m -&gt; m
+pmconcat = List.foldr (&lt;&gt;) mempty
+    . parMap mconcat
+    . chunksOf 1024
+</code></pre>
+<p>To put it another way, monoids don't suffer from the data dependency which made <code>calculateSourcePos</code> hard to parallelise. The challenge, then, is to come up with a way to make <code>SourcePos</code> into a monoid.</p>
+<h2 id="deltas"><a href="#deltas">Deltas
+
+</a></h2>
+<p>If you go hiking, you might bring with you a list of directions on a piece of paper. Directions are monoidal: if you have directions from your house to the beach, and from the beach to the pub, you can follow those directions sequentially to get from your house to the pub. (I'll tolerate hiking as long as the destination is a pub.)</p>
+<p>Directions are relative, not absolute. The directions on your paper might tell you how to get from your house to the pub, but if you start somewhere other than your house you can still follow the directions — you just have to hope you end up in a different pub.</p>
+<p>So by analogy, let's stop worrying about absolute locations in a source file and instead think about offsets relative to an arbitrary location.</p>
+<pre><code class="language-haskell">data SourcePosDelta = SourcePosDelta {
+    lines :: Natural,
+    cols :: Natural
+}
+</code></pre>
+<p>You can add a relative <code>SourcePosDelta</code> to an absolute <code>SourcePos</code> to get a new absolute <code>SourcePos</code>. This is analogous to setting off on a hike from a given starting location.</p>
+<pre><code class="language-haskell">add :: SourcePos -&gt; SourcePosDelta -&gt; SourcePos
+add sp delta = SourcePos {
+    line = line sp + lines delta,
+    col = (if lines delta == 0 then col sp else 0) + cols delta
+}
+</code></pre>
+<p>When the delta spans multiple lines, we discard <code>sp^.col</code> and only take <code>delta^.Cols</code>. This reflects the behaviour of <code>computeSourcePos</code>, which resets the column counter when a new line is encountered. The asymmetry is interesting, though; the <code>line</code> calculation depends only on the two <code>lines</code> fields, but the <code>col</code> field has some interference from the <code>lines</code>.</p>
+<p>Likewise, you can find the difference between two <code>SourcePos</code>es to get the path that would take you from one to the other:</p>
+<pre><code class="language-haskell">subtract :: SourcePos -&gt; SourcePos -&gt; SourcePosDelta
+subtract start end = SourcePosDelta {
+    lines = line end - line start,
+    cols = col end - (if line end == line start then col start else 0)
+}
+</code></pre>
+<p>From here we can see how to add a pair of <code>SourcePosDelta</code>s (and write the <code>Monoid</code> instance). In fact, the code is more or less identical to <code>add</code>:</p>
+<pre><code class="language-haskell">instance Monoid SourcePosDelta where
+    mempty = SourcePosDelta 0 0
+    
+    delta1 &lt;&gt; delta2 = SourcePosDelta {
+        lines = lines delta1 + lines delta2,
+        cols = (if lines delta2 == 0 then cols delta1 else 0) + cols delta2
+    }
+</code></pre>
+<p>I'll leave it up to you to convince yourself that this definition satisfies the monoid laws.</p>
+<p>Each character in the input file corresponds to a small <code>SourcePosDelta</code>: <code>'\n'</code> corresponds to <code>SourcePosDelta 1 0</code> and each other character corresponds to <code>SourcePosDelta 0 1</code>. The parser can map each character to a <code>SourcePosDelta</code>, add up the monoidal deltas (possibly in parallel), and then add the result to the <code>SourcePos</code> corresponding to the start of the <code>inputText</code>.</p>
+<pre><code class="language-haskell">calculateSourcePosDelta inputText = pmconcat $ parMap toDelta inputText
+    where
+        toDelta '\n' = SourcePosDelta 1 0
+        toDelta _ = SourcePosDelta 0 1
+</code></pre>
+<h2 id="hardware-parallelism"><a href="#hardware-parallelism">Hardware Parallelism
+
+</a></h2>
+<p><a href="https://github.com/benjamin-hodgson/Pidgin/blob/sourceposdelta/Pidgin.Bench/SourcePosDeltaBench.cs">I tested some implementations of <code>&lt;&gt;</code> (in C#)</a> which made use of modern CPUs' support for <em>hardware parallelism</em> (also known as SIMD, for Single Instruction Multiple Data). Recent versions of .NET come bundled with opt-in SIMD support, to be found in <a href="https://docs.microsoft.com/en-us/dotnet/api/system.numerics?view=net-6.0">the <code>System.Numerics</code> namespace</a>.</p>
+<p>CPUs with SIMD have extra-wide registers (like, 256 bits) divided into <em>lanes</em>. You can stuff four 64-bit integers (or eight 32-bit ones) into a single register, and the CPU supports special instructions to perform the same operation on each of those four integers at once — so (for example) you can add four sets of two integers with a single instruction. Each SIMD operation is a little bit slower than its corresponding single-target instruction, but since they operate on four times the amount of data you can often get reasonable speedups when you're processing lots of data.</p>
+<p><a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L278">My fastest attempt</a> involved packing <code>SourcePosDelta</code>'s two integers into <a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L320">a single 64-bit integer</a> and doing some <a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L334">bit manipulation</a> to implement <code>&lt;&gt;</code>'s &quot;annihilation&quot; semantics. Then I divided the input array into four chunks — one per lane — and ran the bit manipulation algorithm on each lane. Since it's best to load contiguous data into a SIMD register's lanes, I had to <a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L51">rearrange the input array</a> to line the chunks up with their SIMD lanes.</p>
+<p>I decided against putting the SIMD code into the library, because in practice the number of <code>SourcePosDelta</code>s which need summing is often not very large. In any case, the SIMD code offered comparable performance to a much simpler algorithm: loop backwards until you find the last newline in a chunk of text, then ignore any non-newline characters to the left of it.</p>
+<h2 id="spans-and-shifts"><a href="#spans-and-shifts">Spans and Shifts
+
+</a></h2>
+<p>Here's another cool thing you can do with <code>SourcePosDelta</code>.</p>
+<p>In general, each node in a parse tree corresponds to a certain <em>span</em> of the input document: the section of the input text containing a given syntactic construct.</p>
+<pre><code class="language-haskell">data Span = Span {
+    start :: SourcePos,
+    width :: SourcePosDelta
+}
+
+end :: Span -&gt; SourcePos
+end span = add (start span) (width span)
+
+containsPos :: Span -&gt; SourcePos -&gt; Bool
+span `containsPos` pos = pos &gt;= start span &amp;&amp; pos &lt;= end span
+</code></pre>
+<p>It's common in compilers to keep track of these spans in order to report error messages. For example, you might want to colour a piece of code red in an IDE if it contains an error.</p>
+<pre><code class="language-haskell">data Node = Node {
+    span :: Span,
+    data :: Expr
+}
+data Expr = Lit Int | Add Node Node
+</code></pre>
+<p>In an interactive IDE, you have a programmer typing code; the IDE's parser needs to respond in real time to each keystroke. So, for performance's sake, you only want to re-parse the fragment of code that the user is currently typing, and reuse the rest of the document's parse tree from the last time you parsed it.</p>
+<p>But when the user types characters into the middle of a document, all of the constructs after it get moved right and down. So you need to <code>shift</code> the parse tree over by the amount that the user typed.</p>
+<pre><code class="language-haskell">shift :: SourcePosDelta -&gt; Node -&gt; Node
+shift d (Node span data) = Node (shiftSpan d span) (shiftData data)
+    where
+        shiftData l@(Lit _) = l
+        shiftData (Add l r) = Add (shift d l) (shift d r)
+
+shiftSpan :: SourcePosDelta -&gt; Span -&gt; Span
+shiftSpan d (Span start width) = Span
+    -- we need to add `d` on the _left_ of `start`,
+    -- so we can't use `add start d`. Instead,
+    -- round-trip via `SourcePosDelta`.
+    (add startOfFile (d &lt;&gt; subtract startOfFile start))
+    width
+</code></pre>
+<p><code>shift</code> rebuilds the entire tree! That's asymptotically as bad as re-parsing the entire file — clearly not something we want to do on every keystroke. Instead, let's annotate the tree with the amount by which it's been shifted. This lets us shift a whole subtree at once without mutating it.</p>
+<pre><code class="language-haskell">data Node = Node {
+    shiftedBy :: SourcePosDelta,
+    originalSpan :: Span,
+    expr :: Expr
+}
+
+span :: Node -&gt; Span
+span (Node shift span _) = shiftSpan shift span
+
+shift :: SourcePosDelta -&gt; Node -&gt; Node
+shift delta node = node { shiftedBy = delta &lt;&gt; shiftedBy node }
+</code></pre>
+<p><code>shift</code> is very fast now; it only rebuilds a single node. When the compiler traverses the parse tree, it simply needs to keep track of the current shift amount and apply that shift to any locations reported in error messages.</p>
+<p>For completeness, here is some code to apply an edit to a parse tree. <code>edit</code> searches the parse tree to find the node where the edit occurred, replaces that node, and <code>shifts</code> everything that was textually to the right of that node.</p>
+<pre><code class="language-haskell">editSpan :: Span  -- ^ The location and amount the user typed
+         -&gt; Span  -- ^ The original span
+         -&gt; Maybe Span  -- ^ The span with the edit applied
+editSpan edit span
+    | not (span `containsPos` (start edit)) = Nothing
+    | otherwise = Just $ Span
+        (start span)
+        -- insert `edit`'s `SourcePosDelta` into `span`'s
+        (subtract (start span) (start edit)
+            &lt;&gt; width edit
+            &lt;&gt; subtract (end span) (end edit))
+
+edit :: Span  -- ^ The location and amount the user typed
+     -&gt; Expr  -- ^ The replacement parse tree
+     -&gt; Node  -- ^ The original parse tree
+     -&gt; Node  -- ^ The edited parse tree
+edit s replacement node = Node
+    mempty
+    -- this `fromJust` is ok assuming that the edit was inside `span node`
+    (fromJust $ editSpan s (span node))
+    (editExpr (expr node))
+    where
+        editExpr (Lit _) = replacement
+        editExpr (Add l r)
+            | span l `containsPos` start s = Add (edit s replacement l) (shift (width s) r)
+            | span r `containsPos` start s = Add l (edit s replacement r)
+            | otherwise = replacement
+</code></pre>
+<p>This code is linear in the <em>depth</em> of the tree, which is usually shallow (typically dozens of nodes deep, rather than hundreds or thousands). You could do even better asymptotically by storing the parse tree in a <a href="https://en.wikipedia.org/wiki/Zipper_(data_structure)">zipper</a> focused on the node the user is currently editing, and lazily apply shifts as the zipper moves around.</p>
+<h2 id="monoid-actions"><a href="#monoid-actions">Monoid Actions
+
+</a></h2>
+<p>Let's look a little closer at the formalism underlying <code>SourcePosDelta</code>.</p>
+<p>This idea of building up a monoid and then using it to transform some other value is formalised using the notion of <em>actions</em> (also known as <em>modules</em>). A monoidal object is said to be a <em>monoid action</em> on some other object <code>a</code> if it can be used to transform <code>a</code>:</p>
+<pre><code class="language-haskell">-- &quot;Action a m&quot; means &quot;m acts on a&quot;
+class Monoid m =&gt; Action a m where
+    act :: m -&gt; a -&gt; a
+</code></pre>
+<p>I always thought <em>action monoid</em> would make a better name for this concept than <em>monoid action</em>. The monoidal value <code>m</code> represents an action to be carried out on some other object <code>a</code>.</p>
+<p>To be a well-behaved monoid action, the <code>act</code> method should respect the monoidal nature of the action:</p>
+<ol>
+<li>
+<p><code>mempty</code> should be a no-op action: <code>act mempty == id</code>.</p>
+</li>
+<li>
+<p>Building a monoidal value with <code>&lt;&gt;</code> and then acting with it should be the same as acting with the individual pieces of the monoid: <code>(m &lt;&gt; n) `act` x == m `act` (n `act` x)</code>.</p>
+<ul>
+<li>
+<p>This rule defines a &quot;left&quot; monoid action. It turns out that <code>SourcePosDelta</code> is actually a &quot;right&quot; monoid action, for which this rule is flipped: <code>(m &lt;&gt; n) `act` x == n `act` (m `act` x)</code>.</p>
+</li>
+<li>
+<p>In fact, let's separate the ideas of &quot;left&quot; and &quot;right&quot; actions. I find that the composition law for right actions makes more sense when the arguments are the other way around.</p>
+<pre><code class="language-haskell">class Monoid m =&gt; LAction a m where
+    lact :: m -&gt; a -&gt; a
+
+class Monoid m =&gt; RAction a m where
+    ract :: a -&gt; m -&gt; a
+</code></pre>
+<p>So now <code>RAction</code>'s composition law reads <code>x `ract` (m &lt;&gt; n) == (x `ract` m) `ract` n</code>.</p>
+</li>
+</ul>
+</li>
+</ol>
+<p>Basically, these laws assert that you can build actions with <code>&lt;&gt;</code> and it'll behave in the way you expect.</p>
+<p>Here are a couple of examples to help you think about monoid actions.</p>
+<ol>
+<li>
+<p>Yes, <code>SourcePosDelta</code> is a monoid action on <code>SourcePos</code>. Adding a <code>SourcePosDelta</code> to a <code>SourcePos</code> gives you a new <code>SourcePos</code> representing somewhere later in the file — a <code>SourcePosDelta</code> represents the action of moving to a later location. You can convince yourself that the definition of <code>ract</code> does indeed satisfy the laws I outlined above:</p>
+<pre><code class="language-haskell">instance RAction SourcePos SourcePosDelta where
+    ract sp delta = SourcePos {
+        line = line sp + lines delta,
+        col = (if lines delta == 0 then col sp else 0) + cols delta
+    }
+</code></pre>
+</li>
+<li>
+<p>I first learned about monoid actions (well, group actions) during a crystallography course at university. Crystallographers are very concerned with symmetry, because crystals are repeating structures which look the same in every direction. Crystals can be categorised by the collection of rotations, reflections and translations (the <em>space group</em>) under which the crystal looks the same. You monoidally build up a sequence of spatial transformations, and then use those transformations to act on a crystal.</p>
+<p>A more familiar way of phrasing the same example: When you go hiking with written directions, you can think of the directions as acting on your current location. When you follow a direction such as &quot;walk 200 metres&quot;, you update your location accordingly.</p>
+</li>
+<li>
+<p>Any monoid can always be thought of as acting upon itself, simply by defining <code>act = (&lt;&gt;)</code>.</p>
+</li>
+</ol>
+<h2 id="actions-all-the-way-down"><a href="#actions-all-the-way-down">Actions All the Way Down
+
+</a></h2>
+<p>It turns out monoid actions can also explain the strange asymmetry in <code>SourcePosDelta</code>'s <code>(&lt;&gt;)</code> method. When computing <code>delta1 &lt;&gt; delta2</code>, we can think of <code>delta2</code>'s <code>lines</code> as acting on <code>delta1</code>'s <code>cols</code>.</p>
+<pre><code class="language-haskell">newtype Lines = Lines Natural deriving Monoid via (Sum Natural)
+newtype Cols = Cols Natural deriving Monoid via (Sum Natural)
+
+instance RAction Cols Lines where
+    ract c (Lines 0) = c
+    ract _ _ = Cols 0
+</code></pre>
+<p><code>Lines</code>'s action on <code>Cols</code> is to erase the <code>Cols</code> altogether when the number of <code>Lines</code> is not zero. It's a weirdly degenerate monoid action, but it's an action nonetheless. (It seems like <code>Lines</code> basically represents an <a href="https://en.wikipedia.org/wiki/Annihilator_(ring_theory)">annihilator</a> for <code>Cols</code>.)</p>
+<p>With <code>Lines</code>'s action on <code>Cols</code> in hand, <code>SourcePosDelta</code>'s <code>Monoid</code> instance can be explained as an instance of a (right) <em>semi-direct product</em>. A semi-direct product is like a regular product type <code>(a, b)</code>, except its <code>Monoid</code> instance allows for one of the fields to interfere with the other by acting on it:</p>
+<pre><code class="language-haskell">data RSemiDirect a b = RSD a b
+
+instance (Monoid a, Monoid b, RAction a b) =&gt; Monoid (RSemiDirect a b) where
+    mempty = RSD mempty mempty
+
+    (RSD x1 y1) &lt;&gt; (RSD x2 y2) = RSD
+        (ract x1 y2 &lt;&gt; x2)
+        (y1 &lt;&gt; y2)
+</code></pre>
+<p><code>RSemiDirect a b</code> is a monoid when <code>b</code>'s action on <code>a</code> respects <code>a</code>'s monoidal structure:</p>
+<ol>
+<li>
+<p>Acting on an empty monoid produces another empty monoid: <code>ract mempty x == mempty</code>.</p>
+</li>
+<li>
+<p><code>b</code>'s monoidal structure distributes over <code>a</code>'s: <code>ract (x &lt;&gt; y) z == ract x z &lt;&gt; ract y z</code>.</p>
+</li>
+</ol>
+<p>I won't prove it here, but these do hold for <code>Lines</code>'s action on <code>Cols</code>. So we have a clean explanation for <code>SourcePosDelta</code>'s asymmetric monoidal structure in terms of the semi-direct product:</p>
+<pre><code class="language-haskell">type SourcePosDelta = RSemiDirect Cols Lines
+</code></pre>
+<p>I first read about semi-direct products a few years ago in <a href="http://ozark.hendrix.edu/~yorgey/pub/twisted.pdf">the &quot;twisted functors&quot; paper</a>. They use semi-direct products to manage pointer arithmetic while writing to buffers — monoidally building up an offset and using it to act on a base pointer. They also give a couple of other examples.</p>
+
+]]></summary>
+</entry>
+<entry>
     <title>Some Notes on Variables and Binding</title>
     <link href="http://www.benjamin.pizza/posts/2021-05-18-some-notes-on-variables-and-binding.html" />
     <id>http://www.benjamin.pizza/posts/2021-05-18-some-notes-on-variables-and-binding.html</id>
