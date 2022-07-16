@@ -46,7 +46,7 @@
             </header>
 
             
-<p>It's common in functional languages — and increasingly in hybrid languages like C# — to work with complex systems of immutable datatypes. For a contrived example, suppose you're working on a billing application:</p>
+<p>It’s common in functional languages — and increasingly in hybrid languages like C# — to work with complex systems of immutable datatypes. For a contrived example, suppose you’re working on a billing application:</p>
 <pre><code class="language-csharp">class Order
 {
     public Customer Customer { get; }
@@ -70,7 +70,7 @@ class Product
 }
 </code></pre>
 <img src="../images/2018-12-06-zooming-in-on-field-accessors/model.jpg" />
-<p>(I've omitted the constructors; you can imagine your own.) These objects are immutable, meaning you can't modify them directly. The way to update an immutable object is to make a copy of that object with the relevant properties changed. This turns out to be surprisingly tedious when you're working inside a deeply nested structure:</p>
+<p>(I’ve omitted the constructors; you can imagine your own.) These objects are immutable, meaning you can’t modify them directly. The way to update an immutable object is to make a copy of that object with the relevant properties changed. This turns out to be surprisingly tedious when you’re working inside a deeply nested structure:</p>
 <pre><code class="language-csharp">Order UpdatePostcode(Order order/*👨🏻‍⚖️*/, string newPostcode)
     =&gt; new Order(
         new Customer(
@@ -84,7 +84,7 @@ class Product
         order.Products
     );
 </code></pre>
-<p>F#'s <code>with</code>-syntax helps a little, but not a lot. You still have to write each name multiple times.</p>
+<p>F#’s <code>with</code>-syntax helps a little, but not a lot. You still have to write each name multiple times.</p>
 <pre><code class="language-fsharp">let updatePostcode(order : Order, newPostcode : string) : Order = {
   order with customer = {
     order.customer with address = {
@@ -93,19 +93,19 @@ class Product
   }
 }
 </code></pre>
-<p>This pain is caused by immutability. In an imperative setting you can say <code>order.Customer.Address.Postcode = newPostcode;</code>, although of course mutable data is less reliable and harder to work with overall. Rather than give up on immutability, functional programmers have invented a remarkable family of composable tools called <em>optics</em> for poking around inside complex datatypes. Optics are a way of describing &quot;paths&quot; through structures: you can compose paths together, and read and write the values at the end of those paths. I'm here today to demonstrate that C#8's upcoming <a href="https://github.com/dotnet/csharplang/issues/52"><em>default interface methods</em></a> are great at modelling optics.</p>
-<p>Let's start with <em>lenses</em>, the family member that gave the family its name.</p>
+<p>This pain is caused by immutability. In an imperative setting you can say <code>order.Customer.Address.Postcode = newPostcode;</code>, although of course mutable data is less reliable and harder to work with overall. Rather than give up on immutability, functional programmers have invented a remarkable family of composable tools called <em>optics</em> for poking around inside complex datatypes. Optics are a way of describing “paths” through structures: you can compose paths together, and read and write the values at the end of those paths. I’m here today to demonstrate that C#8’s upcoming <a href="https://github.com/dotnet/csharplang/issues/52"><em>default interface methods</em></a> are great at modelling optics.</p>
+<p>Let’s start with <em>lenses</em>, the family member that gave the family its name.</p>
 <h2 id="lenses"><a href="#lenses">Lenses
 
 </a></h2>
-<p>A <em>lens</em> is a first-class property for an immutable object. It's an object with a pair of methods, a <em>getter</em> which retrives the value of a property and a <em>setter</em> which updates it. Remember, we're working with immutable data, so the setter returns a new copy of the object.</p>
+<p>A <em>lens</em> is a first-class property for an immutable object. It’s an object with a pair of methods, a <em>getter</em> which retrives the value of a property and a <em>setter</em> which updates it. Remember, we’re working with immutable data, so the setter returns a new copy of the object.</p>
 <pre><code class="language-csharp">interface ILens&lt;T, TProp&gt;
 {
     TProp Get(T obj);
     T Set(T oldObj, TProp newVal);
 }
 </code></pre>
-<p>For example, here's a lens which focuses on an <code>Order</code>'s <code>Customer</code>.</p>
+<p>For example, here’s a lens which focuses on an <code>Order</code>’s <code>Customer</code>.</p>
 <pre><code class="language-csharp">class CustomerL : ILens&lt;Order, Customer&gt;
 {
     public Customer Get(Order o) =&gt; o.Customer;
@@ -116,7 +116,7 @@ class Product
 <img src="../images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" />
 <p>So a lens picks out a single property inside a given object.</p>
 <p>The power of lenses comes from their composability. Given a lens identifying a <code>T2</code> inside a <code>T1</code> (<code>ILens&lt;T1, T2&gt;</code>) and a lens identifying a <code>T3</code> inside a <code>T2</code> (<code>ILens&lt;T2, T3&gt;</code>), you can compose those lenses together to focus all the way from the <code>T1</code> to the <code>T3</code>.</p>
-<p>You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I've given it the shortest name I can think of: <code>_</code>. (Readers of <a href="2018-03-16-eighty.html">an earlier post of mine</a> will know of my fondness for <code>_</code>.)</p>
+<p>You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I’ve given it the shortest name I can think of: <code>_</code>. (Readers of <a href="2018-03-16-eighty.html">an earlier post of mine</a> will know of my fondness for <code>_</code>.)</p>
 <img src="../images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" />
 <p>Compare this terse, declarative code with the tedious version of <code>UpdatePostcode</code> from the beginning:</p>
 <pre><code class="language-csharp">Order UpdatePostcode(Order order/*👨🏻‍⚖️*/, string newPostcode)
@@ -129,7 +129,7 @@ class Product
 }
 </code></pre>
 <p>Lenses work without reference to any particular instance. (This is called <del><em>pointless</em></del> <a href="https://stackoverflow.com/questions/944446/what-is-point-free-style-in-functional-programming"><em>point-free</em></a> programming.) <code>order.Customer.Address.Postcode</code> becomes <code>new CustomerL()._(new AddressL())._(new PostcodeL())</code> — the path of properties is sort of detached from the object itself. Treating a path through a datatype as a first class value is the big idea behind lenses.</p>
-<p>Here's how <code>_</code> is implemented. It returns a new <code>ILens</code> (an instance of a private class) which delegates to the two smaller lenses.</p>
+<p>Here’s how <code>_</code> is implemented. It returns a new <code>ILens</code> (an instance of a private class) which delegates to the two smaller lenses.</p>
 <pre><code class="language-csharp">static class LensExtensions
 {
     public static ILens&lt;T1, T3&gt; _&lt;T1, T2, T3&gt;(this ILens&lt;T1, T2&gt; l1, ILens&lt;T2, T3&gt; l2)
@@ -147,7 +147,7 @@ class Product
     }
 }
 </code></pre>
-<p>To summarise, a lens is a way to focus on a small part of a big immutable structure. They're like a first-class version of the <code>.</code> and <code>=</code> operators: you can compose lenses together to focus deeper, and upon focusing on a location you can get and set the value at that location.</p>
+<p>To summarise, a lens is a way to focus on a small part of a big immutable structure. They’re like a first-class version of the <code>.</code> and <code>=</code> operators: you can compose lenses together to focus deeper, and upon focusing on a location you can get and set the value at that location.</p>
 <h3 id="mapping-under-a-lens"><a href="#mapping-under-a-lens">Mapping under a lens</a></h3>
 <p>A common pattern is to get a value from a lens, apply some sort of transformation to it, and then put it back where it was. The <code>Map</code> helper function wraps up this pattern:</p>
 <pre><code class="language-csharp">interface ILens&lt;T, TProp&gt;
@@ -159,20 +159,20 @@ class Product
         =&gt; Set(oldObj, transformer(Get(oldObj))).
 }
 </code></pre>
-<p>Here's an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you're working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
+<p>Here’s an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you’re working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
 <hr />
-<p>Powerful as they are, these lenses don't quite scale up to cover all of the important ways to access data. Specifically, they don't support computed properties or lists.</p>
+<p>Powerful as they are, these lenses don’t quite scale up to cover all of the important ways to access data. Specifically, they don’t support computed properties or lists.</p>
 <h2 id="getters"><a href="#getters">Getters
 
 </a></h2>
-<p>How would you write a lens which focuses on a list's <code>Count</code>? You can't set <code>Count</code> directly - it measures the number of times you've added or removed something from the list. The only way to change the <code>Count</code> is to add or remove an item!</p>
+<p>How would you write a lens which focuses on a list’s <code>Count</code>? You can’t set <code>Count</code> directly - it measures the number of times you’ve added or removed something from the list. The only way to change the <code>Count</code> is to add or remove an item!</p>
 <pre><code class="language-csharp">class CountL&lt;T&gt; : ILens&lt;ImmutableList&lt;T&gt;, int&gt;
 {
     public int Get(ImmutableList&lt;T&gt; l) =&gt; l.Count;
     public ImmutableList&lt;T&gt; Set(ImmutableList&lt;T&gt; l, int count) =&gt; /* ??? */;
 }
 </code></pre>
-<p>Clearly we need to separate the &quot;getting&quot; and &quot;setting&quot; reponsibilities of <code>ILens</code>.</p>
+<p>Clearly we need to separate the “getting” and “setting” reponsibilities of <code>ILens</code>.</p>
 <pre><code class="language-csharp">interface IGetter&lt;T, TProp&gt;
 {
     TProp Get(T obj);
@@ -182,7 +182,7 @@ interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;
     T Set(T oldObj, TProp newVal);
 }
 </code></pre>
-<p>We don't lose composability by doing this. You can still compose two getters to get a getter.</p>
+<p>We don’t lose composability by doing this. You can still compose two getters to get a getter.</p>
 <pre><code class="language-csharp">static class LensExtensions
 {
     public static IGetter&lt;T1, T3&gt; _(
@@ -199,11 +199,11 @@ interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;
     }
 }
 </code></pre>
-<p>If you compose a lens with a getter, you get a getter. This makes sense: if any part of a given path through a data structure is read-only, then the whole path must be read-only. It Just Works™ because <code>ILens</code> is a subtype of <code>IGetter</code>. Overload resolution takes care of it: you type <code>_</code> and the compiler picks the right return type based on the types of <code>_</code>'s arguments.</p>
+<p>If you compose a lens with a getter, you get a getter. This makes sense: if any part of a given path through a data structure is read-only, then the whole path must be read-only. It Just Works™ because <code>ILens</code> is a subtype of <code>IGetter</code>. Overload resolution takes care of it: you type <code>_</code> and the compiler picks the right return type based on the types of <code>_</code>’s arguments.</p>
 <h2 id="multi-lenses"><a href="#multi-lenses">Multi-lenses
 
 </a></h2>
-<p><code>ILens</code> focuses on a single part of a structure. Its <code>Get</code> method returns a single <code>TProp</code> and its <code>Set</code> method takes a single <code>TProp</code>. This means you can't use lenses to, for example, update the price of all the products in an order.</p>
+<p><code>ILens</code> focuses on a single part of a structure. Its <code>Get</code> method returns a single <code>TProp</code> and its <code>Set</code> method takes a single <code>TProp</code>. This means you can’t use lenses to, for example, update the price of all the products in an order.</p>
 <p>Enter <em>multi-lenses</em>, also known as <em>traversals</em>.</p>
 <pre><code class="language-csharp">interface IMultiLens&lt;T, TProp&gt;
 {
@@ -216,7 +216,7 @@ interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;
 }
 </code></pre>
 <p>(Readers of <a href="2017-11-13-recursion-without-recursion.html">an earlier post</a> might recognise <code>IMultiLens</code> as a generalisation of <code>IRewriter</code>.) A multi-lens is like a lens which can hit more than one target. While a lens focuses on <em>exactly one</em> <code>TProp</code> inside a <code>T</code>, a multi-lens relaxes that restriction, focusing on <em>zero-or-many</em> <code>TProps</code> at once.</p>
-<p>Here's an example multi-lens which focuses on all of the <code>Product</code>s in an <code>Order</code>.</p>
+<p>Here’s an example multi-lens which focuses on all of the <code>Product</code>s in an <code>Order</code>.</p>
 <pre><code class="language-csharp">class ProductsL : IMultiLens&lt;Order, Product&gt;
 {
     IEnumerable&lt;Product&gt; MultiGet(Order order) =&gt; order.Products;
@@ -226,7 +226,7 @@ interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;
 }
 </code></pre>
 <img src="../images/2018-12-06-zooming-in-on-field-accessors/products.jpg" />
-<p>You can compose multi-lenses, too. If you have a multi-lens which finds $n$ <code>T2</code>s inside a <code>T1</code>, and a second multi-lens which finds $m$ <code>T3</code>s inside a <code>T2</code>, you can build a multi-lens which finds $nm$ <code>T3</code>s inside a <code>T1</code>. This works by looking through the second multi-lens at all $n$ of the first multi-lens's targets.</p>
+<p>You can compose multi-lenses, too. If you have a multi-lens which finds $n$ <code>T2</code>s inside a <code>T1</code>, and a second multi-lens which finds $m$ <code>T3</code>s inside a <code>T2</code>, you can build a multi-lens which finds $nm$ <code>T3</code>s inside a <code>T1</code>. This works by looking through the second multi-lens at all $n$ of the first multi-lens’s targets.</p>
 <pre><code class="language-csharp">static class LensExtensions
 {
     public static IMultiLens&lt;T1, T3&gt; _(
@@ -259,7 +259,7 @@ interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;
 }
 </code></pre>
 <p><code>MultiSet</code> chops <code>newVals</code> into chunks that are the length of each group of descendants. This is safe as long as a user never calls <code>MultiSet</code> with a different number of elements than was returned by <code>MultiGet</code>.</p>
-<p>So far we can compose multi-lenses on their own, but they don't yet interoperate well with lenses. But note multi-lenses generalise lenses by relaxing the requirement that there should be exactly one substructure. Every lens is also a multi-lens by forgetting that there's a single <code>TProp</code>. (Once again we're relying on the assumption that the list does not change length in between <code>MultiGet</code> and <code>MultiSet</code> calls.)</p>
+<p>So far we can compose multi-lenses on their own, but they don’t yet interoperate well with lenses. But note multi-lenses generalise lenses by relaxing the requirement that there should be exactly one substructure. Every lens is also a multi-lens by forgetting that there’s a single <code>TProp</code>. (Once again we’re relying on the assumption that the list does not change length in between <code>MultiGet</code> and <code>MultiSet</code> calls.)</p>
 <pre><code class="language-csharp">interface ILens&lt;T, TProp&gt; : IMultiLens&lt;T, TProp&gt;
 {
     TProp Get(T obj);
@@ -311,9 +311,9 @@ interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;, IMultiLens&lt;T, TPro
 <h2 id="default-interface-implementations"><a href="#default-interface-implementations">Default Interface Implementations
 
 </a></h2>
-<p>The code above makes central use of default interface implementations, so it's probably time to talk about what they are.</p>
-<p>In C#8, interfaces won't just be type declarations any more. You'll be allowed to write code in an interface method, to function as the default implementation of that method. Typically it'll be written in terms of the other methods on the interface, like an extension method. They differ from extension methods, however, in that they are virtual. If an implementing class has a better (faster, typically) way of implementing the operation, it's free to override it.</p>
-<p>Here's an example. How would LINQ's design look different if default interface methods had been around at the time? Today's <a href="https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.count"><code>Count</code></a> method, an extension method, works in linear time by counting up all of the elements of the input <code>IEnumerable</code>.</p>
+<p>The code above makes central use of default interface implementations, so it’s probably time to talk about what they are.</p>
+<p>In C#8, interfaces won’t just be type declarations any more. You’ll be allowed to write code in an interface method, to function as the default implementation of that method. Typically it’ll be written in terms of the other methods on the interface, like an extension method. They differ from extension methods, however, in that they are virtual. If an implementing class has a better (faster, typically) way of implementing the operation, it’s free to override it.</p>
+<p>Here’s an example. How would LINQ’s design look different if default interface methods had been around at the time? Today’s <a href="https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.count"><code>Count</code></a> method, an extension method, works in linear time by counting up all of the elements of the input <code>IEnumerable</code>.</p>
 <pre><code class="language-csharp">public static int Count&lt;T&gt;(this IEnumerable&lt;T&gt; source)
 {
     var count = 0;
@@ -335,8 +335,8 @@ interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;, IMultiLens&lt;T, TPro
     public int Count =&gt; _count;
 }
 </code></pre>
-<p><a href="https://github.com/dotnet/corefx/blob/master/src/System.Linq/src/System/Linq/Count.cs">The real <code>Count</code> extension method</a> takes a fast path when its argument happens to be an <a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.icollection-1?view=netframework-4.7.2"><code>ICollection</code></a>, but that doesn't scale well. Not every <code>IEnumerable</code> which admits a fast <code>Count</code> can also implement <code>ICollection</code> — for example, an immutable collection can't implement the <code>void Add(T item)</code> method.</p>
-<p>If LINQ had been designed not as a collection of extension methods but as a collection of default interface methods, it'd be possible to override <code>Count</code> in an extensible way:</p>
+<p><a href="https://github.com/dotnet/corefx/blob/master/src/System.Linq/src/System/Linq/Count.cs">The real <code>Count</code> extension method</a> takes a fast path when its argument happens to be an <a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.icollection-1?view=netframework-4.7.2"><code>ICollection</code></a>, but that doesn’t scale well. Not every <code>IEnumerable</code> which admits a fast <code>Count</code> can also implement <code>ICollection</code> — for example, an immutable collection can’t implement the <code>void Add(T item)</code> method.</p>
+<p>If LINQ had been designed not as a collection of extension methods but as a collection of default interface methods, it’d be possible to override <code>Count</code> in an extensible way:</p>
 <pre><code class="language-csharp">interface IEnumerable&lt;T&gt;
 {
     IEnumerator&lt;T&gt; GetEnumerator();
@@ -365,25 +365,25 @@ class List&lt;T&gt; : IEnumerable&lt;T&gt;
 }
 </code></pre>
 <p>Interfaces with default methods are somewhat like abstract classes with virtual methods. The main difference is that a class can implement multiple interfaces, while it can only derive from one class. So default interface implementations amount to a form of multiple inheritance! (This provoked much whingeing in <a href="https://github.com/dotnet/csharplang/issues/288">the discussion on GitHub</a>.)</p>
-<p>The optics library I've outlined above makes central use of multiple inheritance. <code>ILens</code> inherits its <code>MultiGet</code> implementation from <code>IGetter</code> and its <code>Map</code> implementation from <code>IMultiLens</code>. So it wouldn't work with abstract classes; before C#8 we wouldn't have been able to write this program. Default interface implementations add new expressive power to the language.</p>
+<p>The optics library I’ve outlined above makes central use of multiple inheritance. <code>ILens</code> inherits its <code>MultiGet</code> implementation from <code>IGetter</code> and its <code>Map</code> implementation from <code>IMultiLens</code>. So it wouldn’t work with abstract classes; before C#8 we wouldn’t have been able to write this program. Default interface implementations add new expressive power to the language.</p>
 <h2 id="production-worthiness"><a href="#production-worthiness">Production-Worthiness
 
 </a></h2>
-<p>Lenses are very useful in functional languages, but I would not recommend you use them in practical C#, even after the release of C#8. When you stand it next to <a href="http://hackage.haskell.org/package/lens">Haskell's <code>lens</code> library</a>, the API I outlined above has a number of significant shortcomings.</p>
+<p>Lenses are very useful in functional languages, but I would not recommend you use them in practical C#, even after the release of C#8. When you stand it next to <a href="http://hackage.haskell.org/package/lens">Haskell’s <code>lens</code> library</a>, the API I outlined above has a number of significant shortcomings.</p>
 <ul>
 <li>
-<p><strong>Performance</strong>. The big one! Accessing a field is such a common operation that it'd better be fast. The <code>.</code> operator (<code>order.Customer.Address.Postcode</code>) is very fast on the CLR — just a pointer hop. Composed lenses, on the other hand, are tree-shaped objects, and calling <code>Get</code> means traversing that tree with a interface method call at each level. I ran some rudimentary benchmarks and found deeply nested lenses to be orders of magnitude slower than equivalent lensless code.</p>
-<p>The <code>lens</code> library sidesteps this performance issue by leaning on Haskell's optimising compiler. <code>lens</code> has been carefully designed to be easy for GHC to optimise, and the result is that GHC generally produces identical machine code for equivalent lensy and lensless functions.</p>
+<p><strong>Performance</strong>. The big one! Accessing a field is such a common operation that it’d better be fast. The <code>.</code> operator (<code>order.Customer.Address.Postcode</code>) is very fast on the CLR — just a pointer hop. Composed lenses, on the other hand, are tree-shaped objects, and calling <code>Get</code> means traversing that tree with a interface method call at each level. I ran some rudimentary benchmarks and found deeply nested lenses to be orders of magnitude slower than equivalent lensless code.</p>
+<p>The <code>lens</code> library sidesteps this performance issue by leaning on Haskell’s optimising compiler. <code>lens</code> has been carefully designed to be easy for GHC to optimise, and the result is that GHC generally produces identical machine code for equivalent lensy and lensless functions.</p>
 </li>
 <li>
-<p><strong>Code generation</strong>. Almost all of the atomic lens classes you'd write for a business system are pure boilerplate — exactly the sort of thing you'd expect a machine to write. You should be able to define an object, perhaps mark it up using an attribute, and get on with using lenses into that object in the rest of your program, with Intellisense support. You shouldn't ever need to see a lens's source code. Roslyn, the C# compiler, has no facilities for compile-time code injection like this. A lens library could bundle a source code generator, perhaps using Roslyn's API, which users run ahead-of-time — many ORMs do this — but that's a much less compelling user experience.</p>
-<p>This may be a good use case for F#'s type providers. (In any case F# places more emphasis on immutability than C#, making lenses a more natural fit in the first place.) Presently you can't use a type provider to generate code based on another type (though <a href="https://github.com/fsharp/fslang-design/issues/125">it appears to be planned</a>), and <a href="https://github.com/fsharp/fslang-suggestions/issues/679#issuecomment-399411192">there don't seem to be plans</a> to support multiple inheritance in the F# source language. In principle one could implement the hierarchy in C# and consume it from an F# type provider.</p>
+<p><strong>Code generation</strong>. Almost all of the atomic lens classes you’d write for a business system are pure boilerplate — exactly the sort of thing you’d expect a machine to write. You should be able to define an object, perhaps mark it up using an attribute, and get on with using lenses into that object in the rest of your program, with Intellisense support. You shouldn’t ever need to see a lens’s source code. Roslyn, the C# compiler, has no facilities for compile-time code injection like this. A lens library could bundle a source code generator, perhaps using Roslyn’s API, which users run ahead-of-time — many ORMs do this — but that’s a much less compelling user experience.</p>
+<p>This may be a good use case for F#’s type providers. (In any case F# places more emphasis on immutability than C#, making lenses a more natural fit in the first place.) Presently you can’t use a type provider to generate code based on another type (though <a href="https://github.com/fsharp/fslang-design/issues/125">it appears to be planned</a>), and <a href="https://github.com/fsharp/fslang-suggestions/issues/679#issuecomment-399411192">there don’t seem to be plans</a> to support multiple inheritance in the F# source language. In principle one could implement the hierarchy in C# and consume it from an F# type provider.</p>
 </li>
 <li>
-<p>Two ergonomic complaints regarding C#'s support for <strong>generics</strong>:</p>
+<p>Two ergonomic complaints regarding C#’s support for <strong>generics</strong>:</p>
 <ul>
 <li>
-<p><strong>Type inference</strong>. C# has only minimal support for type inference. This makes generic lenses unpleasant to use. The following lens picks out a <code>KeyValuePair</code>'s <code>Value</code>:</p>
+<p><strong>Type inference</strong>. C# has only minimal support for type inference. This makes generic lenses unpleasant to use. The following lens picks out a <code>KeyValuePair</code>’s <code>Value</code>:</p>
 <pre><code class="language-csharp">class ValueL&lt;K, V&gt; : ILens&lt;KeyValuePair&lt;K, V&gt;, V&gt;
 {
     public V Get(KeyValuePair&lt;K, V&gt; kvp) =&gt; kvp.Value;
@@ -391,30 +391,30 @@ class List&lt;T&gt; : IEnumerable&lt;T&gt;
         =&gt; new KeyValuePair&lt;K, V&gt;(kvp.Key, val);
 }
 </code></pre>
-<p>You can't use <code>ValueL</code> without explicitly mentioning the concrete type parameters at which you're using it:</p>
+<p>You can’t use <code>ValueL</code> without explicitly mentioning the concrete type parameters at which you’re using it:</p>
 <pre><code class="language-csharp">new ValueL&lt;string, int&gt;().Set(new KeyValuePair&lt;string, int&gt;(&quot;foo&quot;, 3), 7);
 </code></pre>
-<p>Ideally the compiler would be able to deduce the <code>&lt;string, int&gt;</code> part by noticing that we're using it on a <code>KeyValuePair&lt;string, int&gt;</code>. This is difficult to implement in a subtyping-based language, though.</p>
+<p>Ideally the compiler would be able to deduce the <code>&lt;string, int&gt;</code> part by noticing that we’re using it on a <code>KeyValuePair&lt;string, int&gt;</code>. This is difficult to implement in a subtyping-based language, though.</p>
 </li>
 <li>
 <p><strong>Generic type aliases</strong>. <a href="http://comonad.com/reader/2012/mirrored-lenses/">The most general formulation of lenses</a> actually has <em>four</em> type parameters: <code>ILens&lt;in S, out T, out A, in B&gt;</code>! This is to support lenses into generic types, allowing you to change the type of the resulting structure by writing a different type into the lens. (<code>new ValueL().Set(new KeyValuePair&lt;string, string&gt;(&quot;foo&quot;, &quot;bar&quot;), 3)</code> should return a <code>KeyValuePair&lt;string, int&gt;</code> — that is, a new <code>KeyValuePair</code> with a different type to the original.)</p>
-<p>The old <code>ILens&lt;S, A&gt;</code> is then equivalent to <code>ILens&lt;S, S, A, A&gt;</code>. Ideally we'd be able to define a <em>type alias</em>, so that you can type <code>ILens&lt;S, A&gt;</code> for <code>ILens&lt;S, S, A, A&gt;</code>, but C# doesn't support this. (<a href="https://github.com/dotnet/roslyn/issues/3993">A modest proposed extension to <code>using</code></a> would largely service this complaint, reducing the noise to a few lines of boilerplate at the top of each file.)</p>
+<p>The old <code>ILens&lt;S, A&gt;</code> is then equivalent to <code>ILens&lt;S, S, A, A&gt;</code>. Ideally we’d be able to define a <em>type alias</em>, so that you can type <code>ILens&lt;S, A&gt;</code> for <code>ILens&lt;S, S, A, A&gt;</code>, but C# doesn’t support this. (<a href="https://github.com/dotnet/roslyn/issues/3993">A modest proposed extension to <code>using</code></a> would largely service this complaint, reducing the noise to a few lines of boilerplate at the top of each file.)</p>
 </li>
 </ul>
 </li>
 <li>
-<p><strong>Noisy syntax</strong>. Haskell allows you to define custom symbolic operators, and <code>lens</code> ships a large collection of operators to debigulate your code. <code>new CustomerL()._(new AddressL())._(new PostcodeL()).Get(order)</code> is clunky in comparison to Haskell's cute OO-style <code>order^.customer.address.postcode</code>.</p>
+<p><strong>Noisy syntax</strong>. Haskell allows you to define custom symbolic operators, and <code>lens</code> ships a large collection of operators to debigulate your code. <code>new CustomerL()._(new AddressL())._(new PostcodeL()).Get(order)</code> is clunky in comparison to Haskell’s cute OO-style <code>order^.customer.address.postcode</code>.</p>
 <ul>
-<li>Related to this concern is <strong>namespacing</strong>. Above I've used a convention of appending the letter <code>L</code> to lens classes (<code>CustomerL</code>), but that starts to break down when you have more than one property with the same name in your system. One option might be to nest the lenses inside the objects themselves and import them with <code>using static</code>.
+<li>Related to this concern is <strong>namespacing</strong>. Above I’ve used a convention of appending the letter <code>L</code> to lens classes (<code>CustomerL</code>), but that starts to break down when you have more than one property with the same name in your system. One option might be to nest the lenses inside the objects themselves and import them with <code>using static</code>.
 </li>
 </ul>
 </li>
 <li>
-<p><strong>Platform compatibility</strong>. According to <a href="https://blogs.msdn.microsoft.com/dotnet/2018/11/12/building-c-8-0/">a recent announcement</a>, default interface implementations are only going to be available on .NET Core, and won't be in the desktop framework for the foreseeable future. As I understand it, the desktop CLR's stringent backwards compatibility requirements make testing a wide-reaching CLR feature like this difficult and expensive. But to me, a library author, this is a very disappointing development: libraries <em>must</em> support the desktop CLR if they expect to have any users, so locking down features designed for library authors seems like a misfire. I'd prefer it if Microsoft just said directly that the desktop framework is being sunsetted — that way I'd at least have some ammunition for GitHub issues.</p>
+<p><strong>Platform compatibility</strong>. According to <a href="https://blogs.msdn.microsoft.com/dotnet/2018/11/12/building-c-8-0/">a recent announcement</a>, default interface implementations are only going to be available on .NET Core, and won’t be in the desktop framework for the foreseeable future. As I understand it, the desktop CLR’s stringent backwards compatibility requirements make testing a wide-reaching CLR feature like this difficult and expensive. But to me, a library author, this is a very disappointing development: libraries <em>must</em> support the desktop CLR if they expect to have any users, so locking down features designed for library authors seems like a misfire. I’d prefer it if Microsoft just said directly that the desktop framework is being sunsetted — that way I’d at least have some ammunition for GitHub issues.</p>
 </li>
 </ul>
-<p>All that said, there are a couple of things which I find preferable about this design when compared to <code>lens</code>. Haskell doesn't feature subtyping directly, so <code>lens</code> uses a clever function-based encoding of its type hierarchy, using the type class solver to handle the various subtype relationships. Encoding lenses as functions is partly why <code>lens</code> is so fast, but it does make for a steep learning curve and notoriously confusing type errors. Using a more direct representation of subtyping means the model is clearer, and it's easier to see how one would slot (eg) prisms or indexed lenses into the system I outlined above. What's more, the four-parameter version of <code>ILens</code> I mentioned above is variously co- and contra-variant in its parameters, meaning it interoperates well with the rest of C#'s type hierarchy. In some sense these lenses are <em>more</em> composable than <code>lens</code>'s lenses.</p>
-<p>I'd love to tell you I've written this up as a published library, but the shortfalls I noted above make this formulation of lenses impractical for real-world use. I'd love to hear your ideas on how to improve the situation! In the meantime, I bagsie the name <code>OptiCS</code>.</p>
+<p>All that said, there are a couple of things which I find preferable about this design when compared to <code>lens</code>. Haskell doesn’t feature subtyping directly, so <code>lens</code> uses a clever function-based encoding of its type hierarchy, using the type class solver to handle the various subtype relationships. Encoding lenses as functions is partly why <code>lens</code> is so fast, but it does make for a steep learning curve and notoriously confusing type errors. Using a more direct representation of subtyping means the model is clearer, and it’s easier to see how one would slot (eg) prisms or indexed lenses into the system I outlined above. What’s more, the four-parameter version of <code>ILens</code> I mentioned above is variously co- and contra-variant in its parameters, meaning it interoperates well with the rest of C#’s type hierarchy. In some sense these lenses are <em>more</em> composable than <code>lens</code>’s lenses.</p>
+<p>I’d love to tell you I’ve written this up as a published library, but the shortfalls I noted above make this formulation of lenses impractical for real-world use. I’d love to hear your ideas on how to improve the situation! In the meantime, I bagsie the name <code>OptiCS</code>.</p>
 
 
         </article>

@@ -46,8 +46,8 @@
             </header>
 
             
-<p>I've been thinking a bit about how to build a library of tools to handle variables, capture-avoiding substitution, etc, on top of <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Pretty much every compiler needs to deal with variables, and they're notoriously tricky to handle correctly.</p>
-<p>I'm a way off having a final design, but I thought I'd publish my unfinished notes, hastily written in an afternoon. You'll see a few Thinking Emojis throughout this article, indicating things I haven't figured out yet. Please do get in touch if any of this gives you ideas.</p>
+<p>I’ve been thinking a bit about how to build a library of tools to handle variables, capture-avoiding substitution, etc, on top of <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Pretty much every compiler needs to deal with variables, and they’re notoriously tricky to handle correctly.</p>
+<p>I’m a way off having a final design, but I thought I’d publish my unfinished notes, hastily written in an afternoon. You’ll see a few Thinking Emojis throughout this article, indicating things I haven’t figured out yet. Please do get in touch if any of this gives you ideas.</p>
 <h2 id="a-quick-look-at-some-prior-art"><a href="#a-quick-look-at-some-prior-art">A quick look at some prior art
 
 </a></h2>
@@ -71,7 +71,7 @@
 </li>
 </ul>
 </li>
-<li>I don't like:
+<li>I don’t like:
 <ul>
 <li>Generics magic to find/traverse patterns
 </li>
@@ -96,7 +96,7 @@
 </li>
 <li>Choose your own pattern/index.
 <ul>
-<li>Library explicitly doesn't manage patterns or names. It just does substitution using your monad. <code>Scope</code> doesn't contain a &quot;pattern&quot; object.
+<li>Library explicitly doesn’t manage patterns or names. It just does substitution using your monad. <code>Scope</code> doesn’t contain a “pattern” object.
 </li>
 <li>Me gusta
 </li>
@@ -104,19 +104,19 @@
 </li>
 <li>Nested datatype manages de Bruijn depth statically.
 <ul>
-<li>Nested datatype is quite awkward in practice — doesn't play nicely with mutual recursion or Plated.
+<li>Nested datatype is quite awkward in practice — doesn’t play nicely with mutual recursion or Plated.
 </li>
-<li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you're dealing with huge trees — but also, not super costly complexity-wise.
+<li>Clever trick in <code>Scope</code> to speed up shifting at cost of canonicity. Prob a bit of a gimmick unless you’re dealing with huge trees — but also, not super costly complexity-wise.
 </li>
 </ul>
 </li>
 <li>Works really nicely with standard classes: <code>Foldable</code>/<code>Traversable</code> to look at FVs, <code>Functor</code> for renaming, <code>Monad</code> for substitution. <code>Eq1</code> for alpha equivalence, etc. Very pleasing.
 <ul>
-<li>OTOH, <a href="https://stackoverflow.com/questions/39057576/mutually-recursive-syntaxes-with-bound">doesn't work with a non-monadic AST</a>.
+<li>OTOH, <a href="https://stackoverflow.com/questions/39057576/mutually-recursive-syntaxes-with-bound">doesn’t work with a non-monadic AST</a>.
 </li>
 </ul>
 </li>
-<li>Overall, probably not such a good fit for C# since we don't have HKTs, <code>Monad</code> etc. Not very library-able.
+<li>Overall, probably not such a good fit for C# since we don’t have HKTs, <code>Monad</code> etc. Not very library-able.
 </li>
 </ul>
 <p><a href="https://github.com/brendanzab/moniker"><strong><code>moniker</code></strong></a></p>
@@ -127,7 +127,7 @@
 </li>
 <li>Library defines a couple of traits (<code>BoundTerm</code>/<code>BoundPattern</code>) to locate variables, do substitution, etc. <code>unbound</code> uses generics for this.
 </li>
-<li>Traverse your own terms, but <code>derive</code> magic assists with implementing the library's traits.
+<li>Traverse your own terms, but <code>derive</code> magic assists with implementing the library’s traits.
 </li>
 </ul>
 <h2 id="representing-names"><a href="#representing-names">Representing Names
@@ -140,7 +140,7 @@
     public int Index { get; }  // where inside the binding site should I look?
 }
 </code></pre>
-<p>For now, I'm not storing names in <code>Bound</code>. If you want to know the original name, go and find it in the pattern. Use of <code>int</code> for <code>Index</code> requires patterns to have a canonical ordering (and bind each variable only once).</p>
+<p>For now, I’m not storing names in <code>Bound</code>. If you want to know the original name, go and find it in the pattern. Use of <code>int</code> for <code>Index</code> requires patterns to have a canonical ordering (and bind each variable only once).</p>
 <p>Free variables: need an easy way to freshen them.</p>
 <pre><code class="language-csharp">readonly struct Free
 {
@@ -173,7 +173,7 @@
 </a></h2>
 <p>I definitely want an explicit type to represent a scope. I personally think <code>BindingSite</code> is a slightly better name, although perhaps that should be reserved for names inside patterns? 🤔</p>
 <p>The idea is to treat <code>BindingSite</code> as an abstract data type. To create a <code>BindingSite</code> (such as when parsing a lambda expression), you call <code>Binder.Bind(variables, body)</code>. The binder traverses the <code>body</code> AST, looking for variables which are bound by the lambda and converting them to <code>Bound</code> de Bruijn indexes. Likewise, when you need to go inside a <code>BindingSite</code>, you have to explicitly unbind it.</p>
-<p>Don't want to discard the original names, of course.</p>
+<p>Don’t want to discard the original names, of course.</p>
 <p><strong>Idea 1</strong>: Store the original name with the <code>Bound</code> variable (just as an annotation, ignore in alpha-equivalence etc).</p>
 <pre><code class="language-csharp">readonly struct Bound
 {
@@ -191,7 +191,7 @@
     public T Body { get; }
 }
 </code></pre>
-<p>It feels kinda ugly. Also potential consistency issues — if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you're gonna end up duplicating information. Also, it doesn't seem like this would easily support recursive patterns such as letrec or Agda's dot notation.</p>
+<p>It feels kinda ugly. Also potential consistency issues — if your binding sites have more syntactic structure than that (patterns, type signatures, etc), you’re gonna end up duplicating information. Also, it doesn’t seem like this would easily support recursive patterns such as letrec or Agda’s dot notation.</p>
 <p><strong>Idea 3</strong>: Store the actual pattern in the <code>BindingSite</code>. This is more in line with how <code>unbound</code>/<code>moniker</code> do it.</p>
 <pre><code class="language-csharp">readonly struct BindingSite&lt;T&gt;
 {
@@ -231,16 +231,16 @@ class Rec : Pattern
             .Select(x =&gt; x.Name.Free);
 }
 </code></pre>
-<p>Ways this doesn't scale:</p>
+<p>Ways this doesn’t scale:</p>
 <ul>
-<li>If your language has multiple types of patterns (eg, type variables and value variables) you can't statically distinguish them.
+<li>If your language has multiple types of patterns (eg, type variables and value variables) you can’t statically distinguish them.
 </li>
-<li>The structure of the pattern lives only at runtime — it all gets stuffed into a <code>Pattern</code>-typed variable. You can't <em>statically</em> encode the syntactic structure of the binding site (at which point it's not a whole lot better than Idea 2).
+<li>The structure of the pattern lives only at runtime — it all gets stuffed into a <code>Pattern</code>-typed variable. You can’t <em>statically</em> encode the syntactic structure of the binding site (at which point it’s not a whole lot better than Idea 2).
 </li>
-<li>&quot;Rewrite all the embedded terms&quot; is an ad-hoc affair. Long-standing shortcoming of <code>IRewritable</code>, for which I haven't come up with a satisfactorily simple solution.
+<li>“Rewrite all the embedded terms” is an ad-hoc affair. Long-standing shortcoming of <code>IRewritable</code>, for which I haven’t come up with a satisfactorily simple solution.
 </li>
 </ul>
-<p>What should be the advice for implementing <code>IRewritable</code> on objects containing a binding site? Should you traverse to the body? (Problematic because de Bruijn indexes from different scopes are not comparable.) Are you meant to unbind the body? That would mean you can't use <code>IRewritable</code> as is, because <code>IRewritable</code> doesn't have a parameter for a source of fresh names. Perhaps we should be using <code>IRewriter</code> and not <code>IRewritable</code>, although that's a messier API. 🤔</p>
+<p>What should be the advice for implementing <code>IRewritable</code> on objects containing a binding site? Should you traverse to the body? (Problematic because de Bruijn indexes from different scopes are not comparable.) Are you meant to unbind the body? That would mean you can’t use <code>IRewritable</code> as is, because <code>IRewritable</code> doesn’t have a parameter for a source of fresh names. Perhaps we should be using <code>IRewriter</code> and not <code>IRewritable</code>, although that’s a messier API. 🤔</p>
 <blockquote>
 <p>This ☝🏻 is a pressing concern because <code>Telescope</code> features a <code>BindingSite</code>!</p>
 </blockquote>
@@ -263,7 +263,7 @@ class Rec&lt;T&gt; : Pattern
     public T Body { get; }
 }
 </code></pre>
-<p>Some things about this work really well too, as evidenced by its use in <code>unbound</code>/<code>moniker</code>. I find the &quot;type soup&quot; usability issue a bit concerning, but more pressingly it doesn't play nicely with <code>IRewritable</code>.</p>
+<p>Some things about this work really well too, as evidenced by its use in <code>unbound</code>/<code>moniker</code>. I find the “type soup” usability issue a bit concerning, but more pressingly it doesn’t play nicely with <code>IRewritable</code>.</p>
 <pre><code class="language-csharp">class Telescope&lt;L, R&gt;
 {
     // ...
@@ -281,11 +281,11 @@ class Rec&lt;T&gt; : Pattern
 }
 </code></pre>
 <p>That unsafe cast really is unsafe, because a <code>Rewrite</code> operation is liable to change the type of the pattern. Maybe patterns should be read-only? Do I need to split the read/write parts of <code>IRewritable</code>? 🤔</p>
-<p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful — they're hard to reason about and hard to program with. (It's much easier to manipulate values than code.) I'd prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
+<p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful — they’re hard to reason about and hard to program with. (It’s much easier to manipulate values than code.) I’d prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
 <h2 id="asts-with-binding-structure"><a href="#asts-with-binding-structure">ASTs with Binding Structure
 
 </a></h2>
-<p>This part is fairly worked out I think. I'm assuming that your syntax tree has a case for variables, containing a <code>Name</code> (and no children) and a case for binding sites, containing a <code>BindingSite</code> (and no children). So all we need to add to <code>IRewritable</code> is a way to identify those nodes:</p>
+<p>This part is fairly worked out I think. I’m assuming that your syntax tree has a case for variables, containing a <code>Name</code> (and no children) and a case for binding sites, containing a <code>BindingSite</code> (and no children). So all we need to add to <code>IRewritable</code> is a way to identify those nodes:</p>
 <pre><code class="language-csharp">interface IBindable&lt;T&gt; : IRewritable&lt;T&gt; where T : IBindable&lt;T&gt;
 {
     bool TryGetName(out Name name);
@@ -317,7 +317,7 @@ class Rec&lt;T&gt; : Pattern
     }
 }
 </code></pre>
-<p>As an optimisation (and as a UX improvement), you can avoid freshening variables if you're sure they don't clash with any other names which are in scope. That means keeping track of the set of names we want to avoid:</p>
+<p>As an optimisation (and as a UX improvement), you can avoid freshening variables if you’re sure they don’t clash with any other names which are in scope. That means keeping track of the set of names we want to avoid:</p>
 <pre><code class="language-csharp">interface IFreshener
 {
     Free Freshen(Free name);
@@ -355,7 +355,7 @@ class LocalFreshener : IFreshener
 <h2 id="traversing-the-tree"><a href="#traversing-the-tree">Traversing the tree
 
 </a></h2>
-<p>OK, finally we have everything we need to bind and unbind variables in ASTs. Let's suppose we went with <strong>Idea 2</strong> from above — just storing a flat list of names at the binding site.</p>
+<p>OK, finally we have everything we need to bind and unbind variables in ASTs. Let’s suppose we went with <strong>Idea 2</strong> from above — just storing a flat list of names at the binding site.</p>
 <pre><code class="language-csharp">static class Binder
 {
     public static BindingSite&lt;T&gt; Bind&lt;T&gt;(ImmutableArray&lt;Free&gt; variables, T body) where T : IBindable&lt;T&gt;
@@ -429,9 +429,9 @@ class LocalFreshener : IFreshener
 }
 </code></pre>
 <p>You can develop versions of <code>Rewrite</code>, <code>SelfAndDescendants</code>, and so on, which appropriately <code>Bind</code> and <code>Unbind</code> variables inside the tree.</p>
-<p>There are a couple of design issues regarding the performance of <code>Bind</code>/<code>Unbind</code>. Each call traverses and rewrites the whole tree and potentially chews through a bunch of fresh names, so if you bind and unbind a lot then you're gonna have performance problems.</p>
-<p>There might be room for improvement here — off the top of my head, you could rewrite everything up to the next binding site and just store a &quot;substitution to be applied&quot; there. You can defer applying the changes until you're asked to open that binding site. I suspect that'd give you asymptotic speedups (quadratic -&gt; linear?) for certain algorithms which do lots of renaming.</p>
-<p>Also, some tree operations don't require you to <code>Unbind</code> and re-<code>Bind</code> every single binding site. If you're doing some sort of operation where you're not generating new names or binding sites, or moving nodes across binding sites, you can just leave <code>Bound</code> variables where they are. That's an argument for making (eg) <code>bindingSite.Body</code> public, and going under it in <code>GetChildren</code>/<code>SetChildren</code>. Although in practice that's the sort of thing which is hard to get right and can cause subtle (or not-so-subtle) bugs in your language implementation.</p>
+<p>There are a couple of design issues regarding the performance of <code>Bind</code>/<code>Unbind</code>. Each call traverses and rewrites the whole tree and potentially chews through a bunch of fresh names, so if you bind and unbind a lot then you’re gonna have performance problems.</p>
+<p>There might be room for improvement here — off the top of my head, you could rewrite everything up to the next binding site and just store a “substitution to be applied” there. You can defer applying the changes until you’re asked to open that binding site. I suspect that’d give you asymptotic speedups (quadratic -&gt; linear?) for certain algorithms which do lots of renaming.</p>
+<p>Also, some tree operations don’t require you to <code>Unbind</code> and re-<code>Bind</code> every single binding site. If you’re doing some sort of operation where you’re not generating new names or binding sites, or moving nodes across binding sites, you can just leave <code>Bound</code> variables where they are. That’s an argument for making (eg) <code>bindingSite.Body</code> public, and going under it in <code>GetChildren</code>/<code>SetChildren</code>. Although in practice that’s the sort of thing which is hard to get right and can cause subtle (or not-so-subtle) bugs in your language implementation.</p>
 
 
         </article>

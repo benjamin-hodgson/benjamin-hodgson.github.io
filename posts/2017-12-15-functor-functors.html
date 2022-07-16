@@ -47,11 +47,11 @@
 
             
 <p>You can teach a new dog old tricks.</p>
-<p>One of the fun things about category theory is that once you've learned an idea in one context it's easy to apply it to another one. Of the numerous categories available to Haskell programmers, <strong>Hask</strong>, the category of Haskell types and functions, gets the lion's share of the attention. Working with standard abstractions in more overlooked categories is a great way to reuse ideas: it makes you look clever, like you've invented something new, but actually all you've done is put the building blocks together differently. I won't tell if you don't.</p>
+<p>One of the fun things about category theory is that once you’ve learned an idea in one context it’s easy to apply it to another one. Of the numerous categories available to Haskell programmers, <strong>Hask</strong>, the category of Haskell types and functions, gets the lion’s share of the attention. Working with standard abstractions in more overlooked categories is a great way to reuse ideas: it makes you look clever, like you’ve invented something new, but actually all you’ve done is put the building blocks together differently. I won’t tell if you don’t.</p>
 <h2 id="templates-reusable-records"><a href="#templates-reusable-records">Templates: Reusable Records
 
 </a></h2>
-<p>Every now and then I'll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and &quot;draft&quot; checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.</p>
+<p>Every now and then I’ll see a question on Stack Overflow or Reddit in which a programmer is trying to work with a bunch of record types which share a similar structure. For a contrived example, in a shopping system you may want to differentiate between completed checkout forms, which are ready to be dispatched, and “draft” checkout forms, which the user is currently filling in. The simplest way to do this is to build separate types, and write a function to upgrade a draft form to a regular form if all of its fields are filled in.</p>
 <pre><code class="language-haskell">data CardType = Visa | AmEx | Mastercard
 
 data Form = Form {
@@ -77,7 +77,7 @@ toForm (DraftForm
         Form email cardType cardNumber cardExpiry
 toForm _ = Nothing
 </code></pre>
-<p>Now, the standard trick to de-duplicate these two types is to derive both from what I'll call a <em>template</em> type, wrapping each field of the template in some type constructor <code>f</code>. You recover <code>Form</code> by setting <code>f</code> to the boring <code>Identity</code> functor, and you get <code>DraftForm</code> by setting <code>f</code> to <code>Maybe</code>.</p>
+<p>Now, the standard trick to de-duplicate these two types is to derive both from what I’ll call a <em>template</em> type, wrapping each field of the template in some type constructor <code>f</code>. You recover <code>Form</code> by setting <code>f</code> to the boring <code>Identity</code> functor, and you get <code>DraftForm</code> by setting <code>f</code> to <code>Maybe</code>.</p>
 <pre><code class="language-haskell">data FormTemplate f = FormTemplate {
     _email :: f Text,
     _cardType :: f CardType,
@@ -87,22 +87,22 @@ toForm _ = Nothing
 type Form = FormTemplate Identity
 type DraftForm = FormTemplate Maybe
 </code></pre>
-<p>So a template is a record type parameterised by a type constructor. It'll generally have a kind of <code>(* -&gt; *) -&gt; *</code>. The fields of the record are the type constructor applied to a variety of different type arguments. Working with a template typically involves coming up with an interesting type constructor <code>(* -&gt; *)</code> and plugging it in to get interestingly-typed fields. You can think of a record as a container of <code>f</code>s.</p>
-<p>This trick has become Haskell folklore - I couldn't tell you where I first saw it - but I've only seen a few people talk about what happens when you treat templates as first class citizens. To get used to this style, a simple example is giving names to specific instantiations of arbitrary templates:</p>
+<p>So a template is a record type parameterised by a type constructor. It’ll generally have a kind of <code>(* -&gt; *) -&gt; *</code>. The fields of the record are the type constructor applied to a variety of different type arguments. Working with a template typically involves coming up with an interesting type constructor <code>(* -&gt; *)</code> and plugging it in to get interestingly-typed fields. You can think of a record as a container of <code>f</code>s.</p>
+<p>This trick has become Haskell folklore - I couldn’t tell you where I first saw it - but I’ve only seen a few people talk about what happens when you treat templates as first class citizens. To get used to this style, a simple example is giving names to specific instantiations of arbitrary templates:</p>
 <pre><code class="language-haskell">type Record t = t Identity
 type Partial t = t Maybe
 
 type Form = Record FormTemplate
 type DraftForm = Partial FormTemplate
 </code></pre>
-<p>The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I'll be taking familiar tools for working with containers of <em>values</em> - <code>Functor</code>, <code>Traversable</code>, <code>Representable</code> - and applying them to the context of containers of <em>functors</em>.</p>
+<p>The rest of this blog post is about treating template types intuitively as fixed-size containers of functors. I’ll be taking familiar tools for working with containers of <em>values</em> - <code>Functor</code>, <code>Traversable</code>, <code>Representable</code> - and applying them to the context of containers of <em>functors</em>.</p>
 <h2 id="functors-from-the-category-of-endofunctors"><a href="#functors-from-the-category-of-endofunctors">Functors from the Category of Endofunctors
 
 </a></h2>
 <p>In Haskell, categories are represented as a <em>kind</em> <code>k</code> of objects and a <em>type constructor</em> <code>c :: k -&gt; k -&gt; *</code> of morphisms between those objects. If the category <code>C</code> has objects in <code>k1</code> and morphisms in <code>c</code>, and <code>D</code> has objects in <code>k2</code> and morphisms in <code>d</code>, then a functor from <code>C</code> to <code>D</code> is a type constructor <code>f :: k1 -&gt; k2</code> mapping objects paired with an operation <code>fmap :: c a b -&gt; d (f a) (f b)</code> mapping the morphisms. The standard <code>Functor</code> class is for <em>endofunctors on <strong>Hask</strong></em> - the special case in which <code>k1 ~ k2 ~ *</code> and <code>c ~ d ~ (-&gt;)</code>.</p>
 <img src="../images/2017-12-15-functor-functors/hask.jpg" alt="Endofunctors on Hask" />
-<p>Given two categories <code>C</code> and <code>D</code>, you can construct the category of functors between <code>C</code> and <code>D</code>, written as <code>[C, D]</code>. Objects in this category are functors from <code>C</code> to <code>D</code>, and morphisms are natural transformations between those functors. Since <code>[C, D]</code> is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that'd be a type of kind <code>(k1 -&gt; k2) -&gt; k3</code>. I'll call such types <em>functor functors</em>.</p>
-<p>We're talking about record templates of kind <code>(* -&gt; *) -&gt; *</code>. This fits the pattern of a functor from the functor category, with <code>k1 ~ k2 ~ k3 ~ *</code>. So the functor category in question is the category of endofunctors on <strong>Hask</strong> (that is, members of the standard <code>Functor</code> class), and the destination category is <strong>Hask</strong>. So it's reasonable to expect record templates to be functorial in their argument:</p>
+<p>Given two categories <code>C</code> and <code>D</code>, you can construct the category of functors between <code>C</code> and <code>D</code>, written as <code>[C, D]</code>. Objects in this category are functors from <code>C</code> to <code>D</code>, and morphisms are natural transformations between those functors. Since <code>[C, D]</code> is a regular category, you can of course have functors mapping that category to other categories. So in Haskell that’d be a type of kind <code>(k1 -&gt; k2) -&gt; k3</code>. I’ll call such types <em>functor functors</em>.</p>
+<p>We’re talking about record templates of kind <code>(* -&gt; *) -&gt; *</code>. This fits the pattern of a functor from the functor category, with <code>k1 ~ k2 ~ k3 ~ *</code>. So the functor category in question is the category of endofunctors on <strong>Hask</strong> (that is, members of the standard <code>Functor</code> class), and the destination category is <strong>Hask</strong>. So it’s reasonable to expect record templates to be functorial in their argument:</p>
 <pre><code class="language-haskell">-- natural transformations between functors f and g
 type f ~&gt; g = forall x. f x -&gt; g x
 
@@ -126,7 +126,7 @@ ffmap id = id
 ffmap (eta . phi) = ffmap eta . ffmap phi
 </code></pre>
 <img src="../images/2017-12-15-functor-functors/ffunctor.jpg" alt="Functor functors" />
-<p><code>ffmap</code> encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor <code>f</code> into <code>g</code>, then you can map a record of <code>f</code>s to a record of <code>g</code>s by embedding each <code>f</code>. (This is also sometimes called &quot;hoisting&quot;.) For example, the boring <code>Identity</code> functor can be embedded into an arbitrary <code>Applicative</code> by injecting the contained value using <code>pure</code>. We can use this to turn a total record into a partial one:</p>
+<p><code>ffmap</code> encodes the notion of generalising the functor a template has been instantiated with. If you can embed the functor <code>f</code> into <code>g</code>, then you can map a record of <code>f</code>s to a record of <code>g</code>s by embedding each <code>f</code>. (This is also sometimes called “hoisting”.) For example, the boring <code>Identity</code> functor can be embedded into an arbitrary <code>Applicative</code> by injecting the contained value using <code>pure</code>. We can use this to turn a total record into a partial one:</p>
 <pre><code class="language-haskell">generalise :: Applicative f =&gt; Identity a -&gt; f a
 generalise (Identity x) = pure x
 
@@ -136,7 +136,7 @@ toPartial = ffmap generalise
 <h2 id="traversing-records"><a href="#traversing-records">Traversing Records
 
 </a></h2>
-<p>Now that we have a new dog, it's natural to ask which old tricks we can teach it. With the intuition that a template <code>t f</code> is like a container of <code>f</code>s, what does it mean to traverse such a container? <code>sequenceA :: Applicative f =&gt; t (f a) -&gt; f (t a)</code> takes a container of strategies to produce values and sequences them to get a strategy to produce a container of values. Replacing <em>value</em> with <em>functor</em> in the above sentence, it's clear that we need to decide on a notion of &quot;strategy to produce a functor&quot;. <a href="https://stackoverflow.com/questions/44187945/what-should-a-higher-order-traversable-class-look-like">With thanks to Li-yao Xia</a>, the simplest of such notions is a regular applicative functor <code>a</code> returning a functorial value <code>g x</code> - that is, <code>Compose a g</code>.</p>
+<p>Now that we have a new dog, it’s natural to ask which old tricks we can teach it. With the intuition that a template <code>t f</code> is like a container of <code>f</code>s, what does it mean to traverse such a container? <code>sequenceA :: Applicative f =&gt; t (f a) -&gt; f (t a)</code> takes a container of strategies to produce values and sequences them to get a strategy to produce a container of values. Replacing <em>value</em> with <em>functor</em> in the above sentence, it’s clear that we need to decide on a notion of “strategy to produce a functor”. <a href="https://stackoverflow.com/questions/44187945/what-should-a-higher-order-traversable-class-look-like">With thanks to Li-yao Xia</a>, the simplest of such notions is a regular applicative functor <code>a</code> returning a functorial value <code>g x</code> - that is, <code>Compose a g</code>.</p>
 <pre><code class="language-haskell">class FFunctor t =&gt; FTraversable t where
     ftraverse :: (Functor f, Functor g, Applicative a)
               =&gt; (f ~&gt; Compose a g) -&gt; t f -&gt; a (t g)
@@ -181,7 +181,7 @@ toRecord = ftraverse (Compose . fmap Identity)
 toForm :: DraftForm -&gt; Maybe Form
 toForm = toRecord
 </code></pre>
-<p>Here's another example: a generic program, defined by analogy to <code>Foldable</code>'s <code>foldMap</code>, to collapse the fields of a record into a monoidal value. Note that <code>f () -&gt; m</code> is isomorphic to, but simpler than, <code>forall x. f x -&gt; m</code>. Annoyingly, we have to give a type signature to <code>mkConst</code> to resolve the ambiguity over <code>g</code> in the call to <code>ftraverse</code>. I'm picking <code>Empty</code> as a way of demonstrating that I have nothing up my sleeves.</p>
+<p>Here’s another example: a generic program, defined by analogy to <code>Foldable</code>’s <code>foldMap</code>, to collapse the fields of a record into a monoidal value. Note that <code>f () -&gt; m</code> is isomorphic to, but simpler than, <code>forall x. f x -&gt; m</code>. Annoyingly, we have to give a type signature to <code>mkConst</code> to resolve the ambiguity over <code>g</code> in the call to <code>ftraverse</code>. I’m picking <code>Empty</code> as a way of demonstrating that I have nothing up my sleeves.</p>
 <pre><code class="language-haskell">data Empty a deriving Functor
 
 ffoldMap :: forall f t m. (Monoid m, Functor f, FTraversable t)
@@ -195,8 +195,8 @@ ffoldMap f = getConst . ftraverse mkConst
 <h2 id="zipping-templates"><a href="#zipping-templates">Zipping templates
 
 </a></h2>
-<p>Given a pair of records of the same shape <code>t</code>, we should be able to combine them point-wise, matching up the fields of each: <code>fzip :: t f -&gt; t g -&gt; t (Product f g)</code>. In <strong>Hask</strong>, &quot;combining point-wise&quot; is exactly what the &quot;reader&quot; applicative <code>(-&gt;) r</code> does, so any functor which enjoys an isomorphism to <code>(-&gt;) r</code> for some <code>r</code> has at least a zippy <code>Applicative</code> instance. Such functors are called <em>representable functors</em> and they are members of the class <a href="https://hackage.haskell.org/package/adjunctions-4.3/docs/Data-Functor-Rep.html#t:Representable"><code>Representable</code></a>.</p>
-<p>Of course, we're working with functors from the functor category, so the relevant notion of <code>Representable</code> will need a little adjustment. Instead of an isomorphism to a function <code>(-&gt;) r</code> we'll use an isomorphism to a natural transformation <code>(~&gt;) r</code>.</p>
+<p>Given a pair of records of the same shape <code>t</code>, we should be able to combine them point-wise, matching up the fields of each: <code>fzip :: t f -&gt; t g -&gt; t (Product f g)</code>. In <strong>Hask</strong>, “combining point-wise” is exactly what the “reader” applicative <code>(-&gt;) r</code> does, so any functor which enjoys an isomorphism to <code>(-&gt;) r</code> for some <code>r</code> has at least a zippy <code>Applicative</code> instance. Such functors are called <em>representable functors</em> and they are members of the class <a href="https://hackage.haskell.org/package/adjunctions-4.3/docs/Data-Functor-Rep.html#t:Representable"><code>Representable</code></a>.</p>
+<p>Of course, we’re working with functors from the functor category, so the relevant notion of <code>Representable</code> will need a little adjustment. Instead of an isomorphism to a function <code>(-&gt;) r</code> we’ll use an isomorphism to a natural transformation <code>(~&gt;) r</code>.</p>
 <pre><code class="language-haskell">class FFunctor t =&gt; FRepresentable t where
     type FRep t :: * -&gt; *
     ftabulate :: (FRep t ~&gt; f) -&gt; t f
@@ -261,10 +261,10 @@ instance (FRepresentable t, Monoid c) =&gt; Monoid (Wrap t (Const c)) where
 <h2 id="lenses"><a href="#lenses">Lenses
 
 </a></h2>
-<p>Rather than come up with a new notion of <code>Lens</code> formulated in terms of <code>FFunctor</code>, we can reuse the standard <code>Lens</code> type as long as we're careful about how polymorphic lenses should be. Specifically, a lens into a record template should express no opinion as to which functor the template should be instantiated with.</p>
+<p>Rather than come up with a new notion of <code>Lens</code> formulated in terms of <code>FFunctor</code>, we can reuse the standard <code>Lens</code> type as long as we’re careful about how polymorphic lenses should be. Specifically, a lens into a record template should express no opinion as to which functor the template should be instantiated with.</p>
 <pre><code class="language-haskell">newtype FLens t a = FLens (forall f. Lens' (t f) (f a))
 </code></pre>
-<p>We can store a template's lenses in an instance of the template itself!</p>
+<p>We can store a template’s lenses in an instance of the template itself!</p>
 <pre><code class="language-haskell">type Lenses t = t (FLens t)
 
 class HasLenses t where
@@ -282,8 +282,8 @@ instance HasLenses FormTemplate where
 <h2 id="compositional-validation"><a href="#compositional-validation">Compositional Validation
 
 </a></h2>
-<p>Now for an extended example: form validation. We'll be making use of all of the tools from above - zipping, traversing, and mapping - to design a typed API for validating individual fields of a form.</p>
-<p><code>Either</code> isn't a great choice for a validation monad, because <code>Either</code> aborts the computation at the first failure. You typically want to report all the errors in a form. Instead, we'll be working with the following type, which is isomorphic to <code>Either</code> but with an <code>Applicative</code> instance which returns <em>all</em> of the failures in a given computation, combining the values using a <code>Monoid</code>. So it's kind of a Frankensteinian mishmash of the <code>Either</code> and <code>Writer</code> applicatives.</p>
+<p>Now for an extended example: form validation. We’ll be making use of all of the tools from above - zipping, traversing, and mapping - to design a typed API for validating individual fields of a form.</p>
+<p><code>Either</code> isn’t a great choice for a validation monad, because <code>Either</code> aborts the computation at the first failure. You typically want to report all the errors in a form. Instead, we’ll be working with the following type, which is isomorphic to <code>Either</code> but with an <code>Applicative</code> instance which returns <em>all</em> of the failures in a given computation, combining the values using a <code>Monoid</code>. So it’s kind of a Frankensteinian mishmash of the <code>Either</code> and <code>Writer</code> applicatives.</p>
 <pre><code class="language-haskell">data Validation e a = Failure e | Success a deriving Functor
 
 instance Bifunctor Validation where
@@ -298,7 +298,7 @@ instance Monoid e =&gt; Applicative (Validation e) where
     _ &lt;*&gt; Failure e2 = Failure e2
 </code></pre>
 <p>This <code>Applicative</code> instance has no compatible <code>Monad</code> instance.</p>
-<p>We'll build a library for validation processes which examine a single field of a record at a time. A validation rule for a field typed <code>a</code> is a function which takes an <code>a</code> and returns a <code>Validation e a</code>.</p>
+<p>We’ll build a library for validation processes which examine a single field of a record at a time. A validation rule for a field typed <code>a</code> is a function which takes an <code>a</code> and returns a <code>Validation e a</code>.</p>
 <pre><code class="language-haskell">newtype Validator e a = Validator { runValidator :: a -&gt; Validation e a }
 
 -- a validator which always succeeds
@@ -323,7 +323,7 @@ emailValidator = hasAtSymbol &amp;&gt; hasTopLevelDomain
             else Failure [&quot;Invalid TLD&quot;]
         topLevelDomains = [&quot;.com&quot;, &quot;.org&quot;, &quot;.co.uk&quot;]  -- etc
 </code></pre>
-<p>The plan is to store these <code>Validator</code>s in a record template, zip them along an instance of the record itself, and then traverse the result to get either a validated record or a collection of errors. To make things interesting, we'll store the validation results for a given field in the matching field of another record.</p>
+<p>The plan is to store these <code>Validator</code>s in a record template, zip them along an instance of the record itself, and then traverse the result to get either a validated record or a collection of errors. To make things interesting, we’ll store the validation results for a given field in the matching field of another record.</p>
 <pre><code class="language-haskell">type Validators e t = t (Validator e)
 type Errors e t = t (Const e)
 
@@ -382,15 +382,15 @@ Failure (FormTemplate {
 <ul>
 <li>Monad transformers are often functorial in their <code>m</code> argument.
 </li>
-<li><code>Fix f</code> (a &quot;list of <code>f</code>s&quot;, if you will) is also a functor functor, where <code>ffmap</code>ping represents a change of variables.
+<li><code>Fix f</code> (a “list of <code>f</code>s”, if you will) is also a functor functor, where <code>ffmap</code>ping represents a change of variables.
 </li>
 <li>Since the <code>Const</code>, <code>Sum</code>, <code>Product</code> and <code>Compose</code> type combinators are poly-kinded, they can be reused as functor functors too.
 </li>
 <li>Add another primitive <code>FFunctor</code> to apply a functor to a type, <code>newtype At a f = At { getAt :: f a }</code>, and you have a kit to build polynomial functor functors with which you can build templates and write generic programs.
 </li>
 </ul>
-<p>One design decision I made when developing the <code>FFunctor</code> class was to give <code>ffmap</code> a <code>(Functor f, Functor g)</code> constraint, so you can only <code>ffmap</code> between types that are in fact functors. This is mathematically principled in some sense, but it has certain engineering tradeoffs compared to an unconstrained type for <code>ffmap</code>. It enables more instances of <code>FFunctor</code> - for example, you can only write <code>Fix</code>'s <code>ffmap</code> with a <code>Functor</code> constraint for either the input or output type parameters - but it rules out certain usages of <code>ffmap</code>. You can't <code>ffmap</code> over a template containing <code>Validator</code>s, for example, because <code>Validator</code> is not a <code>Functor</code>. I <em>didn't</em> put the same <code>Functor</code> constraints into <code>FRepresentable</code>'s methods. An <code>FRep</code> type typically won't be functorial - it'll be GADT-like - so adding a <code>Functor (FRep t)</code> constraint would be far too restrictive.</p>
-<p>You'll notice that the concept of an applicative functor functor is conspicuously absent from my presentation above. <code>FApplicative</code> would probably look something like this:</p>
+<p>One design decision I made when developing the <code>FFunctor</code> class was to give <code>ffmap</code> a <code>(Functor f, Functor g)</code> constraint, so you can only <code>ffmap</code> between types that are in fact functors. This is mathematically principled in some sense, but it has certain engineering tradeoffs compared to an unconstrained type for <code>ffmap</code>. It enables more instances of <code>FFunctor</code> - for example, you can only write <code>Fix</code>’s <code>ffmap</code> with a <code>Functor</code> constraint for either the input or output type parameters - but it rules out certain usages of <code>ffmap</code>. You can’t <code>ffmap</code> over a template containing <code>Validator</code>s, for example, because <code>Validator</code> is not a <code>Functor</code>. I <em>didn’t</em> put the same <code>Functor</code> constraints into <code>FRepresentable</code>’s methods. An <code>FRep</code> type typically won’t be functorial - it’ll be GADT-like - so adding a <code>Functor (FRep t)</code> constraint would be far too restrictive.</p>
+<p>You’ll notice that the concept of an applicative functor functor is conspicuously absent from my presentation above. <code>FApplicative</code> would probably look something like this:</p>
 <pre><code class="language-haskell">newtype (f :-&gt; g) a = Morph { getMorph :: f a -&gt; g a }
 
 class FFunctor t =&gt; FApplicative t where
@@ -420,9 +420,9 @@ instance FApplicative FormTemplate where
             (f4 cardExpiry)
 </code></pre>
 <p><code>FApplicative</code> is a more general interface than <code>FRepresentable</code>, in that it supports notions of composition other than zipping. However, that bookkeeping <code>:-&gt;</code> <code>newtype</code> wrapper is inconvenient. With the normal <code>Applicative</code> class you can map an <em>n</em>-ary function over <em>n</em> applicative values directly: <code>f &lt;$&gt; x &lt;*&gt; y &lt;*&gt; z</code>. With <code>FApplicative</code> you have to apply the <code>Morph</code> constructor as many times as <code>f</code> has arguments: <code>fpure (Morph $ \x -&gt; Morph $ \y -&gt; Morph $ \z -&gt; f x y z) `fap` t `fap` u `fap` v</code>, which becomes very unwieldy very quickly. (<a href="https://www.reddit.com/r/haskell/comments/78xxql/structures_of_arrays_functors_and_continuations/doy80ft/">/u/rampion has come up with nicer syntax for this</a>, but it involves <a href="https://gist.github.com/rampion/20291bde6c8568c11f9cc5923d9639eb#file-ffunctor-hs-L28">a more complicated formulation of <code>FApplicative</code></a>.) On the other hand, <code>FApplicative</code> does open up some interesting options for the design of <code>FTraversable</code>: one can traverse in an <code>FApplicative</code> rather than an <code>Applicative</code>. This gives some nice type signatures - <code>fsequence :: (FTraversable t, FApplicative f) =&gt; t f -&gt; f t</code> - and is strictly more general than the <code>FTraversable</code> I gave above, since any <code>Applicative</code> can be lifted into an <code>FApplicative</code> by composition (<code>newtype ComposeAt a f g = ComposeAt { getComposeAt :: f (g a) }</code>).</p>
-<p>How useful are these tools in practice? Would I structure a production application around functor functors? Probably not. It's a question of balance - while it's useful to recognise functorial structures in categories other than <strong>Hask</strong> as a thinking tool, actually representing such abstractions in code doesn't always pay off. Haskell already has a rich ecosystem of tools for working with the <code>Functor</code> family, but there's much less code in the wild that's structured around functor functors. This is partly because <code>Functor</code> has the advantage of being a standard class in <code>base</code>, but it's also because code built around functor functors is a little less convenient to work with, typically requiring some tedious <code>newtype</code> bookkeeping.</p>
-<p>Over the course of putting together this article I came across some work by others on this very topic. I've spotted versions of these classes being packaged with bigger libraries such as <a href="http://hackage.haskell.org/package/hedgehog-0.5.1/docs/Hedgehog-Internal-HTraversable.html"><code>hedgehog</code></a> and <a href="https://hackage.haskell.org/package/quickcheck-state-machine-0.2.0/docs/Test-StateMachine-Types-HFunctor.html"><code>quickcheck-state-machine</code></a>. There are also a few packages providing similar tools. The most mature of these seems to be <a href="http://hackage.haskell.org/package/rank2classes"><code>rank2classes</code></a>, which includes some Template Haskell tools for deriving instances; there's also <a href="http://hackage.haskell.org/package/conkin">the Conkin package</a>, which has <a href="https://github.com/rampion/conkin/blob/master/README.md">a well-written tutorial</a> focusing on working with data in column-major order.</p>
-<p>Haskell's full of big ideas and powerful programming idioms. In this post we saw an example of reinterpreting some familiar tools - <code>Functor</code>, <code>Traversable</code> and <code>Representable</code> - in a new context. With the intuition that a record template is a container of functors, and the formalism of functors from the functor category, we were able to reuse intuitions about those familiar tools to write terse and generic programs.</p>
+<p>How useful are these tools in practice? Would I structure a production application around functor functors? Probably not. It’s a question of balance - while it’s useful to recognise functorial structures in categories other than <strong>Hask</strong> as a thinking tool, actually representing such abstractions in code doesn’t always pay off. Haskell already has a rich ecosystem of tools for working with the <code>Functor</code> family, but there’s much less code in the wild that’s structured around functor functors. This is partly because <code>Functor</code> has the advantage of being a standard class in <code>base</code>, but it’s also because code built around functor functors is a little less convenient to work with, typically requiring some tedious <code>newtype</code> bookkeeping.</p>
+<p>Over the course of putting together this article I came across some work by others on this very topic. I’ve spotted versions of these classes being packaged with bigger libraries such as <a href="http://hackage.haskell.org/package/hedgehog-0.5.1/docs/Hedgehog-Internal-HTraversable.html"><code>hedgehog</code></a> and <a href="https://hackage.haskell.org/package/quickcheck-state-machine-0.2.0/docs/Test-StateMachine-Types-HFunctor.html"><code>quickcheck-state-machine</code></a>. There are also a few packages providing similar tools. The most mature of these seems to be <a href="http://hackage.haskell.org/package/rank2classes"><code>rank2classes</code></a>, which includes some Template Haskell tools for deriving instances; there’s also <a href="http://hackage.haskell.org/package/conkin">the Conkin package</a>, which has <a href="https://github.com/rampion/conkin/blob/master/README.md">a well-written tutorial</a> focusing on working with data in column-major order.</p>
+<p>Haskell’s full of big ideas and powerful programming idioms. In this post we saw an example of reinterpreting some familiar tools - <code>Functor</code>, <code>Traversable</code> and <code>Representable</code> - in a new context. With the intuition that a record template is a container of functors, and the formalism of functors from the functor category, we were able to reuse intuitions about those familiar tools to write terse and generic programs.</p>
 
 
         </article>

@@ -50,7 +50,7 @@
 <p><em>I got married yesterday! This post is about my C# generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Have a read of <a href="../posts/2017-11-13-recursion-without-recursion.html">my earlier post</a> for an introduction.</em></p>
 </blockquote>
 <h2 id="how-things-were"><a href="#how-things-were">How things were</a></h2>
-<p>I recently made a substantial change to Sawmill's core <code>IRewritable</code> interface. Here's what it used to look like:</p>
+<p>I recently made a substantial change to Sawmill’s core <code>IRewritable</code> interface. Here’s what it used to look like:</p>
 <pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
 {
     Children&lt;T&gt; GetChildren();
@@ -58,7 +58,7 @@
     T RewriteChildren(Func&lt;T, T&gt; transformer);
 }
 </code></pre>
-<p>It's a pleasingly simple interface with two core operations — <code>GetChildren</code> returns the current object's immediate children and <code>SetChildren</code> replaces them. But there are also some warts.</p>
+<p>It’s a pleasingly simple interface with two core operations — <code>GetChildren</code> returns the current object’s immediate children and <code>SetChildren</code> replaces them. But there are also some warts.</p>
 <h3 id="wart-1-childrent"><a href="#wart-1-childrent">Wart 1: <code>Children&lt;T&gt;</code></a></h3>
 <p><code>Children&lt;T&gt;</code> is a custom struct, not a standard collection type:</p>
 <pre><code class="language-csharp">struct Children&lt;T&gt;
@@ -73,10 +73,10 @@ enum NumberOfChildren
     None, One, Two, Many
 }
 </code></pre>
-<p>I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So <code>GetChildren</code> returns a <code>Children&lt;T&gt;</code>, passing up to two children on the stack and the rest in an <code>ImmutableList</code>. The <code>NumberOfChildren</code> property tells the library how many of the struct's fields are filled in.</p>
-<p>This custom collection type is an extra hurdle to understanding <code>IRewritable</code>'s API. It also makes certain parts of Sawmill's implementation more complex — many internal methods have to <code>switch</code> on the <code>NumberOfChildren</code> they're working with and do the same work in four different ways. It's also relatively large for a <code>struct</code> (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.</p>
+<p>I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So <code>GetChildren</code> returns a <code>Children&lt;T&gt;</code>, passing up to two children on the stack and the rest in an <code>ImmutableList</code>. The <code>NumberOfChildren</code> property tells the library how many of the struct’s fields are filled in.</p>
+<p>This custom collection type is an extra hurdle to understanding <code>IRewritable</code>’s API. It also makes certain parts of Sawmill’s implementation more complex — many internal methods have to <code>switch</code> on the <code>NumberOfChildren</code> they’re working with and do the same work in four different ways. It’s also relatively large for a <code>struct</code> (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.</p>
 <h3 id="wart-2-collections"><a href="#wart-2-collections">Wart 2: Collections</a></h3>
-<p>In fact, having <code>GetChildren</code> return a collection at all is problematic, because it forces implementations to allocate memory. If your object has three or more children (and they're not already stored in an <code>ImmutableList</code>) then you have to create a new <code>ImmutableList</code> whenever <code>GetChildren</code> is called:</p>
+<p>In fact, having <code>GetChildren</code> return a collection at all is problematic, because it forces implementations to allocate memory. If your object has three or more children (and they’re not already stored in an <code>ImmutableList</code>) then you have to create a new <code>ImmutableList</code> whenever <code>GetChildren</code> is called:</p>
 <pre><code class="language-csharp">class ThreeChildren : IRewritable&lt;ThreeChildren&gt;
 {
     private readonly ThreeChildren _child1;
@@ -96,7 +96,7 @@ enum NumberOfChildren
         );
 }
 </code></pre>
-<p>When Sawmill traverses a tree it typically calls <code>GetChildren()</code> for every node in the tree. That's a lot of throwaway <code>ImmutableList</code>s!</p>
+<p>When Sawmill traverses a tree it typically calls <code>GetChildren()</code> for every node in the tree. That’s a lot of throwaway <code>ImmutableList</code>s!</p>
 <p>One way to avoid creating all this garbage might be to redesign <code>IRewritable</code> to be buffer-oriented.</p>
 <pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
 {
@@ -115,10 +115,10 @@ enum NumberOfChildren
     public Bad SetChildren(Bad[] newChildren) =&gt; new Bad(newChildren);  // BUG
 }
 </code></pre>
-<p>This is not a &quot;pit of success&quot; API — <code>SetChildren</code> looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each <code>GetChildren</code>/<code>SetChildren</code> call in order to be safe. So this design would end up allocating just as much as the <code>ImmutableList</code> version.</p>
-<p>(Keep the buffer idea in your head, though, because we'll be coming back to it in a minute.)</p>
+<p>This is not a “pit of success” API — <code>SetChildren</code> looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each <code>GetChildren</code>/<code>SetChildren</code> call in order to be safe. So this design would end up allocating just as much as the <code>ImmutableList</code> version.</p>
+<p>(Keep the buffer idea in your head, though, because we’ll be coming back to it in a minute.)</p>
 <h3 id="wart-3-rewritechildren"><a href="#wart-3-rewritechildren">Wart 3: <code>RewriteChildren</code></a></h3>
-<p><code>RewriteChildren</code>, which applies a transformation function to the object's immediate children (in other words, a one-level <code>Rewrite</code>), has a sensible implementation in terms of the other two methods: get the children, transform them, and put them back.</p>
+<p><code>RewriteChildren</code>, which applies a transformation function to the object’s immediate children (in other words, a one-level <code>Rewrite</code>), has a sensible implementation in terms of the other two methods: get the children, transform them, and put them back.</p>
 <pre><code class="language-csharp">public static T DefaultRewriteChildren&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
     where T : IRewritable&lt;T&gt;
 {
@@ -127,8 +127,8 @@ enum NumberOfChildren
     return value.SetChildren(newChildren);
 }
 </code></pre>
-<p>(<a href="https://github.com/benjamin-hodgson/Sawmill/blob/87aea1e5757360b99457c8e2e6a7993fc2176f23/Sawmill/Rewriter.DefaultRewriteChildren.cs">The real <code>DefaultRewriteChildren</code></a> was a bit more complex than this, because it tried to avoid calling <code>SetChildren</code> if <code>transformer</code> didn't actually change anything.)</p>
-<p>In fact, I expect that most <code>IRewritable</code>s would just delegate <code>RewriteChildren</code> to <code>DefaultRewriteChildren</code>. So why did I put <code>RewriteChildren</code> on the interface? It's because of Wart 2 — <code>GetChildren</code> can be expensive because it might have to create an <code>ImmutableList</code>. (And applying <code>transformer</code> to that <code>ImmutableList</code> using eg <a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.immutable.immutablelist-1.convertall?view=netcore-3.0"><code>ConvertAll</code></a> would have to create another one.) So <code>DefaultRewriteChildren</code> is slow; the idea of <code>RewriteChildren</code> was for objects to transform their children directly, without going via an <code>ImmutableList</code>.</p>
+<p>(<a href="https://github.com/benjamin-hodgson/Sawmill/blob/87aea1e5757360b99457c8e2e6a7993fc2176f23/Sawmill/Rewriter.DefaultRewriteChildren.cs">The real <code>DefaultRewriteChildren</code></a> was a bit more complex than this, because it tried to avoid calling <code>SetChildren</code> if <code>transformer</code> didn’t actually change anything.)</p>
+<p>In fact, I expect that most <code>IRewritable</code>s would just delegate <code>RewriteChildren</code> to <code>DefaultRewriteChildren</code>. So why did I put <code>RewriteChildren</code> on the interface? It’s because of Wart 2 — <code>GetChildren</code> can be expensive because it might have to create an <code>ImmutableList</code>. (And applying <code>transformer</code> to that <code>ImmutableList</code> using eg <a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.immutable.immutablelist-1.convertall?view=netcore-3.0"><code>ConvertAll</code></a> would have to create another one.) So <code>DefaultRewriteChildren</code> is slow; the idea of <code>RewriteChildren</code> was for objects to transform their children directly, without going via an <code>ImmutableList</code>.</p>
 <pre><code class="language-csharp">class ThreeChildren : IRewritable&lt;ThreeChildren&gt;
 {
     // ...
@@ -136,9 +136,9 @@ enum NumberOfChildren
         =&gt; new ThreeChildren(f(_child1), f(_child2), f(_child3));  // no ImmutableList
 }
 </code></pre>
-<p>The extra method makes <code>IRewritable</code> harder to understand and harder to implement. Implementing <code>RewriteChildren</code> (without using <code>DefaultRewriteChildren</code>) can be tricky; if the transformer function doesn't change anything you should avoid recreating the object.</p>
+<p>The extra method makes <code>IRewritable</code> harder to understand and harder to implement. Implementing <code>RewriteChildren</code> (without using <code>DefaultRewriteChildren</code>) can be tricky; if the transformer function doesn’t change anything you should avoid recreating the object.</p>
 <h2 id="the-new-way"><a href="#the-new-way">The new way</a></h2>
-<p>I'm pleased to say that <code>IRewritable</code>'s new design addresses all three of these warts. Remember the &quot;buffer&quot; idea from earlier?</p>
+<p>I’m pleased to say that <code>IRewritable</code>’s new design addresses all three of these warts. Remember the “buffer” idea from earlier?</p>
 <pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
 {
     int CountChildren();
@@ -146,18 +146,18 @@ enum NumberOfChildren
     T SetChildren(ReadOnlySpan&lt;T&gt; newChildren);
 }
 </code></pre>
-<p>This design is almost identical to the one I outlined earlier — it uses <a href="https://docs.microsoft.com/en-us/dotnet/api/system.span-1?view=netcore-3.0"><code>Span</code></a>s instead of arrays. (For the uninitiated, a <code>Span</code> is basically a &quot;slice&quot; of an array. It can also be backed by <em>unmanaged</em> memory, though, making it more flexible than <code>ArraySegment</code>.)</p>
+<p>This design is almost identical to the one I outlined earlier — it uses <a href="https://docs.microsoft.com/en-us/dotnet/api/system.span-1?view=netcore-3.0"><code>Span</code></a>s instead of arrays. (For the uninitiated, a <code>Span</code> is basically a “slice” of an array. It can also be backed by <em>unmanaged</em> memory, though, making it more flexible than <code>ArraySegment</code>.)</p>
 <ul>
 <li><code>CountChildren</code> tells Sawmill how much space is needed to copy the children.
 </li>
-<li><code>GetChildren</code> copies the current object's immediate children into <code>buffer</code>.
+<li><code>GetChildren</code> copies the current object’s immediate children into <code>buffer</code>.
 </li>
 <li><code>SetChildren</code> creates a copy of the current object with its immediate children replaced.
 </li>
 </ul>
-<p>Here's the important difference. Unlike an array, a <code>Span</code> <em>can't be stored on the heap</em>. <code>Span</code> is defined using <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref?view=netcore-3.0#ref-struct-types">the <code>ref</code> keyword</a>, which tells the compiler to check that <code>Span</code>s are confined to the stack. If you pass a <code>Span</code> into a method as an argument, you can be confident that the <code>Span</code> won't leave the scope of that method's stack frame (just like <code>ref</code>).</p>
-<p>So <code>Span</code> thoroughly solves the safety issue with the array-oriented API. I don't have to worry about mutating a <code>Span</code> which got stored inside a client object, because the <code>Span</code> can't be stored! This allows Sawmill to safely reuse the memory behind a <code>Span</code>, rather than allocating a new array for each <code>GetChildren</code>/<code>SetChildren</code> call.</p>
-<p>So Sawmill's methods like <code>RewriteChildren</code> can be implemented without allocating memory. In this example I'm using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1?view=netcore-3.0"><code>ArrayPool</code></a> to avoid creating a new array for every <code>RewriteChildren</code> call.</p>
+<p>Here’s the important difference. Unlike an array, a <code>Span</code> <em>can’t be stored on the heap</em>. <code>Span</code> is defined using <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref?view=netcore-3.0#ref-struct-types">the <code>ref</code> keyword</a>, which tells the compiler to check that <code>Span</code>s are confined to the stack. If you pass a <code>Span</code> into a method as an argument, you can be confident that the <code>Span</code> won’t leave the scope of that method’s stack frame (just like <code>ref</code>).</p>
+<p>So <code>Span</code> thoroughly solves the safety issue with the array-oriented API. I don’t have to worry about mutating a <code>Span</code> which got stored inside a client object, because the <code>Span</code> can’t be stored! This allows Sawmill to safely reuse the memory behind a <code>Span</code>, rather than allocating a new array for each <code>GetChildren</code>/<code>SetChildren</code> call.</p>
+<p>So Sawmill’s methods like <code>RewriteChildren</code> can be implemented without allocating memory. In this example I’m using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1?view=netcore-3.0"><code>ArrayPool</code></a> to avoid creating a new array for every <code>RewriteChildren</code> call.</p>
 <pre><code class="language-csharp">public static T RewriteChildren&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
     where T : IRewritable&lt;T&gt;
 {
@@ -178,13 +178,13 @@ enum NumberOfChildren
     return result;
 }
 </code></pre>
-<p>The main reason for having <code>RewriteChildren</code> be a method on the interface was to avoid allocating memory (for the <code>GetChildren</code> calls). So we don't need it on the interface any more — this extension method serves as a single universal implementation. Likewise, <code>Children&lt;T&gt;</code>'s purpose was also to avoid allocating memory, so we can do away with it too.</p>
+<p>The main reason for having <code>RewriteChildren</code> be a method on the interface was to avoid allocating memory (for the <code>GetChildren</code> calls). So we don’t need it on the interface any more — this extension method serves as a single universal implementation. Likewise, <code>Children&lt;T&gt;</code>’s purpose was also to avoid allocating memory, so we can do away with it too.</p>
 <h2 id="relieving-arraypool-pressure"><a href="#relieving-arraypool-pressure">Relieving <code>ArrayPool</code> pressure</a></h2>
-<p>There's one operational problem with this implementation: it can end up renting a large number of arrays from the pool. <code>Rewrite</code>, which applies a transformation function to every node in a tree (not just one layer), is implemented something like this:</p>
+<p>There’s one operational problem with this implementation: it can end up renting a large number of arrays from the pool. <code>Rewrite</code>, which applies a transformation function to every node in a tree (not just one layer), is implemented something like this:</p>
 <pre><code class="language-csharp">public static T Rewrite(this T value, Func&lt;T, T&gt; transformer) where T : IRewritable&lt;T&gt;
     =&gt; transformer(t.RewriteChildren(child =&gt; child.Rewrite(transformer)));
 </code></pre>
-<p>The lambda which is passed to <code>RewriteChildren</code> contains a recursive call to <code>Rewrite</code>. Let's think through the operational behaviour of <code>Rewrite</code>:</p>
+<p>The lambda which is passed to <code>RewriteChildren</code> contains a recursive call to <code>Rewrite</code>. Let’s think through the operational behaviour of <code>Rewrite</code>:</p>
 <ol>
 <li><code>Rewrite</code> calls <code>RewriteChildren</code>
 </li>
@@ -201,7 +201,7 @@ enum NumberOfChildren
 </ol>
 <p>Since steps 1-3 are repeated before step 5 happens, you can end up renting many arrays (a number equal to the height of the tree) before returning any of them to the pool. So the array pool could run out of arrays!</p>
 <p>To fix this problem, we want to rent a small number of large arrays from the array pool, rather than a large number of small ones. We can lean on the fact that each array only lives as long as a single method — the array is <code>Rent</code>ed at the start of <code>RewriteChildren</code> and then <code>Return</code>ed at the end. The memory usage is stack-shaped.</p>
-<p>So here's the plan. We're going to rent a large array from the pool at <code>Rewrite</code>'s beginning, and <code>RewriteChildren</code> will take a chunk from that array each time it's called. Each chunk will be freed up before any previously-allocated chunks are freed.</p>
+<p>So here’s the plan. We’re going to rent a large array from the pool at <code>Rewrite</code>’s beginning, and <code>RewriteChildren</code> will take a chunk from that array each time it’s called. Each chunk will be freed up before any previously-allocated chunks are freed.</p>
 <pre><code class="language-csharp">public static T Rewrite&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
     where T : IRewritable&lt;T&gt;
 {
@@ -269,11 +269,11 @@ private static T RewriteChildrenInternal&lt;T&gt;(
     }
 }
 </code></pre>
-<p>I've glossed over an important part of <code>ChunkStack</code>'s implementation: what happens when the array fills up? The <a href="https://github.com/benjamin-hodgson/Sawmill/blob/bf652359023a76d3ea395d7d743db1a8d6559ec2/Sawmill/ChunkStack.cs">real implementation</a> manages a collection of &quot;regions&quot;, taking a new region from the array pool when existing regions fill up.</p>
-<p>In the pathological case of a <em>very</em> large tree, this version of <code>Rewrite</code> can still exhaust the array pool, but it'll happen much less quickly.</p>
+<p>I’ve glossed over an important part of <code>ChunkStack</code>’s implementation: what happens when the array fills up? The <a href="https://github.com/benjamin-hodgson/Sawmill/blob/bf652359023a76d3ea395d7d743db1a8d6559ec2/Sawmill/ChunkStack.cs">real implementation</a> manages a collection of “regions”, taking a new region from the array pool when existing regions fill up.</p>
+<p>In the pathological case of a <em>very</em> large tree, this version of <code>Rewrite</code> can still exhaust the array pool, but it’ll happen much less quickly.</p>
 <h2 id="hackalloc"><a href="#hackalloc"></a></h2>
-<p>I mentioned earlier that a <code>Span</code> is not necessarily backed by an array. <code>Span</code> represents <em>a contiguous block of memory</em>, with no assumptions about where that memory is or how it's managed. A <code>Span</code> could be a slice of an array, or it could be a chunk of unmanaged memory, or it could be an area of the stack. Under the hood it's <em>just a pointer</em>; <code>Span</code> doesn't care exactly where the pointer points.</p>
-<p>In fact, C# has built in support for that last case. The <code>stackalloc</code> keyword works like C's <code>alloca</code>: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, <code>stackalloc</code> was only available in an <code>unsafe</code> context, but today it's available in safe code thanks to <code>Span</code>.</p>
+<p>I mentioned earlier that a <code>Span</code> is not necessarily backed by an array. <code>Span</code> represents <em>a contiguous block of memory</em>, with no assumptions about where that memory is or how it’s managed. A <code>Span</code> could be a slice of an array, or it could be a chunk of unmanaged memory, or it could be an area of the stack. Under the hood it’s <em>just a pointer</em>; <code>Span</code> doesn’t care exactly where the pointer points.</p>
+<p>In fact, C# has built in support for that last case. The <code>stackalloc</code> keyword works like C’s <code>alloca</code>: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, <code>stackalloc</code> was only available in an <code>unsafe</code> context, but today it’s available in safe code thanks to <code>Span</code>.</p>
 <pre><code class="language-csharp">public void StackallocExample()
 {
     // allocate space for three ints in the current stack frame
@@ -284,8 +284,8 @@ private static T RewriteChildrenInternal&lt;T&gt;(
     Console.WriteLine(myInts[2]);  // prints 579
 }
 </code></pre>
-<p>I want to use <code>stackalloc</code> to avoid taking memory from the <code>ChunkStack</code> when an object has a small number (say, 4) of children. This is fairly common in practice. Stack memory tends to be marginally faster than heap memory because it's more likely to be in the processor cache, so this may have a modest performance benefit as well as relieving pressure on the array pool. If there are more than 4 children we can just fall back on the <code>ChunkStack</code>.</p>
-<p>Here's the new <code>RewriteChildrenInternal</code>:</p>
+<p>I want to use <code>stackalloc</code> to avoid taking memory from the <code>ChunkStack</code> when an object has a small number (say, 4) of children. This is fairly common in practice. Stack memory tends to be marginally faster than heap memory because it’s more likely to be in the processor cache, so this may have a modest performance benefit as well as relieving pressure on the array pool. If there are more than 4 children we can just fall back on the <code>ChunkStack</code>.</p>
+<p>Here’s the new <code>RewriteChildrenInternal</code>:</p>
 <pre><code class="language-csharp">private static T RewriteChildrenInternal&lt;T&gt;(
     this T value,
     Func&lt;T, T&gt; transformer,
@@ -316,9 +316,9 @@ private static T RewriteChildrenInternal&lt;T&gt;(
     return result;
 }
 </code></pre>
-<p>Sadly this doesn't work. The compiler complains about the <code>stackalloc T</code> line: &quot;Cannot take the address of, get the size of, or declare a pointer to a managed type ('T')&quot;. Basically, the CLR doesn't support <code>stackalloc</code> with reference types — you can only use <code>stackalloc</code> with primitives or structs containing primitives. (A type parameter <code>T</code> <em>might</em> be a reference type, so you still can't use it with <code>stackalloc</code>.) Under the hood, <code>stackalloc</code> is untyped; the garbage collector doesn't know how to follow pointers that are stored in <code>stackalloc</code>ed memory because it doesn't even know there are pointers there.</p>
-<p>I still think the idea's a good one, though. Can we unsafely hack it up?</p>
-<p>I'm going to use the following <code>struct</code> as a &quot;poor man's <code>stackalloc[4]</code>&quot;:</p>
+<p>Sadly this doesn’t work. The compiler complains about the <code>stackalloc T</code> line: “Cannot take the address of, get the size of, or declare a pointer to a managed type (‘T’)”. Basically, the CLR doesn’t support <code>stackalloc</code> with reference types — you can only use <code>stackalloc</code> with primitives or structs containing primitives. (A type parameter <code>T</code> <em>might</em> be a reference type, so you still can’t use it with <code>stackalloc</code>.) Under the hood, <code>stackalloc</code> is untyped; the garbage collector doesn’t know how to follow pointers that are stored in <code>stackalloc</code>ed memory because it doesn’t even know there are pointers there.</p>
+<p>I still think the idea’s a good one, though. Can we unsafely hack it up?</p>
+<p>I’m going to use the following <code>struct</code> as a “poor man’s <code>stackalloc[4]</code>”:</p>
 <pre><code class="language-csharp">struct Four&lt;T&gt;
 {
     public T First;
@@ -327,7 +327,7 @@ private static T RewriteChildrenInternal&lt;T&gt;(
     public T Fourth;
 }
 </code></pre>
-<p>A variable of type <code>Four&lt;T&gt;</code> has enough room for four <code>T</code>s — so when the variable is a local variable (in an ordinary method) it's functionally equivalent to a <code>stackalloc T[4]</code>. We won't be using the <code>First</code>, <code>Second</code>, <code>Third</code> and <code>Fourth</code> properties directly — we'll be (unsafely) addressing them relative to the start of the struct. In this example I'm using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.0"><code>System.Runtime.CompilerServices.Unsafe</code></a> to address <code>Third</code> by looking 2 elements beyond <code>First</code>:</p>
+<p>A variable of type <code>Four&lt;T&gt;</code> has enough room for four <code>T</code>s — so when the variable is a local variable (in an ordinary method) it’s functionally equivalent to a <code>stackalloc T[4]</code>. We won’t be using the <code>First</code>, <code>Second</code>, <code>Third</code> and <code>Fourth</code> properties directly — we’ll be (unsafely) addressing them relative to the start of the struct. In this example I’m using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.0"><code>System.Runtime.CompilerServices.Unsafe</code></a> to address <code>Third</code> by looking 2 elements beyond <code>First</code>:</p>
 <pre><code class="language-csharp">var four = new Four&lt;T&gt;();
 ref T third = ref Unsafe.Add(ref four.First, 2);
 Assert.True(Unsafe.AreSame(ref four.Third, ref third));
@@ -340,7 +340,7 @@ Assert.True(Unsafe.AreSame(ref four.Third, ref third));
     var span = new Span&lt;T&gt;(ptr, 4);
 }
 </code></pre>
-<p>Sadly the <code>Span</code> constructor throws an exception when <code>T</code> is a reference type. At this point I went for a poke around in the .NET source code. I wanted to know how <code>array.AsSpan()</code> works. I found <a href="https://github.com/dotnet/corefx/blob/7e9a177824cbefaee8985a9b517ebb0ea2e17a81/src/Common/src/CoreLib/System/Span.Fast.cs#L123">an internal constructor</a> which takes a <code>ref T</code>. We can illictly call that constructor using reflection, although of course we want to avoid the performance costs of reflection. So the actual plan is to use runtime code generation to call the internal <code>Span</code> constructor. Ordinarily I'd use <code>Expression</code> to do this runtime code generation, but <code>Expression</code> doesn't support <code>ref</code> parameters, so we have to write the IL by hand.</p>
+<p>Sadly the <code>Span</code> constructor throws an exception when <code>T</code> is a reference type. At this point I went for a poke around in the .NET source code. I wanted to know how <code>array.AsSpan()</code> works. I found <a href="https://github.com/dotnet/corefx/blob/7e9a177824cbefaee8985a9b517ebb0ea2e17a81/src/Common/src/CoreLib/System/Span.Fast.cs#L123">an internal constructor</a> which takes a <code>ref T</code>. We can illictly call that constructor using reflection, although of course we want to avoid the performance costs of reflection. So the actual plan is to use runtime code generation to call the internal <code>Span</code> constructor. Ordinarily I’d use <code>Expression</code> to do this runtime code generation, but <code>Expression</code> doesn’t support <code>ref</code> parameters, so we have to write the IL by hand.</p>
 <pre><code class="language-csharp">private static class SpanFactory&lt;T&gt;
 {
     private delegate Span&lt;T&gt; SpanCtor(ref T value, int length);
@@ -377,11 +377,11 @@ Assert.True(Unsafe.AreSame(ref four.Third, ref third));
 </code></pre>
 <p>Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.</p>
 <blockquote>
-<p><strong>Update</strong>: On .NET Core, there is an officially-supported API to do this: <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=netcore-3.0"><code>MemoryMarshal.CreateSpan</code></a>. I didn't know it existed at the time that I wrote this.</p>
+<p><strong>Update</strong>: On .NET Core, there is an officially-supported API to do this: <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=netcore-3.0"><code>MemoryMarshal.CreateSpan</code></a>. I didn’t know it existed at the time that I wrote this.</p>
 </blockquote>
-<p>There are also risks associated with mixing pointers and references like this. You have to be very careful that the <code>Span</code> doesn't live longer than the <code>Four</code> it points to. That means the <code>Four</code> has to be discarded at the end of the method along with the <code>Span</code>, and it has to be stored in a &quot;real&quot; local variable, not in temporary storage on the evaluation stack. I'll address that by mentioning the variable (as a parameter to a non-inlined &quot;keep-alive&quot; method) at the end of the method.</p>
+<p>There are also risks associated with mixing pointers and references like this. You have to be very careful that the <code>Span</code> doesn’t live longer than the <code>Four</code> it points to. That means the <code>Four</code> has to be discarded at the end of the method along with the <code>Span</code>, and it has to be stored in a “real” local variable, not in temporary storage on the evaluation stack. I’ll address that by mentioning the variable (as a parameter to a non-inlined “keep-alive” method) at the end of the method.</p>
 <p>You also need to be certain that the <code>Four</code> is stored on the stack and not the heap. Data stored on the heap is liable to get moved by the garbage collector, which would invalidate the pointer inside the <code>Span</code>. Beware that local variables are not always safe from being moved! Methods containing <code>await</code>s, <code>yield</code>s, and lambdas are liable to store their local variables on the heap, so if <code>RewriteChildrenInternal</code> were not an ordinary method this hack would not be safe.</p>
-<p>Here's the final implementation of <code>RewriteChildrenInternal</code>. <code>var four = new Four&lt;T&gt;();</code> allocates space for four <code>T</code>s in <code>RewriteChildrenInternal</code>'s stack frame. Then, when I call <code>GetSpan</code>, I'm passing in the address of the start of that <code>Four</code> using the <code>ref</code> keyword. <code>GetSpan</code> returns a <code>Span</code> which either points at the start of <code>four</code> or at a chunk taken from the <code>ChunkStack</code>, depending on how many children we need to store. <code>ReleaseSpan</code> returns the <code>Span</code> to the <code>ChunkStack</code> if it came from there, and the <code>KeepAlive</code> call ensures the <code>four</code> isn't deallocated too early.</p>
+<p>Here’s the final implementation of <code>RewriteChildrenInternal</code>. <code>var four = new Four&lt;T&gt;();</code> allocates space for four <code>T</code>s in <code>RewriteChildrenInternal</code>’s stack frame. Then, when I call <code>GetSpan</code>, I’m passing in the address of the start of that <code>Four</code> using the <code>ref</code> keyword. <code>GetSpan</code> returns a <code>Span</code> which either points at the start of <code>four</code> or at a chunk taken from the <code>ChunkStack</code>, depending on how many children we need to store. <code>ReleaseSpan</code> returns the <code>Span</code> to the <code>ChunkStack</code> if it came from there, and the <code>KeepAlive</code> call ensures the <code>four</code> isn’t deallocated too early.</p>
 <pre><code class="language-csharp">private static T RewriteChildrenInternal&lt;T&gt;(
     this T value,
     Func&lt;T, T&gt; transformer,
@@ -433,7 +433,7 @@ private static void KeepAlive&lt;T&gt;(ref Four&lt;T&gt; four)
 {
 }
 </code></pre>
-<p>As far as I know, the designers of <code>Span</code> were thinking primarily about applications such as serialisation and parsing — the sort of low-level code you'd find in a <a href="https://github.com/aspnet/AspNetCore">high performance web server</a>. But <code>Span</code> also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my <code>IRewritable</code> abstraction, but I'm also leaning on its flexibility to implement that abstraction as efficiently as possible.</p>
+<p>As far as I know, the designers of <code>Span</code> were thinking primarily about applications such as serialisation and parsing — the sort of low-level code you’d find in a <a href="https://github.com/aspnet/AspNetCore">high performance web server</a>. But <code>Span</code> also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my <code>IRewritable</code> abstraction, but I’m also leaning on its flexibility to implement that abstraction as efficiently as possible.</p>
 <p>Sawmill version 3.0 is now available <a href="https://www.nuget.org/packages/Sawmill">on Nuget</a>, and you can read all of this code in <a href="https://github.com/benjamin-hodgson/Sawmill">the GitHub repo</a>.</p>
 
 

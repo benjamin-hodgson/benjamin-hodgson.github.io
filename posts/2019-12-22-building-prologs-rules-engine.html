@@ -56,11 +56,11 @@
     </ol>
 </nav>
 <img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
-<p>Today's the day! We're going to turn last week's unification algorithm into an actual programming language by filling in the bottom-right part of the above diagram. Prolog's <em>rules engine</em> is the system which processes the predicates and facts in your program to answer queries.</p>
+<p>Today’s the day! We’re going to turn last week’s unification algorithm into an actual programming language by filling in the bottom-right part of the above diagram. Prolog’s <em>rules engine</em> is the system which processes the predicates and facts in your program to answer queries.</p>
 <h2 id="the-database"><a href="#the-database">The Database
 
 </a></h2>
-<p>When you load a program into your Prolog interpreter, it reads the collection of rules into an internal data structure. This data structure is known as Prolog's <em>database</em>. For simplicity we can represent the database as an array of rules (ie, the same structure which comes out of the parser), but a real Prolog interpreter would use a more specialised data structure to make querying more efficient.</p>
+<p>When you load a program into your Prolog interpreter, it reads the collection of rules into an internal data structure. This data structure is known as Prolog’s <em>database</em>. For simplicity we can represent the database as an array of rules (ie, the same structure which comes out of the parser), but a real Prolog interpreter would use a more specialised data structure to make querying more efficient.</p>
 <pre><code class="language-csharp">class Engine
 {
     private readonly ImmutableArray&lt;Rule&gt; _database;
@@ -76,11 +76,11 @@
 <h2 id="a-first-attempt"><a href="#a-first-attempt">A First Attempt
 
 </a></h2>
-<p>Prolog's interactive terminal accepts <em>queries</em> (predicates) and outputs a <em>substitution</em> which satisfies the query, according to the rules in the database. So the signature for <code>Query</code> is</p>
+<p>Prolog’s interactive terminal accepts <em>queries</em> (predicates) and outputs a <em>substitution</em> which satisfies the query, according to the rules in the database. So the signature for <code>Query</code> is</p>
 <pre><code class="language-csharp">public ImmutableDictionary&lt;string, Term&gt; Query(Term goal)
 </code></pre>
-<p>If a goal can't be satisfied, <code>Query</code> will return <code>null</code>.</p>
-<p>When you type a query, Prolog looks for the first rule in its database which matches the goal. In code, that means looping over <code>_database</code> and ignoring rules whose <code>Head</code> doesn't unify with the goal.</p>
+<p>If a goal can’t be satisfied, <code>Query</code> will return <code>null</code>.</p>
+<p>When you type a query, Prolog looks for the first rule in its database which matches the goal. In code, that means looping over <code>_database</code> and ignoring rules whose <code>Head</code> doesn’t unify with the goal.</p>
 <pre><code class="language-csharp">public ImmutableDictionary&lt;string, Term&gt; Query(Term goal)
 {
     foreach (var rule in _database)
@@ -108,7 +108,7 @@ private ImmutableDictionary&lt;string, Term&gt; Query(Rule rule, Term goal)
     // ...
 }
 </code></pre>
-<p>If the rule's head does match the goal, Prolog needs to check the conditions on the right hand side of the rule. Each predicate on the right-hand side becomes a sub-goal; we'll recursively call <code>Query</code> for each of these sub-goals. These recursive <code>Query</code> calls will return a substitution, and the information from those substitutions needs to be propagated bi-directionally. It's just like when we were solving a system of equations in the last post: we'll propagate information forwards by <code>Apply</code>ing the current substitution to later sub-goals, and propagate it backwards by <code>Compose</code>-ing the substitutions from each recursive <code>Query</code> call into the current substitution.</p>
+<p>If the rule’s head does match the goal, Prolog needs to check the conditions on the right hand side of the rule. Each predicate on the right-hand side becomes a sub-goal; we’ll recursively call <code>Query</code> for each of these sub-goals. These recursive <code>Query</code> calls will return a substitution, and the information from those substitutions needs to be propagated bi-directionally. It’s just like when we were solving a system of equations in the last post: we’ll propagate information forwards by <code>Apply</code>ing the current substitution to later sub-goals, and propagate it backwards by <code>Compose</code>-ing the substitutions from each recursive <code>Query</code> call into the current substitution.</p>
 <pre><code class="language-csharp">public ImmutableDictionary&lt;string, Term&gt; Query(Rule rule, Term goal)
 {
     // ... 
@@ -125,18 +125,18 @@ private ImmutableDictionary&lt;string, Term&gt; Query(Rule rule, Term goal)
 }
 </code></pre>
 <p>If any of the recursive <code>Query</code> calls failed, that means one of the conditions on the right hand side was not satisfiable, so the whole rule fails (this function returns <code>null</code>) and we have to try the next one. Eventually we hope to find a rule whose head matches the goal <em>and</em> whose conditions are satisfied. This means the query was successful, so we return the <code>subst</code> corresponding to the rule.</p>
-<p>That's a decent first stab at the code for <code>Query</code>. Now we have to fix the bugs.</p>
+<p>That’s a decent first stab at the code for <code>Query</code>. Now we have to fix the bugs.</p>
 <h2 id="backtracking"><a href="#backtracking">Backtracking
 
 </a></h2>
-<p>Here's a trimmed-down version of the example database from the first post.</p>
+<p>Here’s a trimmed-down version of the example database from the first post.</p>
 <pre><code class="language-prolog">likes(benjamin, asparagus).
 likes(benjamin, pizza).
 likes(clio, pizza).
 
 dinner(Food) :- likes(benjamin, Food), likes(clio, Food).
 </code></pre>
-<p>When we feed this database into our <code>Engine</code> and ask it what's for dinner,</p>
+<p>When we feed this database into our <code>Engine</code> and ask it what’s for dinner,</p>
 <pre><code class="language-csharp">var program = @&quot;
 likes(benjamin, asparagus).
 likes(benjamin, pizza).
@@ -160,24 +160,24 @@ else
 }
 </code></pre>
 <p>it replies <code>no solution</code>, even though there is a clear solution (<code>Food := pizza</code>). What did we do wrong?</p>
-<p>Let's think about how our engine is going to execute this query.</p>
+<p>Let’s think about how our engine is going to execute this query.</p>
 <ol>
-<li>Find a rule whose head unifies with the goal. There's only one option: the <code>dinner(Food)</code> line.
+<li>Find a rule whose head unifies with the goal. There’s only one option: the <code>dinner(Food)</code> line.
 </li>
-<li>Query for the first predicate in the rule's body, namely <code>likes(benjamin, Food)</code>.
+<li>Query for the first predicate in the rule’s body, namely <code>likes(benjamin, Food)</code>.
 </li>
 <li>Find a rule whose head unifies with the predicate. There are two options, <code>likes(benjamin, asparagus)</code> and <code>likes(benjamin, pizza)</code>. The engine chooses the first one, so <code>Food := asparagus</code>.
 </li>
-<li>Now query for the second predicate in the rule's body, which is <code>likes(clio, Food)</code>. Since <code>Food := asparagus</code>, we're looking for <code>likes(clio, asparagus)</code>
+<li>Now query for the second predicate in the rule’s body, which is <code>likes(clio, Food)</code>. Since <code>Food := asparagus</code>, we’re looking for <code>likes(clio, asparagus)</code>
 </li>
 <li>Since there are no rules matching <code>likes(clio, asparagus)</code> the query fails.
 </li>
 </ol>
-<p>The bug was in step 3, when the engine committed to the first rule which matched. It later realised that <code>Food</code> couldn't be <code>asparagus</code>, so it needs to be able to <em>backtrack</em> and undo that decision. (This is very similar to the backtracking which parsers do, as detailed in an earlier post.)</p>
-<p>The reality is that each goal may have multiple substitutions which satisfy it. <code>likes(benjamin, Food)</code> has two solutions, <code>Food := asparagus</code> and <code>Food := pizza</code>, but we threw away the second one. So our <code>Query</code> signature really should've looked like this:</p>
+<p>The bug was in step 3, when the engine committed to the first rule which matched. It later realised that <code>Food</code> couldn’t be <code>asparagus</code>, so it needs to be able to <em>backtrack</em> and undo that decision. (This is very similar to the backtracking which parsers do, as detailed in an earlier post.)</p>
+<p>The reality is that each goal may have multiple substitutions which satisfy it. <code>likes(benjamin, Food)</code> has two solutions, <code>Food := asparagus</code> and <code>Food := pizza</code>, but we threw away the second one. So our <code>Query</code> signature really should’ve looked like this:</p>
 <pre><code class="language-csharp">public IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Term goal)
 </code></pre>
-<p>When there's no solution, <code>Query</code> will return an empty list (rather than <code>null</code> as before). I'll update the implementation to work with a collection of substitutions.</p>
+<p>When there’s no solution, <code>Query</code> will return an empty list (rather than <code>null</code> as before). I’ll update the implementation to work with a collection of substitutions.</p>
 <pre><code class="language-csharp">public IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Term goal)
     =&gt; _database.SelectMany(rule =&gt; Query(rule, goal));
 
@@ -204,20 +204,20 @@ private IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Rule ru
     return substs;
 }
 </code></pre>
-<p><code>SelectMany</code> (and <code>from...select</code>, which is the same thing under the hood) coming in clutch here. Each predicate in the body of a rule has potentially many solutions, so each recursive call to <code>Query</code> introduces potentially many possible branches to choose from. <code>SelectMany</code> lets us take all of them — but because <code>IEnumerable</code> is lazy, at runtime it doesn't actually explore more branches than necessary to find a single solution. It also handles the &quot;no solutions&quot; case gracefully: if <code>substs</code> is empty then the body of the <code>foreach</code> loop does nothing. (<code>SelectMany</code> always returns an empty collection when its input collection is empty.)</p>
-<p>Working with immutable data is of utmost importance here. Combining lazy <code>IEnumerable</code>s with mutable data can have catastrophic consequences because it's hard to predict when your code will be run. The body of my loop computes a <em>new</em> <code>substs</code> to be used for the next iteration; it doesn't update a single collection of solutions. I don't know what would happen if you did write it like that but I know it would be wrong!</p>
+<p><code>SelectMany</code> (and <code>from...select</code>, which is the same thing under the hood) coming in clutch here. Each predicate in the body of a rule has potentially many solutions, so each recursive call to <code>Query</code> introduces potentially many possible branches to choose from. <code>SelectMany</code> lets us take all of them — but because <code>IEnumerable</code> is lazy, at runtime it doesn’t actually explore more branches than necessary to find a single solution. It also handles the “no solutions” case gracefully: if <code>substs</code> is empty then the body of the <code>foreach</code> loop does nothing. (<code>SelectMany</code> always returns an empty collection when its input collection is empty.)</p>
+<p>Working with immutable data is of utmost importance here. Combining lazy <code>IEnumerable</code>s with mutable data can have catastrophic consequences because it’s hard to predict when your code will be run. The body of my loop computes a <em>new</em> <code>substs</code> to be used for the next iteration; it doesn’t update a single collection of solutions. I don’t know what would happen if you did write it like that but I know it would be wrong!</p>
 <p>Feeding the <code>dinner(Food)</code> query into this version of the code correctly outputs <code>Food := pizza</code>.</p>
 <h2 id="scope-management"><a href="#scope-management">Scope Management
 
 </a></h2>
 <h3 id="discharging"><a href="#discharging"></a></h3>
-<p>Here's another example program which reveals a bug in <code>Query</code>.</p>
+<p>Here’s another example program which reveals a bug in <code>Query</code>.</p>
 <pre><code class="language-prolog">foo(X).
 bar(baz).
 
 test() :- foo(wibble), bar(X).
 </code></pre>
-<p><code>test()</code> is straightforwardly true, but our interpreter again prints out <code>no solution</code>. Once again, let's walk through the steps the engine will take.</p>
+<p><code>test()</code> is straightforwardly true, but our interpreter again prints out <code>no solution</code>. Once again, let’s walk through the steps the engine will take.</p>
 <ol>
 <li>Query <code>foo(wibble)</code>. The only rule matching this goal is <code>foo(X).</code>, which matches when <code>X := wibble</code>. So the recursive call to <code>Query</code> returns the substitution <code>X := wibble</code>.
 </li>
@@ -226,7 +226,7 @@ test() :- foo(wibble), bar(X).
 <li>Query the second predicate in <code>test</code>, which is <code>bar(wibble)</code>. This goal fails because the only <code>bar</code>-related fact in the database is <code>bar(baz)</code>.
 </li>
 </ol>
-<p>The bug is in step 1, when we returned the <code>X := wibble</code> substitution. <code>foo</code>'s <code>X</code> escaped its scope and collided with the <code>X</code> in <code>test</code>'s body. We need to adjust our code so that variables can't escape their scope by being returned in a substitution.</p>
+<p>The bug is in step 1, when we returned the <code>X := wibble</code> substitution. <code>foo</code>’s <code>X</code> escaped its scope and collided with the <code>X</code> in <code>test</code>’s body. We need to adjust our code so that variables can’t escape their scope by being returned in a substitution.</p>
 <p>The fix is to <em>discharge</em> some of the equalities in a substitution at the end of running a rule (that is, on the last line of <code>Query</code>). We want to throw out equalities related to variables which were local to the rule, keeping only the ones which tell you something about the variables in the goal.</p>
 <pre><code class="language-csharp">private IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Rule rule, Term goal)
 {
@@ -241,11 +241,11 @@ private static ImmutableDictionary&lt;string, Term&gt; Discharge(ImmutableDictio
 </code></pre>
 <p>This fixes the bug. <code>test()</code> now correctly returns an empty substitution.</p>
 <h3 id="freshening"><a href="#freshening"></a></h3>
-<p>There's one final bug to fix in the engine.</p>
+<p>There’s one final bug to fix in the engine.</p>
 <pre><code class="language-prolog">foo(a, X).
 </code></pre>
-<p>Running the query <code>foo(X, b)</code> should return <code>X := a</code>, but the interpreter prints <code>no solution</code>. This is of course another name collision issue. When unifying the goal with the left hand side, the interpreter has mistaken the two <code>X</code>s for being the <em>same</em> <code>X</code>. The <code>X</code> in <code>foo</code>'s left hand side should be local to <code>foo</code>.</p>
-<p>To avoid unintentional collisions we need to <em>freshen</em> local variables. Whenever the interpreter enters a rule, it should rename the rule's local variables to new variables which aren't being used anywhere in the goal. An easy way to guarantee that a name isn't being used anywhere in the goal is to stick a number on the end of it, and increase that number by 1 each time. (I'm also going to put an <code>?</code> on the front of the auto-generated variable names, because variables beginning with <code>?</code> is not valid Prolog so it's guaranteed not to collide with a name typed by a programmer.)</p>
+<p>Running the query <code>foo(X, b)</code> should return <code>X := a</code>, but the interpreter prints <code>no solution</code>. This is of course another name collision issue. When unifying the goal with the left hand side, the interpreter has mistaken the two <code>X</code>s for being the <em>same</em> <code>X</code>. The <code>X</code> in <code>foo</code>’s left hand side should be local to <code>foo</code>.</p>
+<p>To avoid unintentional collisions we need to <em>freshen</em> local variables. Whenever the interpreter enters a rule, it should rename the rule’s local variables to new variables which aren’t being used anywhere in the goal. An easy way to guarantee that a name isn’t being used anywhere in the goal is to stick a number on the end of it, and increase that number by 1 each time. (I’m also going to put an <code>?</code> on the front of the auto-generated variable names, because variables beginning with <code>?</code> is not valid Prolog so it’s guaranteed not to collide with a name typed by a programmer.)</p>
 <pre><code class="language-csharp">private int _freshenCounter = 0;
 private Rule Freshen(Rule rule)
 {
@@ -270,7 +270,7 @@ private Rule Freshen(Rule rule)
     );
 }
 </code></pre>
-<p>Then at the start of <code>Query</code> we need to <code>Freshen</code> the rule we're about to enter.</p>
+<p>Then at the start of <code>Query</code> we need to <code>Freshen</code> the rule we’re about to enter.</p>
 <pre><code class="language-csharp">private IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Rule rule, Term goal)
 {
     rule = Freshen(rule);
@@ -278,7 +278,7 @@ private Rule Freshen(Rule rule)
 }
 </code></pre>
 <p>The <code>foo(X, b)</code> query now correctly returns <code>X := a</code>.</p>
-<p>Here's the final implementation of <code>Query</code> in full.</p>
+<p>Here’s the final implementation of <code>Query</code> in full.</p>
 <pre><code class="language-csharp">public IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Term goal)
     =&gt; _database.SelectMany(rule =&gt; Query(rule, goal));
 
@@ -311,16 +311,16 @@ private IEnumerable&lt;ImmutableDictionary&lt;string, Term&gt;&gt; Query(Rule ru
 <ul>
 <li>Because we implemented <code>_database</code> as an array, finding a matching rule is linear in the size of the program. Try optimising the <code>_database</code> data structure.
 </li>
-<li>Try optimising <code>Freshen</code> so that it doesn't rename more variables than it needs to.
+<li>Try optimising <code>Freshen</code> so that it doesn’t rename more variables than it needs to.
 <ul>
-<li>It's actually possible to avoid freshening altogether by changing the way variables are represented.
+<li>It’s actually possible to avoid freshening altogether by changing the way variables are represented.
 </li>
 </ul>
 </li>
-<li>Backtracking is enabled by default in Prolog (unlike in Pidgin where it's disabled by default). The full Prolog language includes the <code>!</code> operator (pronounced <em>cut</em>) to disable backtracking when necessary. When Prolog encounters <code>!</code> in the right-hand side of a rule, it commits to all of the choices it's made since (and including) selecting that rule from the database. Try implementing cut as an exercise. (You'll need to change the parser, the AST, and the rules engine.)
+<li>Backtracking is enabled by default in Prolog (unlike in Pidgin where it’s disabled by default). The full Prolog language includes the <code>!</code> operator (pronounced <em>cut</em>) to disable backtracking when necessary. When Prolog encounters <code>!</code> in the right-hand side of a rule, it commits to all of the choices it’s made since (and including) selecting that rule from the database. Try implementing cut as an exercise. (You’ll need to change the parser, the AST, and the rules engine.)
 </li>
 </ul>
-<p>Today's code is available in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the <a href="https://github.com/benjamin-hodgson/Amateurlog/blob/80a4ac12303d007295059ac4d9e36ce935a904c2/Engine.cs"><code>Engine.cs</code></a> file.</p>
+<p>Today’s code is available in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the <a href="https://github.com/benjamin-hodgson/Amateurlog/blob/80a4ac12303d007295059ac4d9e36ce935a904c2/Engine.cs"><code>Engine.cs</code></a> file.</p>
 
 
         </article>

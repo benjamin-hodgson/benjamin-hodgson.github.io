@@ -56,47 +56,47 @@
     </ol>
 </nav>
 <img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
-<p>In this post I'm going to focus on the left-hand part of that diagram. We'll use my parsing library <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> to convert Prolog source code into the abstract syntax classes I outlined in the previous post.</p>
+<p>In this post I’m going to focus on the left-hand part of that diagram. We’ll use my parsing library <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a> to convert Prolog source code into the abstract syntax classes I outlined in the previous post.</p>
 <h2 id="about-pidgin"><a href="#about-pidgin">About Pidgin
 
 </a></h2>
 <p>Pidgin is a <em>parser combinator library</em>, meaning it consists of three things:</p>
 <ol>
-<li>A type <code>Parser&lt;TToken, T&gt;</code>, representing a process which consumes a sequence of <code>TToken</code>s and produces a <code>T</code>. (In our case, <code>TToken</code> will be <code>char</code> because we're parsing textual data from a string.)
+<li>A type <code>Parser&lt;TToken, T&gt;</code>, representing a process which consumes a sequence of <code>TToken</code>s and produces a <code>T</code>. (In our case, <code>TToken</code> will be <code>char</code> because we’re parsing textual data from a string.)
 </li>
-<li>Methods to create simple <code>Parser</code>s, such as &quot;consume a single character&quot;.
+<li>Methods to create simple <code>Parser</code>s, such as “consume a single character”.
 </li>
-<li>Methods to combine <code>Parser</code>s into more complex and interesting ones, such as &quot;run two parsers sequentially&quot;.
+<li>Methods to combine <code>Parser</code>s into more complex and interesting ones, such as “run two parsers sequentially”.
 </li>
 </ol>
-<p>The power of parser combinators comes from the fact that parsers are treated as ordinary values. You can pass them around as parameters, return them, store them in fields... Programming with parser combinators is <em>just programming</em>. Contrast this with &quot;language workbench&quot; tools like Antlr, which are often more powerful than parser combinators but have a separate syntax, toolchain, etc. Parser combinators are great for medium-sized parsing tasks like this one.</p>
-<p>It's worth elaborating a bit on what I mean by &quot;consume a sequence&quot;. A parser walks left to right along an input sequence, keeping track of its location in the input. Consuming a token means moving the &quot;current location&quot; pointer along to the next token. This is much like how the <code>Stream</code> classes work in .NET — calling a stream's <code>Read</code> method moves the stream's current position, so that successive calls to <code>Read</code> return different results. (Pidgin indeed lets you feed a <code>Stream</code> to a <code>Parser</code>.)</p>
-<p>When a parser makes a decision about what to do next, that decision is based only on the current character and not on what comes next. If the parser moves further along the string and then realises that decision was wrong, it has to <em>backtrack</em> to the position where it made the decision before it can proceed with a different choice. Backtracking can be catastrophically costly (as described in <a href="https://vimeo.com/112065252">a short talk by my esteemed ex-colleague Balpha</a>), so you want to code your parser to minimise the amount of backtracking it might have to do. With Pidgin, backtracking is disabled by default; it's enabled by the <code>Try</code> function.</p>
+<p>The power of parser combinators comes from the fact that parsers are treated as ordinary values. You can pass them around as parameters, return them, store them in fields… Programming with parser combinators is <em>just programming</em>. Contrast this with “language workbench” tools like Antlr, which are often more powerful than parser combinators but have a separate syntax, toolchain, etc. Parser combinators are great for medium-sized parsing tasks like this one.</p>
+<p>It’s worth elaborating a bit on what I mean by “consume a sequence”. A parser walks left to right along an input sequence, keeping track of its location in the input. Consuming a token means moving the “current location” pointer along to the next token. This is much like how the <code>Stream</code> classes work in .NET — calling a stream’s <code>Read</code> method moves the stream’s current position, so that successive calls to <code>Read</code> return different results. (Pidgin indeed lets you feed a <code>Stream</code> to a <code>Parser</code>.)</p>
+<p>When a parser makes a decision about what to do next, that decision is based only on the current character and not on what comes next. If the parser moves further along the string and then realises that decision was wrong, it has to <em>backtrack</em> to the position where it made the decision before it can proceed with a different choice. Backtracking can be catastrophically costly (as described in <a href="https://vimeo.com/112065252">a short talk by my esteemed ex-colleague Balpha</a>), so you want to code your parser to minimise the amount of backtracking it might have to do. With Pidgin, backtracking is disabled by default; it’s enabled by the <code>Try</code> function.</p>
 <h2 id="handling-tokens-and-whitespace"><a href="#handling-tokens-and-whitespace">Handling Tokens and Whitespace
 
 </a></h2>
-<p>Let's start with the basics and build upwards. Prolog is a <em>whitespace-insensitive</em> language, so we need a way to skip over the whitespace in the source code. We'll use a convention where each component <code>Parser</code> will consume any whitespace <em>after</em> parsing any relevant non-whitespace characters.</p>
-<p>Here's a method which creates a <code>Parser</code> which consumes a specific character, skips over any whitespace, and then returns the original character.</p>
+<p>Let’s start with the basics and build upwards. Prolog is a <em>whitespace-insensitive</em> language, so we need a way to skip over the whitespace in the source code. We’ll use a convention where each component <code>Parser</code> will consume any whitespace <em>after</em> parsing any relevant non-whitespace characters.</p>
+<p>Here’s a method which creates a <code>Parser</code> which consumes a specific character, skips over any whitespace, and then returns the original character.</p>
 <pre><code class="language-csharp">static Parser&lt;char, char&gt; Tok(char value)  // for &quot;token&quot;
     =&gt; Char(value).Before(SkipWhitespaces);
 </code></pre>
-<p>(<code>Char</code> comes from the <code>Pidgin.Parser</code> static class; all of today's code is in a file with <code>using static Pidgin.Parser</code> and <code>using static Pidgin.Parser&lt;char&gt;</code> at the top.) <code>Char</code> is a parser which matches a specific character; <code>SkipWhitespaces</code> greedily consumes and discards a sequence of whitespace characters; and <code>Before</code> glues two parsers together sequentially, keeping only the result of the first one. So <code>Tok('(')</code> will match the input strings <code>&quot;(&quot;</code> and <code>&quot;(    &quot;</code> but not <code>&quot; (&quot;</code> or <code>&quot;)&quot;</code>.</p>
-<p>Here's an equivalent parser for a specific string:</p>
+<p>(<code>Char</code> comes from the <code>Pidgin.Parser</code> static class; all of today’s code is in a file with <code>using static Pidgin.Parser</code> and <code>using static Pidgin.Parser&lt;char&gt;</code> at the top.) <code>Char</code> is a parser which matches a specific character; <code>SkipWhitespaces</code> greedily consumes and discards a sequence of whitespace characters; and <code>Before</code> glues two parsers together sequentially, keeping only the result of the first one. So <code>Tok('(')</code> will match the input strings <code>&quot;(&quot;</code> and <code>&quot;(    &quot;</code> but not <code>&quot; (&quot;</code> or <code>&quot;)&quot;</code>.</p>
+<p>Here’s an equivalent parser for a specific string:</p>
 <pre><code class="language-csharp">static Parser&lt;char, string&gt; Tok(string value)
     =&gt; Try(String(value)).Before(SkipWhitespaces);
 </code></pre>
 <p>Why am I using the <em>backtracking</em> function <code>Try</code> here? Remember, a parser consumes its input one character at a time, and makes decisions based only on the current character. If the first character of the input looks like it matches <code>value</code>, Pidgin will commit to running the <code>String(value)</code> parser; if matching the string fails after the first character then the parser needs to return to where it was so that it can try any alternative ways to parse from that location.</p>
-<p>For an example of why we need <code>Try</code>, consider the parser <code>String(&quot;prolog&quot;).Or(String(&quot;programming&quot;))</code>. <code>Or</code> is Pidgin's <em>choice</em> function — it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here's our parser represented pictorally:</p>
+<p>For an example of why we need <code>Try</code>, consider the parser <code>String(&quot;prolog&quot;).Or(String(&quot;programming&quot;))</code>. <code>Or</code> is Pidgin’s <em>choice</em> function — it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here’s our parser represented pictorally:</p>
 <pre><code>             +--Or--+
              |      |
 String(&quot;prolog&quot;)  String(&quot;programming&quot;)
 </code></pre>
-<p>Let's think about how this parser behaves when you feed it the string <code>&quot;programming&quot;</code>. Naïvely we might expect this to succeed, because <code>String(&quot;programming&quot;)</code> is one of <code>Or</code>'s options. But in fact this parser will fail to parse the string <code>&quot;programming&quot;</code>. Looking at it step by step reveals why:</p>
+<p>Let’s think about how this parser behaves when you feed it the string <code>&quot;programming&quot;</code>. Naïvely we might expect this to succeed, because <code>String(&quot;programming&quot;)</code> is one of <code>Or</code>’s options. But in fact this parser will fail to parse the string <code>&quot;programming&quot;</code>. Looking at it step by step reveals why:</p>
 <p>At the start of the parsing process, the current character is the first letter, namely <code>p</code>.</p>
 <pre>
 <b>p</b> r o g r a m m i n g
 </pre>
-<p>Our <code>Or</code> parser will try to apply the <code>prolog</code> parser first. The <code>prolog</code> parser looks at the current character and says &quot;This looks like the start of <code>prolog</code> to me. I'll consume it.&quot;</p>
+<p>Our <code>Or</code> parser will try to apply the <code>prolog</code> parser first. The <code>prolog</code> parser looks at the current character and says “This looks like the start of <code>prolog</code> to me. I’ll consume it.”</p>
 <pre>
 p <b>r</b> o g r a m m i n g
 </pre>
@@ -105,8 +105,8 @@ p <b>r</b> o g r a m m i n g
 p r <b>o</b> g r a m m i n g
 p r o <b>g</b> r a m m i n g
 </pre>
-<p>Now that we're looking at a <code>g</code>, it's clear that the input doesn't match the string <code>prolog</code>. The <code>prolog</code> parser fails and yields control back to <code>Or</code>. Because the <code>prolog</code> parser consumed input and did not backtrack, <code>Or</code> will not attempt to apply the <code>programming</code> parser. (If it did try, it would fail anyway because we're no longer looking at a <code>p</code>.) If the <code>prolog</code> parser were wrapped in a <code>Try</code>, it would have backtracked to the <code>p</code> upon failing, allowing <code>Or</code> to fall back on the <code>programming</code> parser.</p>
-<p>It's common to use <code>Try</code> for each word and symbol in your language's grammar; I'm going to use <code>Tok</code> for each of my low level component parsers.</p>
+<p>Now that we’re looking at a <code>g</code>, it’s clear that the input doesn’t match the string <code>prolog</code>. The <code>prolog</code> parser fails and yields control back to <code>Or</code>. Because the <code>prolog</code> parser consumed input and did not backtrack, <code>Or</code> will not attempt to apply the <code>programming</code> parser. (If it did try, it would fail anyway because we’re no longer looking at a <code>p</code>.) If the <code>prolog</code> parser were wrapped in a <code>Try</code>, it would have backtracked to the <code>p</code> upon failing, allowing <code>Or</code> to fall back on the <code>programming</code> parser.</p>
+<p>It’s common to use <code>Try</code> for each word and symbol in your language’s grammar; I’m going to use <code>Tok</code> for each of my low level component parsers.</p>
 <p>Finally, we can generalise these <code>Tok</code> methods to run an arbitrary <code>Parser</code> with backtracking and whitespace.</p>
 <pre><code class="language-csharp">static Parser&lt;char, T&gt; Tok&lt;T&gt;(Parser&lt;char, T&gt; p)
     =&gt; Try(p).Before(SkipWhitespaces);
@@ -114,7 +114,7 @@ p r o <b>g</b> r a m m i n g
 static Parser&lt;char, char&gt; Tok(char value) =&gt; Tok(Char(value));
 static Parser&lt;char, string&gt; Tok(string value) =&gt; Tok(String(value));
 </code></pre>
-<p>I have a half-baked plan to add this <code>Tok</code> parser, along with some other tools for handling whitespace, to the Pidgin library itself, so you don't have to write it yourself every time you write a parser.</p>
+<p>I have a half-baked plan to add this <code>Tok</code> parser, along with some other tools for handling whitespace, to the Pidgin library itself, so you don’t have to write it yourself every time you write a parser.</p>
 <p>Some useful token parsers for Prolog:</p>
 <pre><code class="language-csharp">static readonly Parser&lt;char, char&gt; _comma = Tok(',');
 static readonly Parser&lt;char, char&gt; _openParen = Tok('(');
@@ -138,20 +138,20 @@ static readonly Parser&lt;char, string&gt; _variableName = Tok(
     select first + rest
 );
 </code></pre>
-<p>One of the fun things about C#'s <code>from...select</code> syntax is that it's <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers — <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
-<p><code>ManyString</code> takes a parser and greedily runs it in a loop, then packs all of that parser's results into a string. <code>Uppercase</code>, <code>Lowercase</code>, <code>Letter</code> and <code>Digit</code> all consume and return a single character of their respective types.</p>
-<p>So, taken as a whole, <code>_atomName</code> consumes and returns a string as long as it's a valid Prolog atom. Here's how it works:</p>
+<p>One of the fun things about C#’s <code>from...select</code> syntax is that it’s <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers — <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
+<p><code>ManyString</code> takes a parser and greedily runs it in a loop, then packs all of that parser’s results into a string. <code>Uppercase</code>, <code>Lowercase</code>, <code>Letter</code> and <code>Digit</code> all consume and return a single character of their respective types.</p>
+<p>So, taken as a whole, <code>_atomName</code> consumes and returns a string as long as it’s a valid Prolog atom. Here’s how it works:</p>
 <ol>
 <li>Consume a lowercase character and name it <code>first</code>
 </li>
 <li>Consume as many letters, digits and underscores as possible, naming the resulting string <code>rest</code>
 </li>
-<li>Skip any whitespace coming after the name (that's what <code>Tok</code> does)
+<li>Skip any whitespace coming after the name (that’s what <code>Tok</code> does)
 </li>
 <li>Return the string <code>first + rest</code>
 </li>
 </ol>
-<p><code>_variableName</code> works just the same, except in step 1 it consumes an uppercase letter or an underscore. Let's de-duplicate them:</p>
+<p><code>_variableName</code> works just the same, except in step 1 it consumes an uppercase letter or an underscore. Let’s de-duplicate them:</p>
 <pre><code class="language-csharp">static Parser&lt;char, string&gt; Name(Parser&lt;char, char&gt; firstLetter)
     =&gt; Tok(
         from first in firstLetter
@@ -162,8 +162,8 @@ static readonly Parser&lt;char, string&gt; _variableName = Tok(
 <h2 id="terms"><a href="#terms">Terms
 
 </a></h2>
-<p>Terms in Prolog have a recursive structure, as <a href="../posts/2019-12-01-write-you-a-prolog.html">discussed previously</a>. A predicate's arguments can be any term, including another predicate. This circularity poses a problem for our parser code — the <code>_predicate</code> parser needs to call <code>_term</code>, but <code>_term</code> needs to call <code>_predicate</code>, so what order can you put the declarations in?</p>
-<p>Pidgin's built-in <code>Rec</code> function enables forward references like this. The idea is to use a lambda to delay the access to the field until after it's been initialised.</p>
+<p>Terms in Prolog have a recursive structure, as <a href="../posts/2019-12-01-write-you-a-prolog.html">discussed previously</a>. A predicate’s arguments can be any term, including another predicate. This circularity poses a problem for our parser code — the <code>_predicate</code> parser needs to call <code>_term</code>, but <code>_term</code> needs to call <code>_predicate</code>, so what order can you put the declarations in?</p>
+<p>Pidgin’s built-in <code>Rec</code> function enables forward references like this. The idea is to use a lambda to delay the access to the field until after it’s been initialised.</p>
 <pre><code class="language-csharp">static readonly Parser&lt;char, Term&gt; _term = Rec(() =&gt; OneOf(
     _variable,
     // upcast the Parser&lt;char, Predicate&gt; into a Parser&lt;char, Term&gt;
@@ -171,7 +171,7 @@ static readonly Parser&lt;char, string&gt; _variableName = Tok(
     _atom
 )).Labelled(&quot;term&quot;);
 </code></pre>
-<p><code>_predicate</code> is textually below <code>_term</code>, so when <code>_term</code> is initialised <code>_predicate</code> will be <code>null</code>. By putting the <code>_predicate</code> reference inside a lambda and passing it to <code>Rec</code>, we can prevent <code>_predicate</code> from being accessed until after it's been initialised. (<code>Rec</code> returns a parser which calls the lambda the first time it's run.)</p>
+<p><code>_predicate</code> is textually below <code>_term</code>, so when <code>_term</code> is initialised <code>_predicate</code> will be <code>null</code>. By putting the <code>_predicate</code> reference inside a lambda and passing it to <code>Rec</code>, we can prevent <code>_predicate</code> from being accessed until after it’s been initialised. (<code>Rec</code> returns a parser which calls the lambda the first time it’s run.)</p>
 <pre><code class="language-csharp">static readonly Parser&lt;char, Term&gt; _atom
     = Name(Lowercase)
         .Select(name =&gt; (Term)new Atom(name))
@@ -191,11 +191,11 @@ static readonly Parser&lt;char, Predicate&gt; _predicate = (
 static Parser&lt;char, ImmutableArray&lt;T&gt;&gt; CommaSeparated&lt;T&gt;(Parser&lt;char, T&gt; p)
     =&gt; p.Separated(_comma).Select(x =&gt; x.ToImmutableArray());
 </code></pre>
-<p>I'm using <code>Try</code> again in the <code>_predicate</code> parser. This is to disambiguate predicates from atoms. Both start in the same way (a lowercase letter) and you can't be sure you're parsing a predicate until you see a parenthesis. So our <code>_term</code> parser first attempts to read a predicate, but if it doesn't see a parenthesis then it backtracks and reads the name as an atom instead. The order of <code>OneOf</code>'s arguments matters!</p>
+<p>I’m using <code>Try</code> again in the <code>_predicate</code> parser. This is to disambiguate predicates from atoms. Both start in the same way (a lowercase letter) and you can’t be sure you’re parsing a predicate until you see a parenthesis. So our <code>_term</code> parser first attempts to read a predicate, but if it doesn’t see a parenthesis then it backtracks and reads the name as an atom instead. The order of <code>OneOf</code>’s arguments matters!</p>
 <h2 id="rules-queries-and-whole-programs"><a href="#rules-queries-and-whole-programs">Rules, Queries and Whole Programs
 
 </a></h2>
-<p>We're on the home straight. A Prolog program consists of a collection of top-level <em>rules</em> and <em>facts</em>. A rule consists of a predicate followed by the symbol <code>:-</code> and a comma-separated list of predicates, and ends with a <code>.</code> symbol. A fact is just a rule with no right-hand side.</p>
+<p>We’re on the home straight. A Prolog program consists of a collection of top-level <em>rules</em> and <em>facts</em>. A rule consists of a predicate followed by the symbol <code>:-</code> and a comma-separated list of predicates, and ends with a <code>.</code> symbol. A fact is just a rule with no right-hand side.</p>
 <pre><code class="language-csharp">static readonly Parser&lt;char, Rule&gt; _rule
     = Map(
         (head, body) =&gt; new Rule(head, body),
@@ -210,8 +210,8 @@ static Parser&lt;char, ImmutableArray&lt;T&gt;&gt; CommaSeparated&lt;T&gt;(Parse
 static Parser&lt;char, ImmutableArray&lt;T&gt;&gt; CommaSeparatedAtLeastOnce&lt;T&gt;(Parser&lt;char, T&gt; p)
     =&gt; p.SeparatedAtLeastOnce(_comma).Select(x =&gt; x.ToImmutableArray());
 </code></pre>
-<p>(<code>Map</code> is another way of writing <code>Then</code>; <code>Return</code> is a parser which always returns the given value without touching the input string.) Note that <code>.Or(Return(...))</code> is applied to the result of <code>_colonDash.Then(...)</code>. If the parser encounters the <code>:-</code> symbol then it commits to reading at least one item in the rule's body. <code>name(args) :- .</code> is not valid Prolog; if a programmer wants a rule with no body then they have to omit the <code>:-</code>.</p>
-<p>Finally, a Prolog program consists of a sequence of rules. We're also going to need a parser for individual queries typed at the interactive prompt.</p>
+<p>(<code>Map</code> is another way of writing <code>Then</code>; <code>Return</code> is a parser which always returns the given value without touching the input string.) Note that <code>.Or(Return(...))</code> is applied to the result of <code>_colonDash.Then(...)</code>. If the parser encounters the <code>:-</code> symbol then it commits to reading at least one item in the rule’s body. <code>name(args) :- .</code> is not valid Prolog; if a programmer wants a rule with no body then they have to omit the <code>:-</code>.</p>
+<p>Finally, a Prolog program consists of a sequence of rules. We’re also going to need a parser for individual queries typed at the interactive prompt.</p>
 <pre><code class="language-csharp">static readonly Parser&lt;char, ImmutableArray&lt;Rule&gt;&gt; _program =
     from _ in SkipWhitespaces
     from rules in _rule.Many()
@@ -223,7 +223,7 @@ public static ImmutableArray&lt;Rule&gt; ParseProgram(string input) = _program.P
 public static Predicate ParseQuery(string input) = _query.ParseOrThrow(input);
 </code></pre>
 <p>Since by convention each of our component parsers has been consuming whitespaces <em>after</em> the text they match, we need to remember to <code>SkipWhitespaces</code> at the start of the file.</p>
-<p>That's our whole parser! Less than 80 lines of code is not bad, I think. A quick test of our <code>last</code> example from the previous post:</p>
+<p>That’s our whole parser! Less than 80 lines of code is not bad, I think. A quick test of our <code>last</code> example from the previous post:</p>
 <pre><code class="language-csharp">static void Main(string[] args)
 {
     var program = PrologParser.ParseProgram(@&quot;
@@ -243,13 +243,13 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 </li>
 <li>Extend this code to support lists.
 <ul>
-<li>Prolog's lists are linked lists; <code>[]</code> is an empty list and cons cells look like <code>[head | tail]</code>. (<code>head</code> and <code>tail</code> are both arbitrary terms; though at runtime <code>tail</code> should be a list.)
+<li>Prolog’s lists are linked lists; <code>[]</code> is an empty list and cons cells look like <code>[head | tail]</code>. (<code>head</code> and <code>tail</code> are both arbitrary terms; though at runtime <code>tail</code> should be a list.)
 </li>
 <li>At first you can try pretending that lists are syntactic sugar — desugar <code>[]</code> to a <code>nil</code> atom and <code>[head | tail]</code> to a <code>cons(head, tail)</code> predicate.
 </li>
 <li>How can you avoid clashing with mentions of those names in user code?
 <ul>
-<li>You could try mangling the names to something which can't be typed by a user.
+<li>You could try mangling the names to something which can’t be typed by a user.
 </li>
 <li>You could try making them reserved words (adjust the parser to reject user-defined mentions of <code>cons</code> and <code>nil</code>).
 </li>
@@ -259,10 +259,10 @@ last(cons(X, Xs), Y) :- last(Xs, Y).
 </li>
 </ul>
 </li>
-<li>Try using <a href="https://www.benjamin.pizza/Pidgin/v2.2.0/api/Pidgin.Comment.CommentParser.html">Pidgin's <code>CommentParser</code> class</a> to handle Prolog code with comments in.
+<li>Try using <a href="https://www.benjamin.pizza/Pidgin/v2.2.0/api/Pidgin.Comment.CommentParser.html">Pidgin’s <code>CommentParser</code> class</a> to handle Prolog code with comments in.
 </li>
 </ul>
-<p>You can find this code in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the file <a href="https://github.com/benjamin-hodgson/Prolog/blob/master/Parser.cs"><code>Parser.cs</code></a>. Next time we'll talk about <em>unification</em>, the core of Prolog's bi-directional programming model. We'll be using <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> to implement unification <em>generically</em>, without making any assumptions about Prolog's syntax.</p>
+<p>You can find this code in <a href="https://github.com/benjamin-hodgson/Amateurlog">the example repo</a>, in the file <a href="https://github.com/benjamin-hodgson/Prolog/blob/master/Parser.cs"><code>Parser.cs</code></a>. Next time we’ll talk about <em>unification</em>, the core of Prolog’s bi-directional programming model. We’ll be using <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> to implement unification <em>generically</em>, without making any assumptions about Prolog’s syntax.</p>
 
 
         </article>

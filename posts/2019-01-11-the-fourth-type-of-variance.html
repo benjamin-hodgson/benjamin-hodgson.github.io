@@ -46,18 +46,18 @@
             </header>
 
             
-<p>Given a polymorphic type, like <code>List</code>, what can we say about the relationship between different usages of that type? If <code>A</code> and <code>B</code> are related, is <code>List[A]</code> related to <code>List[B]</code>? <em>Variance</em> is the word for this type of relationship, and it turns out there are a few different answers to that question, depending on the type you're asking about.</p>
+<p>Given a polymorphic type, like <code>List</code>, what can we say about the relationship between different usages of that type? If <code>A</code> and <code>B</code> are related, is <code>List[A]</code> related to <code>List[B]</code>? <em>Variance</em> is the word for this type of relationship, and it turns out there are a few different answers to that question, depending on the type you’re asking about.</p>
 <h2 id="covariance"><a href="#covariance">Covariance
 
 </a></h2>
-<p>Probably the most familiar situation is when the parameterised types are related in the same way as the parameter. This is the type of variance exhibited by most &quot;container&quot; types, like <code>List</code>.</p>
+<p>Probably the most familiar situation is when the parameterised types are related in the same way as the parameter. This is the type of variance exhibited by most “container” types, like <code>List</code>.</p>
 <pre><code class="language-scala">sealed abstract class List[+A]
 
 val cats : List[Cat] = List(Cat(&quot;Tilly&quot;), Cat(&quot;Charlie&quot;), Cat(&quot;Izzy&quot;))
 val animals : List[Animal] = cats
 </code></pre>
-<p><code>List</code>'s parameter <code>A</code> is annotated with <code>+</code>, so it'll be treated as covariant. This allows you to use a <code>List[Cat]</code> any time you need a <code>List[Animal]</code>. A list of <code>Cat</code>s is a list of <code>Animal</code>s, because every <code>Cat</code> is an <code>Animal</code>. The subtype relationship of the container goes in the same direction as the subtype relationship of the elements. (In C# <code>+</code> is pronounced <code>out</code>, as in <code>IEnumerable&lt;out T&gt;</code>.)</p>
-<p>Variance is visible even in non-subtyping-based languages. Haskellers'll be familiar with <em>covariant functors</em>. It's the type of functor exhibited the the standard <code>Functor</code> class.</p>
+<p><code>List</code>’s parameter <code>A</code> is annotated with <code>+</code>, so it’ll be treated as covariant. This allows you to use a <code>List[Cat]</code> any time you need a <code>List[Animal]</code>. A list of <code>Cat</code>s is a list of <code>Animal</code>s, because every <code>Cat</code> is an <code>Animal</code>. The subtype relationship of the container goes in the same direction as the subtype relationship of the elements. (In C# <code>+</code> is pronounced <code>out</code>, as in <code>IEnumerable&lt;out T&gt;</code>.)</p>
+<p>Variance is visible even in non-subtyping-based languages. Haskellers’ll be familiar with <em>covariant functors</em>. It’s the type of functor exhibited the the standard <code>Functor</code> class.</p>
 <pre><code class="language-haskell">class Functor f where
     fmap :: (a -&gt; b) -&gt; f a -&gt; f b
 
@@ -69,7 +69,7 @@ instance Functor [] where
 <h2 id="contravariance"><a href="#contravariance">Contravariance
 
 </a></h2>
-<p><em>Contravariance</em>, covariance's evil twin, is the word for when the parameterised types are related in the opposite way as the parameters. Scala's <code>Ordering</code>, which determines which way round to put two objects (like C#'s <code>IComparer</code>), is an example of a contravariant type.</p>
+<p><em>Contravariance</em>, covariance’s evil twin, is the word for when the parameterised types are related in the opposite way as the parameters. Scala’s <code>Ordering</code>, which determines which way round to put two objects (like C#’s <code>IComparer</code>), is an example of a contravariant type.</p>
 <pre><code class="language-scala">trait Ordering[-A] {
     def apply(x : A, y : A) : Int
 }
@@ -86,13 +86,13 @@ newtype Comparer a = Comparer (a -&gt; a -&gt; Ord)
 instance Contravariant Comparer where
     contramap f (Comparer p) = Comparer (\x y -&gt; p (f x) (f y))
 </code></pre>
-<p>If you can turn <code>b</code>s into <code>a</code>s, then you can turn a comparer of <code>a</code>s into a comparer of <code>b</code>s by converting the <code>b</code>s into <code>a</code>s before they go into the comparer. Note how <code>f</code> is applied to <code>p</code>'s inputs in the implementation of <code>contramap</code>.</p>
+<p>If you can turn <code>b</code>s into <code>a</code>s, then you can turn a comparer of <code>a</code>s into a comparer of <code>b</code>s by converting the <code>b</code>s into <code>a</code>s before they go into the comparer. Note how <code>f</code> is applied to <code>p</code>’s inputs in the implementation of <code>contramap</code>.</p>
 <p>In general, a type is contravariant if its parameter appears as an input. An object which consumes <code>Animals</code> can be used to consume <code>Cat</code>s. All you have to do is forget about the cattiness of the animals before you put them into the consumer.</p>
 <p>Julie Moronuki has <a href="https://typeclasses.com/contravariance">the best explanation of contravariance</a> that I know of.</p>
 <h2 id="invariance"><a href="#invariance">Invariance
 
 </a></h2>
-<p><em>Invariance</em> is the word for when there's no relationship at all between different usages of a parameterised type.</p>
+<p><em>Invariance</em> is the word for when there’s no relationship at all between different usages of a parameterised type.</p>
 <p>In Scala a type parameter unadorned with a sign is invariant. The following mutable set type is invariant:</p>
 <pre><code class="language-scala">trait Set[A] {
     // A appears as both an input and an output
@@ -102,7 +102,7 @@ instance Contravariant Comparer where
     def items(): Iterable[A]
 }
 </code></pre>
-<p>In general, a type is invariant if its parameter appears as both an input and an output. You can't use <code>Set</code> covariantly, because <code>A</code> appears as an input to <code>contains</code>, and you can't use it contravariantly because <code>A</code> appears in <code>items</code>'s output. There's no subtyping relationship between the parameter and the type. A <code>Set[Cat]</code> is not a <code>Set[Animal]</code>. If it was, you'd be allowed to upcast it and then call <code>add</code> with a <code>Dog</code>:</p>
+<p>In general, a type is invariant if its parameter appears as both an input and an output. You can’t use <code>Set</code> covariantly, because <code>A</code> appears as an input to <code>contains</code>, and you can’t use it contravariantly because <code>A</code> appears in <code>items</code>’s output. There’s no subtyping relationship between the parameter and the type. A <code>Set[Cat]</code> is not a <code>Set[Animal]</code>. If it was, you’d be allowed to upcast it and then call <code>add</code> with a <code>Dog</code>:</p>
 <pre><code class="language-scala">val catSet = new Set[Cat](Cat(&quot;Tilly&quot;))
 val animalSet: Set[Animal] = catSet
 
@@ -110,7 +110,7 @@ animalSet.add(Dog(&quot;Richard&quot;))
 for (cat: Cat &lt;- catSet.items()) {}  // uh oh, one of the cats will actually be a dog!
 </code></pre>
 <p>The same logic applies to the opposite situation. A <code>Set[Animal]</code> is not a <code>Set[Cat]</code>.</p>
-<p>Here's a Haskell class defining <code>Invariant</code> functors.</p>
+<p>Here’s a Haskell class defining <code>Invariant</code> functors.</p>
 <pre><code class="language-haskell">class Invariant f where
     invmap :: (a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
 </code></pre>
@@ -121,8 +121,8 @@ instance Invariant Operation where
     invmap f g (Operation op) = Operation (\x y -&gt; f (g x `op` g y))
 </code></pre>
 <p>Note how we use <code>f</code> on the output of <code>op</code> and <code>g</code> on the inputs.</p>
-<p>The only time I've actually seen this class used is in <a href="http://comonad.com/reader/2008/rotten-bananas/">Ed Kmett's old article about attempting to represent higher-order abstract syntax generically</a>.</p>
-<p>Let me spell out the similarity between <code>Invariant</code> functors and Scala's subtype invariance. For <code>Operation a</code> to be convertible to <code>Operation b</code>, <code>a</code> must be convertible to <code>b</code> <em>and</em> <code>b</code> must be convertible to <code>a</code>. For <code>Set[A]</code> to be a subtype of <code>Set[B]</code>, <code>A</code> must be a subtype of <code>B</code> <em>and</em> <code>B</code> must be a subtype of <code>A</code> (that is, they must be the same type).</p>
+<p>The only time I’ve actually seen this class used is in <a href="http://comonad.com/reader/2008/rotten-bananas/">Ed Kmett’s old article about attempting to represent higher-order abstract syntax generically</a>.</p>
+<p>Let me spell out the similarity between <code>Invariant</code> functors and Scala’s subtype invariance. For <code>Operation a</code> to be convertible to <code>Operation b</code>, <code>a</code> must be convertible to <code>b</code> <em>and</em> <code>b</code> must be convertible to <code>a</code>. For <code>Set[A]</code> to be a subtype of <code>Set[B]</code>, <code>A</code> must be a subtype of <code>B</code> <em>and</em> <code>B</code> must be a subtype of <code>A</code> (that is, they must be the same type).</p>
 <p>Note that variance is a property of the type parameter (<code>A</code>), not the type constructor (<code>List</code>/<code>Ordering</code>). A given type constructor may have multiple parameters with different variances. <code>Function1[-A, +B]</code>, for example.</p>
 <img src="../images/2019-01-11-the-fourth-type-of-variance/hierarchy.png" />
 <h2 id="combining-variances"><a href="#combining-variances">Combining Variances
@@ -152,7 +152,7 @@ trait Sortable[+A] {
     def sortBy(ordering: Ordering[A]): Unit
 }
 </code></pre>
-<p>Mnemonically, you can think of input parameters as meaning &quot;times -1&quot;. <code>Ordering</code> takes <code>A</code>s as its inputs, so <code>Ordering</code> is negative. <code>Sortable</code> takes a (negative) <code>Ordering</code> as an input, so it's positive (-1 * -1 = 1). Printer takes a (positive) <code>List</code> as input, so it's negative. This explains Scala's choice of <code>+</code> and <code>-</code> as the syntax for its variance annotations.</p>
+<p>Mnemonically, you can think of input parameters as meaning “times -1”. <code>Ordering</code> takes <code>A</code>s as its inputs, so <code>Ordering</code> is negative. <code>Sortable</code> takes a (negative) <code>Ordering</code> as an input, so it’s positive (-1 * -1 = 1). Printer takes a (positive) <code>List</code> as input, so it’s negative. This explains Scala’s choice of <code>+</code> and <code>-</code> as the syntax for its variance annotations.</p>
 <h2 id="the-semilattice-of-variances"><a href="#the-semilattice-of-variances">The Semilattice of Variances
 
 </a></h2>
@@ -163,7 +163,7 @@ defaultInvmapCo f _ x = fmap f x
 defaultInvmapContra :: Contravariant f =&gt; (a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
 defaultInvmapContra _ g x = contramap g x
 </code></pre>
-<p>If I was in the business of redesigning Haskell's libraries, I'd even consider making <code>Invariant</code> a superclass of <code>Functor</code> and <code>Contravariant</code>.</p>
+<p>If I was in the business of redesigning Haskell’s libraries, I’d even consider making <code>Invariant</code> a superclass of <code>Functor</code> and <code>Contravariant</code>.</p>
 <pre><code class="language-haskell">class Invariant f where {- ... -}
 
 class Invariant f =&gt; Functor f where {- ... -}
@@ -171,38 +171,38 @@ class Invariant f =&gt; Functor f where {- ... -}
 class Invariant f =&gt; Contravariant f where {- ... -}
 </code></pre>
 <img src="../images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" />
-<p>So there's this interesting relationship between the three types of variance. They form a little semilattice, of which <code>Invariant</code> is the supremum.</p>
+<p>So there’s this interesting relationship between the three types of variance. They form a little semilattice, of which <code>Invariant</code> is the supremum.</p>
 <p>But, hmm, the picture seems asymmetric. Is variance really only a semilattice? Or is there something lurking at the bottom of that picture?</p>
 <h2 id="phantom-variance"><a href="#phantom-variance">Phantom Variance
 
 </a></h2>
-<p>Looking at the code above, it appears that <code>Functor</code> and <code>Contravariant</code> both specialise <code>Invariant</code> by ignoring one of <code>Invariant</code>'s function parameters. What if we ignored both of them?</p>
+<p>Looking at the code above, it appears that <code>Functor</code> and <code>Contravariant</code> both specialise <code>Invariant</code> by ignoring one of <code>Invariant</code>’s function parameters. What if we ignored both of them?</p>
 <pre><code class="language-haskell">class (Functor f, Contravariant f) =&gt; Phantom f where
     pmap :: f a -&gt; f b
 </code></pre>
-<p>This strange class says that you can map an <code>f a</code> to an <code>f b</code> without needing to map <code>a</code>s or <code>b</code>s at all! Intuitively, you can only convert <code>f a</code> to <code>f b</code> for free when <code>f</code> doesn't mention <code>a</code> anywhere in its body.</p>
-<p>A functor is <code>Invariant</code> when it has <code>a</code>s both as inputs and outputs. <code>Functor</code> specialises <code>Invariant</code> by promising that <code>f</code> doesn't have any input <code>a</code>s, so all you need to do is map the outputs. <code>Contravariant</code> specialises <code>Invariant</code> by promising that there are no output <code>a</code>s and all you need to do is map the inputs. <code>Phantom</code>, being a special case of both covariance and contravariance, guarantees that there are no <code>a</code>s at all in the <code>f</code>.</p>
+<p>This strange class says that you can map an <code>f a</code> to an <code>f b</code> without needing to map <code>a</code>s or <code>b</code>s at all! Intuitively, you can only convert <code>f a</code> to <code>f b</code> for free when <code>f</code> doesn’t mention <code>a</code> anywhere in its body.</p>
+<p>A functor is <code>Invariant</code> when it has <code>a</code>s both as inputs and outputs. <code>Functor</code> specialises <code>Invariant</code> by promising that <code>f</code> doesn’t have any input <code>a</code>s, so all you need to do is map the outputs. <code>Contravariant</code> specialises <code>Invariant</code> by promising that there are no output <code>a</code>s and all you need to do is map the inputs. <code>Phantom</code>, being a special case of both covariance and contravariance, guarantees that there are no <code>a</code>s at all in the <code>f</code>.</p>
 <p>So the four types of variance form a nice lattice.</p>
 <img src="../images/2019-01-11-the-fourth-type-of-variance/lattice.jpg" />
-<p>For completeness, here's the proof that the superclass constraints make sense:</p>
+<p>For completeness, here’s the proof that the superclass constraints make sense:</p>
 <pre><code class="language-haskell">defaultFmap :: Phantom f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 defaultFmap _ = pmap
 
 defaultContramap :: Phantom f =&gt; (b -&gt; a) -&gt; f a -&gt; f b
 defaultContramap _ = pmap
 </code></pre>
-<p>Phantom types show up every now and then in Haskell. They're used to decorate ordinary values with additional type-level information, either to layer on additional type safety or to give GHC a hint for type inference.</p>
+<p>Phantom types show up every now and then in Haskell. They’re used to decorate ordinary values with additional type-level information, either to layer on additional type safety or to give GHC a hint for type inference.</p>
 <pre><code class="language-haskell">data Proxy a = Proxy  -- from Data.Proxy
 instance Phantom Proxy where
     pmap _ = Proxy
 </code></pre>
-<p>Haskell is the only language I know of with proper support for phantom types, in its <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles">role system</a>. (<code>Phantom</code> roughly means <code>forall a b. Coercible (f a) (f b)</code>.) Scala doesn't support it, but it'd mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.</p>
+<p>Haskell is the only language I know of with proper support for phantom types, in its <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles">role system</a>. (<code>Phantom</code> roughly means <code>forall a b. Coercible (f a) (f b)</code>.) Scala doesn’t support it, but it’d mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.</p>
 <pre><code class="language-scala">case class Proxy[±A]  // fantasy syntax
 
 val catProxy = Proxy[Cat]()
 val dogProxy : Proxy[Dog] = catProxy
 </code></pre>
-<p><code>Proxy[A]</code> is always a subtype of <code>Proxy[B]</code> (and vice versa!), even when <code>A</code> and <code>B</code> are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry — two different types can both be a subtype of each other — so subtyping is no longer a partial order. As a language feature, phantom variance probably isn't actually all that desirable.</p>
+<p><code>Proxy[A]</code> is always a subtype of <code>Proxy[B]</code> (and vice versa!), even when <code>A</code> and <code>B</code> are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry — two different types can both be a subtype of each other — so subtyping is no longer a partial order. As a language feature, phantom variance probably isn’t actually all that desirable.</p>
 
 
         </article>
