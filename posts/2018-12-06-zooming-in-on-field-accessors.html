@@ -20,9 +20,6 @@
 
             gtag('config', 'UA-115911217-1');
         </script>
-
-        <script async id="highlightjs-script" src="../js/third-party/highlight.js"></script>
-        <script async src="../js/main.js"></script>
     </head>
     <body>
         <header id="header">
@@ -47,324 +44,284 @@
 
             
 <p>It’s common in functional languages — and increasingly in hybrid languages like C# — to work with complex systems of immutable datatypes. For a contrived example, suppose you’re working on a billing application:</p>
-<pre><code class="language-csharp">class Order
-{
-    public Customer Customer { get; }
-    public ImmutableList&lt;Product&gt; Products { get; }
-}
-class Customer
-{
-    public string Name { get; }
-    public Address Address { get; }
-}
-class Address
-{
-    public string Line1 { get; }
-    public string Line2 { get; }
-    public string Postcode { get; }
-}
-class Product
-{
-    public string Title { get; }
-    public decimal Price { get; }
-}
-</code></pre>
-<img src="../images/2018-12-06-zooming-in-on-field-accessors/model.jpg" />
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Order</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Customer Customer <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableList<span class="op">&lt;</span>Product<span class="op">&gt;</span> Products <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Customer</span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Address Address <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Address</span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Line1 <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Line2 <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Postcode <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Product</span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Title <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">decimal</span> Price <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><img src="../images/2018-12-06-zooming-in-on-field-accessors/model.jpg" />
 <p>(I’ve omitted the constructors; you can imagine your own.) These objects are immutable, meaning you can’t modify them directly. The way to update an immutable object is to make a copy of that object with the relevant properties changed. This turns out to be surprisingly tedious when you’re working inside a deeply nested structure:</p>
-<pre><code class="language-csharp">Order UpdatePostcode(Order order/*👨🏻‍⚖️*/, string newPostcode)
-    =&gt; new Order(
-        new Customer(
-            order.Customer.Name,
-            new Address(
-                order.Customer.Address.Line1,
-                order.Customer.Address.Line2,
-                newPostcode
-            )
-        ),
-        order.Products
-    );
-</code></pre>
-<p>F#’s <code>with</code>-syntax helps a little, but not a lot. You still have to write each name multiple times.</p>
-<pre><code class="language-fsharp">let updatePostcode(order : Order, newPostcode : string) : Order = {
-  order with customer = {
-    order.customer with address = {
-      order.customer.address with postcode = newPostcode
-    }
-  }
-}
-</code></pre>
-<p>This pain is caused by immutability. In an imperative setting you can say <code>order.Customer.Address.Postcode = newPostcode;</code>, although of course mutable data is less reliable and harder to work with overall. Rather than give up on immutability, functional programmers have invented a remarkable family of composable tools called <em>optics</em> for poking around inside complex datatypes. Optics are a way of describing “paths” through structures: you can compose paths together, and read and write the values at the end of those paths. I’m here today to demonstrate that C#8’s upcoming <a href="https://github.com/dotnet/csharplang/issues/52"><em>default interface methods</em></a> are great at modelling optics.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>Order <span class="fu">UpdatePostcode</span><span class="op">(</span>Order order<span class="co">/*👨🏻‍⚖️*/</span><span class="op">,</span> <span class="dt">string</span> newPostcode<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">Order</span><span class="op">(</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">Customer</span><span class="op">(</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>            order<span class="op">.</span><span class="fu">Customer</span><span class="op">.</span><span class="fu">Name</span><span class="op">,</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> <span class="fu">Address</span><span class="op">(</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>                order<span class="op">.</span><span class="fu">Customer</span><span class="op">.</span><span class="fu">Address</span><span class="op">.</span><span class="fu">Line1</span><span class="op">,</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>                order<span class="op">.</span><span class="fu">Customer</span><span class="op">.</span><span class="fu">Address</span><span class="op">.</span><span class="fu">Line2</span><span class="op">,</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>                newPostcode</span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>            <span class="op">)</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="op">),</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        order<span class="op">.</span><span class="fu">Products</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div><p>F#’s <code>with</code>-syntax helps a little, but not a lot. You still have to write each name multiple times.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> updatePostcode<span class="op">(</span>order : Order, newPostcode : <span class="dt">string</span><span class="op">)</span> : Order = <span class="op">{</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>  order <span class="kw">with</span> customer = <span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    order.customer <span class="kw">with</span> address = <span class="op">{</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>      order.customer.address <span class="kw">with</span> postcode = newPostcode</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>This pain is caused by immutability. In an imperative setting you can say <code>order.Customer.Address.Postcode = newPostcode;</code>, although of course mutable data is less reliable and harder to work with overall. Rather than give up on immutability, functional programmers have invented a remarkable family of composable tools called <em>optics</em> for poking around inside complex datatypes. Optics are a way of describing “paths” through structures: you can compose paths together, and read and write the values at the end of those paths. I’m here today to demonstrate that C#8’s upcoming <a href="https://github.com/dotnet/csharplang/issues/52"><em>default interface methods</em></a> are great at modelling optics.</p>
 <p>Let’s start with <em>lenses</em>, the family member that gave the family its name.</p>
 <h2 id="lenses"><a href="#lenses">Lenses
 
 </a></h2>
 <p>A <em>lens</em> is a first-class property for an immutable object. It’s an object with a pair of methods, a <em>getter</em> which retrives the value of a property and a <em>setter</em> which updates it. Remember, we’re working with immutable data, so the setter returns a new copy of the object.</p>
-<pre><code class="language-csharp">interface ILens&lt;T, TProp&gt;
-{
-    TProp Get(T obj);
-    T Set(T oldObj, TProp newVal);
-}
-</code></pre>
-<p>For example, here’s a lens which focuses on an <code>Order</code>’s <code>Customer</code>.</p>
-<pre><code class="language-csharp">class CustomerL : ILens&lt;Order, Customer&gt;
-{
-    public Customer Get(Order o) =&gt; o.Customer;
-
-    public Order Set(Order o, Customer c) =&gt; new Order(c, o.Products);
-}
-</code></pre>
-<img src="../images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" />
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ILens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    TProp <span class="fu">Get</span><span class="op">(</span>T obj<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Set</span><span class="op">(</span>T oldObj<span class="op">,</span> TProp newVal<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>For example, here’s a lens which focuses on an <code>Order</code>’s <code>Customer</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CustomerL <span class="op">:</span> ILens<span class="op">&lt;</span>Order<span class="op">,</span> Customer<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Customer <span class="fu">Get</span><span class="op">(</span>Order o<span class="op">)</span> <span class="op">=&gt;</span> o<span class="op">.</span><span class="fu">Customer</span><span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Order <span class="fu">Set</span><span class="op">(</span>Order o<span class="op">,</span> Customer c<span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">Order</span><span class="op">(</span>c<span class="op">,</span> o<span class="op">.</span><span class="fu">Products</span><span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><img src="../images/2018-12-06-zooming-in-on-field-accessors/customer.jpg" />
 <p>So a lens picks out a single property inside a given object.</p>
 <p>The power of lenses comes from their composability. Given a lens identifying a <code>T2</code> inside a <code>T1</code> (<code>ILens&lt;T1, T2&gt;</code>) and a lens identifying a <code>T3</code> inside a <code>T2</code> (<code>ILens&lt;T2, T3&gt;</code>), you can compose those lenses together to focus all the way from the <code>T1</code> to the <code>T3</code>.</p>
 <p>You can traverse any relationship in your data model by composing together a small number of individual lenses. Composing lenses is so important that I’ve given it the shortest name I can think of: <code>_</code>. (Readers of <a href="2018-03-16-eighty.html">an earlier post of mine</a> will know of my fondness for <code>_</code>.)</p>
 <img src="../images/2018-12-06-zooming-in-on-field-accessors/postcode.jpg" />
 <p>Compare this terse, declarative code with the tedious version of <code>UpdatePostcode</code> from the beginning:</p>
-<pre><code class="language-csharp">Order UpdatePostcode(Order order/*👨🏻‍⚖️*/, string newPostcode)
-{
-    ILens&lt;Order, string&gt; l = new CustomerL()
-        ._(new AddressL())
-        ._(new PostcodeL());
-    
-    return l.Set(order, newPostcode);
-}
-</code></pre>
-<p>Lenses work without reference to any particular instance. (This is called <del><em>pointless</em></del> <a href="https://stackoverflow.com/questions/944446/what-is-point-free-style-in-functional-programming"><em>point-free</em></a> programming.) <code>order.Customer.Address.Postcode</code> becomes <code>new CustomerL()._(new AddressL())._(new PostcodeL())</code> — the path of properties is sort of detached from the object itself. Treating a path through a datatype as a first class value is the big idea behind lenses.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>Order <span class="fu">UpdatePostcode</span><span class="op">(</span>Order order<span class="co">/*👨🏻‍⚖️*/</span><span class="op">,</span> <span class="dt">string</span> newPostcode<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    ILens<span class="op">&lt;</span>Order<span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> l <span class="op">=</span> <span class="kw">new</span> <span class="fu">CustomerL</span><span class="op">()</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">_</span><span class="op">(</span><span class="kw">new</span> <span class="fu">AddressL</span><span class="op">())</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">_</span><span class="op">(</span><span class="kw">new</span> <span class="fu">PostcodeL</span><span class="op">());</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> l<span class="op">.</span><span class="fu">Set</span><span class="op">(</span>order<span class="op">,</span> newPostcode<span class="op">);</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Lenses work without reference to any particular instance. (This is called <del><em>pointless</em></del> <a href="https://stackoverflow.com/questions/944446/what-is-point-free-style-in-functional-programming"><em>point-free</em></a> programming.) <code>order.Customer.Address.Postcode</code> becomes <code>new CustomerL()._(new AddressL())._(new PostcodeL())</code> — the path of properties is sort of detached from the object itself. Treating a path through a datatype as a first class value is the big idea behind lenses.</p>
 <p>Here’s how <code>_</code> is implemented. It returns a new <code>ILens</code> (an instance of a private class) which delegates to the two smaller lenses.</p>
-<pre><code class="language-csharp">static class LensExtensions
-{
-    public static ILens&lt;T1, T3&gt; _&lt;T1, T2, T3&gt;(this ILens&lt;T1, T2&gt; l1, ILens&lt;T2, T3&gt; l2)
-        =&gt; new ComposedLens&lt;T1, T2, T3&gt;(l1, l2);
-
-    private class ComposedLens&lt;T1, T2, T3&gt; : ILens&lt;T1, T3&gt;
-    {
-        private readonly ILens&lt;T1, T2&gt; _l1;
-        private readonly ILens&lt;T2, T3&gt; _l2;
-
-        public T3 Get(T1 obj) =&gt; _l2.Get(_l1.Get(obj));
-
-        public T1 Set(T1 oldObj, T3 newVal)
-            =&gt; _l1.Set(oldObj, _l2.Set(_l1.Get(oldObj), newVal));
-    }
-}
-</code></pre>
-<p>To summarise, a lens is a way to focus on a small part of a big immutable structure. They’re like a first-class version of the <code>.</code> and <code>=</code> operators: you can compose lenses together to focus deeper, and upon focusing on a location you can get and set the value at that location.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">class</span> LensExtensions</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> ILens<span class="op">&lt;</span>T1<span class="op">,</span> T3<span class="op">&gt;</span> _<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">,</span> T3<span class="op">&gt;(</span><span class="kw">this</span> ILens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">&gt;</span> l1<span class="op">,</span> ILens<span class="op">&lt;</span>T2<span class="op">,</span> T3<span class="op">&gt;</span> l2<span class="op">)</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> ComposedLens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">,</span> T3<span class="op">&gt;(</span>l1<span class="op">,</span> l2<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">class</span> ComposedLens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">,</span> T3<span class="op">&gt;</span> <span class="op">:</span> ILens<span class="op">&lt;</span>T1<span class="op">,</span> T3<span class="op">&gt;</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">private</span> <span class="kw">readonly</span> ILens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">&gt;</span> _l1<span class="op">;</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">private</span> <span class="kw">readonly</span> ILens<span class="op">&lt;</span>T2<span class="op">,</span> T3<span class="op">&gt;</span> _l2<span class="op">;</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">public</span> T3 <span class="fu">Get</span><span class="op">(</span>T1 obj<span class="op">)</span> <span class="op">=&gt;</span> _l2<span class="op">.</span><span class="fu">Get</span><span class="op">(</span>_l1<span class="op">.</span><span class="fu">Get</span><span class="op">(</span>obj<span class="op">));</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">public</span> T1 <span class="fu">Set</span><span class="op">(</span>T1 oldObj<span class="op">,</span> T3 newVal<span class="op">)</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>            <span class="op">=&gt;</span> _l1<span class="op">.</span><span class="fu">Set</span><span class="op">(</span>oldObj<span class="op">,</span> _l2<span class="op">.</span><span class="fu">Set</span><span class="op">(</span>_l1<span class="op">.</span><span class="fu">Get</span><span class="op">(</span>oldObj<span class="op">),</span> newVal<span class="op">));</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>To summarise, a lens is a way to focus on a small part of a big immutable structure. They’re like a first-class version of the <code>.</code> and <code>=</code> operators: you can compose lenses together to focus deeper, and upon focusing on a location you can get and set the value at that location.</p>
 <h3 id="mapping-under-a-lens"><a href="#mapping-under-a-lens">Mapping under a lens</a></h3>
 <p>A common pattern is to get a value from a lens, apply some sort of transformation to it, and then put it back where it was. The <code>Map</code> helper function wraps up this pattern:</p>
-<pre><code class="language-csharp">interface ILens&lt;T, TProp&gt;
-{
-    TProp Get(T obj);
-    T Set(T oldObj, TProp newVal);
-
-    T Map(T oldObj, Func&lt;TProp, TProp&gt; transformer)
-        =&gt; Set(oldObj, transformer(Get(oldObj))).
-}
-</code></pre>
-<p>Here’s an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you’re working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ILens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    TProp <span class="fu">Get</span><span class="op">(</span>T obj<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Set</span><span class="op">(</span>T oldObj<span class="op">,</span> TProp newVal<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Map</span><span class="op">(</span>T oldObj<span class="op">,</span> Func<span class="op">&lt;</span>TProp<span class="op">,</span> TProp<span class="op">&gt;</span> transformer<span class="op">)</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">Set</span><span class="op">(</span>oldObj<span class="op">,</span> <span class="fu">transformer</span><span class="op">(</span><span class="fu">Get</span><span class="op">(</span>oldObj<span class="op">))).</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Here’s an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you’re working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
 <hr />
 <p>Powerful as they are, these lenses don’t quite scale up to cover all of the important ways to access data. Specifically, they don’t support computed properties or lists.</p>
 <h2 id="getters"><a href="#getters">Getters
 
 </a></h2>
 <p>How would you write a lens which focuses on a list’s <code>Count</code>? You can’t set <code>Count</code> directly - it measures the number of times you’ve added or removed something from the list. The only way to change the <code>Count</code> is to add or remove an item!</p>
-<pre><code class="language-csharp">class CountL&lt;T&gt; : ILens&lt;ImmutableList&lt;T&gt;, int&gt;
-{
-    public int Get(ImmutableList&lt;T&gt; l) =&gt; l.Count;
-    public ImmutableList&lt;T&gt; Set(ImmutableList&lt;T&gt; l, int count) =&gt; /* ??? */;
-}
-</code></pre>
-<p>Clearly we need to separate the “getting” and “setting” reponsibilities of <code>ILens</code>.</p>
-<pre><code class="language-csharp">interface IGetter&lt;T, TProp&gt;
-{
-    TProp Get(T obj);
-}
-interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;
-{
-    T Set(T oldObj, TProp newVal);
-}
-</code></pre>
-<p>We don’t lose composability by doing this. You can still compose two getters to get a getter.</p>
-<pre><code class="language-csharp">static class LensExtensions
-{
-    public static IGetter&lt;T1, T3&gt; _(
-        this IGetter&lt;T1, T2&gt; g1,
-        IGetter&lt;T2, T3&gt; g2
-    ) =&gt; new ComposedGetter&lt;T1, T2, T3&gt;(g1, g2);
-
-    private class ComposedGetter&lt;T1, T2, T3&gt; : IGetter&lt;T1, T3&gt;
-    {
-        private readonly IGetter&lt;T1, T2&gt; _g1;
-        private readonly IGetter&lt;T2, T3&gt; _g2;
-
-        public T3 Get(T1 obj) =&gt; _g2.Get(_g1.Get(obj));
-    }
-}
-</code></pre>
-<p>If you compose a lens with a getter, you get a getter. This makes sense: if any part of a given path through a data structure is read-only, then the whole path must be read-only. It Just Works™ because <code>ILens</code> is a subtype of <code>IGetter</code>. Overload resolution takes care of it: you type <code>_</code> and the compiler picks the right return type based on the types of <code>_</code>’s arguments.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CountL<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> ILens<span class="op">&lt;</span>ImmutableList<span class="op">&lt;</span>T<span class="op">&gt;,</span> <span class="dt">int</span><span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> <span class="fu">Get</span><span class="op">(</span>ImmutableList<span class="op">&lt;</span>T<span class="op">&gt;</span> l<span class="op">)</span> <span class="op">=&gt;</span> l<span class="op">.</span><span class="fu">Count</span><span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableList<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">Set</span><span class="op">(</span>ImmutableList<span class="op">&lt;</span>T<span class="op">&gt;</span> l<span class="op">,</span> <span class="dt">int</span> count<span class="op">)</span> <span class="op">=&gt;</span> <span class="co">/* ??? */</span><span class="op">;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Clearly we need to separate the “getting” and “setting” reponsibilities of <code>ILens</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IGetter<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    TProp <span class="fu">Get</span><span class="op">(</span>T obj<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ILens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span> <span class="op">:</span> IGetter<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Set</span><span class="op">(</span>T oldObj<span class="op">,</span> TProp newVal<span class="op">);</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>We don’t lose composability by doing this. You can still compose two getters to get a getter.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">class</span> LensExtensions</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> IGetter<span class="op">&lt;</span>T1<span class="op">,</span> T3<span class="op">&gt;</span> <span class="fu">_</span><span class="op">(</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span> IGetter<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">&gt;</span> g1<span class="op">,</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        IGetter<span class="op">&lt;</span>T2<span class="op">,</span> T3<span class="op">&gt;</span> g2</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">new</span> ComposedGetter<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">,</span> T3<span class="op">&gt;(</span>g1<span class="op">,</span> g2<span class="op">);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">class</span> ComposedGetter<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">,</span> T3<span class="op">&gt;</span> <span class="op">:</span> IGetter<span class="op">&lt;</span>T1<span class="op">,</span> T3<span class="op">&gt;</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">private</span> <span class="kw">readonly</span> IGetter<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">&gt;</span> _g1<span class="op">;</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">private</span> <span class="kw">readonly</span> IGetter<span class="op">&lt;</span>T2<span class="op">,</span> T3<span class="op">&gt;</span> _g2<span class="op">;</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">public</span> T3 <span class="fu">Get</span><span class="op">(</span>T1 obj<span class="op">)</span> <span class="op">=&gt;</span> _g2<span class="op">.</span><span class="fu">Get</span><span class="op">(</span>_g1<span class="op">.</span><span class="fu">Get</span><span class="op">(</span>obj<span class="op">));</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>If you compose a lens with a getter, you get a getter. This makes sense: if any part of a given path through a data structure is read-only, then the whole path must be read-only. It Just Works™ because <code>ILens</code> is a subtype of <code>IGetter</code>. Overload resolution takes care of it: you type <code>_</code> and the compiler picks the right return type based on the types of <code>_</code>’s arguments.</p>
 <h2 id="multi-lenses"><a href="#multi-lenses">Multi-lenses
 
 </a></h2>
 <p><code>ILens</code> focuses on a single part of a structure. Its <code>Get</code> method returns a single <code>TProp</code> and its <code>Set</code> method takes a single <code>TProp</code>. This means you can’t use lenses to, for example, update the price of all the products in an order.</p>
 <p>Enter <em>multi-lenses</em>, also known as <em>traversals</em>.</p>
-<pre><code class="language-csharp">interface IMultiLens&lt;T, TProp&gt;
-{
-    IEnumerable&lt;TProp&gt; MultiGet(T obj);
-    // newVals should be the same length as the list returned by MultiGet
-    T MultiSet(T oldObj, IEnumerable&lt;TProp&gt; newVals);
-
-    T Map(T oldObj, Func&lt;TProp, TProp&gt; transformer)
-        =&gt; MultiSet(oldObj, MultiGet(oldObj).Select(transformer)).
-}
-</code></pre>
-<p>(Readers of <a href="2017-11-13-recursion-without-recursion.html">an earlier post</a> might recognise <code>IMultiLens</code> as a generalisation of <code>IRewriter</code>.) A multi-lens is like a lens which can hit more than one target. While a lens focuses on <em>exactly one</em> <code>TProp</code> inside a <code>T</code>, a multi-lens relaxes that restriction, focusing on <em>zero-or-many</em> <code>TProps</code> at once.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IMultiLens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> <span class="fu">MultiGet</span><span class="op">(</span>T obj<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// newVals should be the same length as the list returned by MultiGet</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">MultiSet</span><span class="op">(</span>T oldObj<span class="op">,</span> IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> newVals<span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Map</span><span class="op">(</span>T oldObj<span class="op">,</span> Func<span class="op">&lt;</span>TProp<span class="op">,</span> TProp<span class="op">&gt;</span> transformer<span class="op">)</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">MultiSet</span><span class="op">(</span>oldObj<span class="op">,</span> <span class="fu">MultiGet</span><span class="op">(</span>oldObj<span class="op">).</span><span class="fu">Select</span><span class="op">(</span>transformer<span class="op">)).</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>(Readers of <a href="2017-11-13-recursion-without-recursion.html">an earlier post</a> might recognise <code>IMultiLens</code> as a generalisation of <code>IRewriter</code>.) A multi-lens is like a lens which can hit more than one target. While a lens focuses on <em>exactly one</em> <code>TProp</code> inside a <code>T</code>, a multi-lens relaxes that restriction, focusing on <em>zero-or-many</em> <code>TProps</code> at once.</p>
 <p>Here’s an example multi-lens which focuses on all of the <code>Product</code>s in an <code>Order</code>.</p>
-<pre><code class="language-csharp">class ProductsL : IMultiLens&lt;Order, Product&gt;
-{
-    IEnumerable&lt;Product&gt; MultiGet(Order order) =&gt; order.Products;
-
-    Order MultiSet(Order order, IEnumerable&lt;Product&gt; newProducts)
-        =&gt; new Order(order.Customer, newProducts);
-}
-</code></pre>
-<img src="../images/2018-12-06-zooming-in-on-field-accessors/products.jpg" />
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ProductsL <span class="op">:</span> IMultiLens<span class="op">&lt;</span>Order<span class="op">,</span> Product<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    IEnumerable<span class="op">&lt;</span>Product<span class="op">&gt;</span> <span class="fu">MultiGet</span><span class="op">(</span>Order order<span class="op">)</span> <span class="op">=&gt;</span> order<span class="op">.</span><span class="fu">Products</span><span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    Order <span class="fu">MultiSet</span><span class="op">(</span>Order order<span class="op">,</span> IEnumerable<span class="op">&lt;</span>Product<span class="op">&gt;</span> newProducts<span class="op">)</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">Order</span><span class="op">(</span>order<span class="op">.</span><span class="fu">Customer</span><span class="op">,</span> newProducts<span class="op">);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><img src="../images/2018-12-06-zooming-in-on-field-accessors/products.jpg" />
 <p>You can compose multi-lenses, too. If you have a multi-lens which finds $n$ <code>T2</code>s inside a <code>T1</code>, and a second multi-lens which finds $m$ <code>T3</code>s inside a <code>T2</code>, you can build a multi-lens which finds $nm$ <code>T3</code>s inside a <code>T1</code>. This works by looking through the second multi-lens at all $n$ of the first multi-lens’s targets.</p>
-<pre><code class="language-csharp">static class LensExtensions
-{
-    public static IMultiLens&lt;T1, T3&gt; _(
-        this IMultiLens&lt;T1, T2&gt; m1,
-        IMultiLens&lt;T2, T3&gt; m2
-    ) =&gt; new ComposedMultiLens&lt;T1, T2, T3&gt;(m1, m2);
-
-    private class ComposedMultiLens&lt;T1, T2, T3&gt; : IMultiLens&lt;T1, T3&gt;
-    {
-        private readonly IMultiLens&lt;T1, T2&gt; _m1;
-        private readonly IMultiLens&lt;T2, T3&gt; _m2;
-
-        public IEnumerable&lt;T3&gt; MultiGet(T1 obj)
-            =&gt; _m1.MultiGet(obj).SelectMany(_m2.MultiGet);
-
-        public T1 MultiSet(T1 oldObj, IEnumerable&lt;T3&gt; newVals)
-        {
-            IEnumerable&lt;T2&gt; NewT2s()
-            {
-                foreach (var x in _m1.MultiGet(oldObj))
-                {
-                    var chunkLength = _m2.MultiGet(x).Count();
-                    yield return _m2.MultiSet(x, newVals.Take(chunkLength));
-                    newVals = newVals.Skip(chunkLength);
-                }
-            }
-            return _m1.MultiSet(oldObj, NewT2s());
-        }
-    }
-}
-</code></pre>
-<p><code>MultiSet</code> chops <code>newVals</code> into chunks that are the length of each group of descendants. This is safe as long as a user never calls <code>MultiSet</code> with a different number of elements than was returned by <code>MultiGet</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">class</span> LensExtensions</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> IMultiLens<span class="op">&lt;</span>T1<span class="op">,</span> T3<span class="op">&gt;</span> <span class="fu">_</span><span class="op">(</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span> IMultiLens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">&gt;</span> m1<span class="op">,</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        IMultiLens<span class="op">&lt;</span>T2<span class="op">,</span> T3<span class="op">&gt;</span> m2</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">new</span> ComposedMultiLens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">,</span> T3<span class="op">&gt;(</span>m1<span class="op">,</span> m2<span class="op">);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">class</span> ComposedMultiLens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">,</span> T3<span class="op">&gt;</span> <span class="op">:</span> IMultiLens<span class="op">&lt;</span>T1<span class="op">,</span> T3<span class="op">&gt;</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">private</span> <span class="kw">readonly</span> IMultiLens<span class="op">&lt;</span>T1<span class="op">,</span> T2<span class="op">&gt;</span> _m1<span class="op">;</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">private</span> <span class="kw">readonly</span> IMultiLens<span class="op">&lt;</span>T2<span class="op">,</span> T3<span class="op">&gt;</span> _m2<span class="op">;</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">public</span> IEnumerable<span class="op">&lt;</span>T3<span class="op">&gt;</span> <span class="fu">MultiGet</span><span class="op">(</span>T1 obj<span class="op">)</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>            <span class="op">=&gt;</span> _m1<span class="op">.</span><span class="fu">MultiGet</span><span class="op">(</span>obj<span class="op">).</span><span class="fu">SelectMany</span><span class="op">(</span>_m2<span class="op">.</span><span class="fu">MultiGet</span><span class="op">);</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>        <span class="kw">public</span> T1 <span class="fu">MultiSet</span><span class="op">(</span>T1 oldObj<span class="op">,</span> IEnumerable<span class="op">&lt;</span>T3<span class="op">&gt;</span> newVals<span class="op">)</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>            IEnumerable<span class="op">&lt;</span>T2<span class="op">&gt;</span> <span class="fu">NewT2s</span><span class="op">()</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>                <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> x <span class="kw">in</span> _m1<span class="op">.</span><span class="fu">MultiGet</span><span class="op">(</span>oldObj<span class="op">))</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>                <span class="op">{</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">var</span> chunkLength <span class="op">=</span> _m2<span class="op">.</span><span class="fu">MultiGet</span><span class="op">(</span>x<span class="op">).</span><span class="fu">Count</span><span class="op">();</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>                    <span class="kw">yield</span> <span class="kw">return</span> _m2<span class="op">.</span><span class="fu">MultiSet</span><span class="op">(</span>x<span class="op">,</span> newVals<span class="op">.</span><span class="fu">Take</span><span class="op">(</span>chunkLength<span class="op">));</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>                    newVals <span class="op">=</span> newVals<span class="op">.</span><span class="fu">Skip</span><span class="op">(</span>chunkLength<span class="op">);</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> _m1<span class="op">.</span><span class="fu">MultiSet</span><span class="op">(</span>oldObj<span class="op">,</span> <span class="fu">NewT2s</span><span class="op">());</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p><code>MultiSet</code> chops <code>newVals</code> into chunks that are the length of each group of descendants. This is safe as long as a user never calls <code>MultiSet</code> with a different number of elements than was returned by <code>MultiGet</code>.</p>
 <p>So far we can compose multi-lenses on their own, but they don’t yet interoperate well with lenses. But note multi-lenses generalise lenses by relaxing the requirement that there should be exactly one substructure. Every lens is also a multi-lens by forgetting that there’s a single <code>TProp</code>. (Once again we’re relying on the assumption that the list does not change length in between <code>MultiGet</code> and <code>MultiSet</code> calls.)</p>
-<pre><code class="language-csharp">interface ILens&lt;T, TProp&gt; : IMultiLens&lt;T, TProp&gt;
-{
-    TProp Get(T obj);
-    T Set(T oldObj, TProp newVal);
-
-    IEnumerable&lt;TProp&gt; MultiGet(T obj)
-        =&gt; new[] { Get(obj) };
-    T MultiSet(T oldObj, IEnumerable&lt;TProp&gt; newVals)
-        =&gt; Set(oldObj, newVals.Single());
-}
-</code></pre>
-<p>Inheriting from <code>IMultiLens</code> like this is just the same trick as inheriting from <code>IGetter</code>. It allows you to compose a lens with a multi-lens using <code>_</code>; the result will be a multi-lens.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ILens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span> <span class="op">:</span> IMultiLens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    TProp <span class="fu">Get</span><span class="op">(</span>T obj<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Set</span><span class="op">(</span>T oldObj<span class="op">,</span> TProp newVal<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> <span class="fu">MultiGet</span><span class="op">(</span>T obj<span class="op">)</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> <span class="fu">Get</span><span class="op">(</span>obj<span class="op">)</span> <span class="op">};</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">MultiSet</span><span class="op">(</span>T oldObj<span class="op">,</span> IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> newVals<span class="op">)</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">Set</span><span class="op">(</span>oldObj<span class="op">,</span> newVals<span class="op">.</span><span class="fu">Single</span><span class="op">());</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Inheriting from <code>IMultiLens</code> like this is just the same trick as inheriting from <code>IGetter</code>. It allows you to compose a lens with a multi-lens using <code>_</code>; the result will be a multi-lens.</p>
 <p>If lenses are like a first-class <code>.</code>, then multi-lenses are like a first-class <code>Select</code>. Composing a lens onto the end of a multi-lens is like <code>Select</code>ing a field from each element of a list, with the added power of being able to write new values to the list. Like lenses, multi-lenses are point-free: you compose a multi-lens describing a path through a datatype, then apply that multi-lens to a specific instance of the datatype.</p>
-<pre><code class="language-csharp">Order TwentyPercentOff(Order order)
-{
-    IMultiLens&lt;Order, decimal&gt; l = new ProductsL()._(new PriceL());
-    return l.Map(order, x =&gt; x * 0.8);
-}
-</code></pre>
-<img src="../images/2018-12-06-zooming-in-on-field-accessors/product-and-price.jpg" />
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>Order <span class="fu">TwentyPercentOff</span><span class="op">(</span>Order order<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    IMultiLens<span class="op">&lt;</span>Order<span class="op">,</span> <span class="dt">decimal</span><span class="op">&gt;</span> l <span class="op">=</span> <span class="kw">new</span> <span class="fu">ProductsL</span><span class="op">().</span><span class="fu">_</span><span class="op">(</span><span class="kw">new</span> <span class="fu">PriceL</span><span class="op">());</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> l<span class="op">.</span><span class="fu">Map</span><span class="op">(</span>order<span class="op">,</span> x <span class="op">=&gt;</span> x <span class="op">*</span> <span class="fl">0.8</span><span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><img src="../images/2018-12-06-zooming-in-on-field-accessors/product-and-price.jpg" />
 <p>Incorporating the earlier <code>IGetter</code> fix, and extending <code>IMultiLens</code> upwards in parallel, leaves us with the following hierarchy.</p>
-<pre><code class="language-csharp">interface IMultiGetter&lt;T, TProp&gt;
-{
-    IEnumerable&lt;TProp&gt; MultiGet(T obj);
-}
-interface IMultiLens&lt;T, TProp&gt; : IMultiGetter&lt;T, TProp&gt;
-{
-    T MultiSet(T oldObj, IEnumerable&lt;TProp&gt; newVals);
-
-    T Map(T oldObj, Func&lt;TProp, TProp&gt; transformer)
-        =&gt; MultiSet(oldObj, MultiGet(oldObj).Select(transformer));
-}
-interface IGetter&lt;T, TProp&gt; : IMultiGetter&lt;T, TProp&gt;
-{
-    TProp Get(T obj);
-
-    IEnumerable&lt;TProp&gt; MultiGet(T obj)
-        =&gt; new[] { Get(obj) };
-}
-interface ILens&lt;T, TProp&gt; : IGetter&lt;T, TProp&gt;, IMultiLens&lt;T, TProp&gt;
-{
-    T Set(T oldObj, TProp newVal);
-
-    T MultiSet(T oldObj, IEnumerable&lt;TProp&gt; newVals)
-        =&gt; Set(oldObj, newVals.Single());
-}
-</code></pre>
-<img src="../images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" />
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IMultiGetter<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> <span class="fu">MultiGet</span><span class="op">(</span>T obj<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IMultiLens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span> <span class="op">:</span> IMultiGetter<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">MultiSet</span><span class="op">(</span>T oldObj<span class="op">,</span> IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> newVals<span class="op">);</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Map</span><span class="op">(</span>T oldObj<span class="op">,</span> Func<span class="op">&lt;</span>TProp<span class="op">,</span> TProp<span class="op">&gt;</span> transformer<span class="op">)</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">MultiSet</span><span class="op">(</span>oldObj<span class="op">,</span> <span class="fu">MultiGet</span><span class="op">(</span>oldObj<span class="op">).</span><span class="fu">Select</span><span class="op">(</span>transformer<span class="op">));</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IGetter<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span> <span class="op">:</span> IMultiGetter<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    TProp <span class="fu">Get</span><span class="op">(</span>T obj<span class="op">);</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>    IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> <span class="fu">MultiGet</span><span class="op">(</span>T obj<span class="op">)</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> <span class="fu">Get</span><span class="op">(</span>obj<span class="op">)</span> <span class="op">};</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ILens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span> <span class="op">:</span> IGetter<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;,</span> IMultiLens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">Set</span><span class="op">(</span>T oldObj<span class="op">,</span> TProp newVal<span class="op">);</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">MultiSet</span><span class="op">(</span>T oldObj<span class="op">,</span> IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> newVals<span class="op">)</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">Set</span><span class="op">(</span>oldObj<span class="op">,</span> newVals<span class="op">.</span><span class="fu">Single</span><span class="op">());</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><img src="../images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" />
 <h2 id="default-interface-implementations"><a href="#default-interface-implementations">Default Interface Implementations
 
 </a></h2>
 <p>The code above makes central use of default interface implementations, so it’s probably time to talk about what they are.</p>
 <p>In C#8, interfaces won’t just be type declarations any more. You’ll be allowed to write code in an interface method, to function as the default implementation of that method. Typically it’ll be written in terms of the other methods on the interface, like an extension method. They differ from extension methods, however, in that they are virtual. If an implementing class has a better (faster, typically) way of implementing the operation, it’s free to override it.</p>
 <p>Here’s an example. How would LINQ’s design look different if default interface methods had been around at the time? Today’s <a href="https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.count"><code>Count</code></a> method, an extension method, works in linear time by counting up all of the elements of the input <code>IEnumerable</code>.</p>
-<pre><code class="language-csharp">public static int Count&lt;T&gt;(this IEnumerable&lt;T&gt; source)
-{
-    var count = 0;
-    foreach (var _ in source)
-    {
-        count++;
-    }
-    return count;
-}
-</code></pre>
-<p>However, there are certain implementations of <code>IEnumerable</code> which can count themselves much faster than that:</p>
-<pre><code class="language-csharp">class List&lt;T&gt; : IEnumerable&lt;T&gt;
-{
-    private T[] _array;
-    private int _count;
-
-    // ...
-
-    public int Count =&gt; _count;
-}
-</code></pre>
-<p><a href="https://github.com/dotnet/corefx/blob/master/src/System.Linq/src/System/Linq/Count.cs">The real <code>Count</code> extension method</a> takes a fast path when its argument happens to be an <a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.icollection-1?view=netframework-4.7.2"><code>ICollection</code></a>, but that doesn’t scale well. Not every <code>IEnumerable</code> which admits a fast <code>Count</code> can also implement <code>ICollection</code> — for example, an immutable collection can’t implement the <code>void Add(T item)</code> method.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> <span class="dt">int</span> Count<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> IEnumerable<span class="op">&lt;</span>T<span class="op">&gt;</span> source<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> count <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> _ <span class="kw">in</span> source<span class="op">)</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        count<span class="op">++;</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> count<span class="op">;</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>However, there are certain implementations of <code>IEnumerable</code> which can count themselves much faster than that:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> List<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> IEnumerable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> T<span class="op">[]</span> _array<span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="dt">int</span> _count<span class="op">;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Count <span class="op">=&gt;</span> _count<span class="op">;</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p><a href="https://github.com/dotnet/corefx/blob/master/src/System.Linq/src/System/Linq/Count.cs">The real <code>Count</code> extension method</a> takes a fast path when its argument happens to be an <a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.icollection-1?view=netframework-4.7.2"><code>ICollection</code></a>, but that doesn’t scale well. Not every <code>IEnumerable</code> which admits a fast <code>Count</code> can also implement <code>ICollection</code> — for example, an immutable collection can’t implement the <code>void Add(T item)</code> method.</p>
 <p>If LINQ had been designed not as a collection of extension methods but as a collection of default interface methods, it’d be possible to override <code>Count</code> in an extensible way:</p>
-<pre><code class="language-csharp">interface IEnumerable&lt;T&gt;
-{
-    IEnumerator&lt;T&gt; GetEnumerator();
-
-    int Count()
-    {
-        var count = 0;
-        foreach (var _ in source)
-        {
-            count++;
-        }
-        return count;
-    }
-    // other methods like Select etc
-}
-
-class List&lt;T&gt; : IEnumerable&lt;T&gt;
-{
-    private T[] _array;
-    private int _count;
-    
-    // ...
-
-    // override the default version from IEnumerable
-    public int Count() =&gt; _count;
-}
-</code></pre>
-<p>Interfaces with default methods are somewhat like abstract classes with virtual methods. The main difference is that a class can implement multiple interfaces, while it can only derive from one class. So default interface implementations amount to a form of multiple inheritance! (This provoked much whingeing in <a href="https://github.com/dotnet/csharplang/issues/288">the discussion on GitHub</a>.)</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IEnumerable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    IEnumerator<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">GetEnumerator</span><span class="op">();</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> <span class="fu">Count</span><span class="op">()</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> count <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> _ <span class="kw">in</span> source<span class="op">)</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>            count<span class="op">++;</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> count<span class="op">;</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    <span class="co">// other methods like Select etc</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> List<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> IEnumerable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> T<span class="op">[]</span> _array<span class="op">;</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="dt">int</span> _count<span class="op">;</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>    <span class="co">// override the default version from IEnumerable</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> <span class="fu">Count</span><span class="op">()</span> <span class="op">=&gt;</span> _count<span class="op">;</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Interfaces with default methods are somewhat like abstract classes with virtual methods. The main difference is that a class can implement multiple interfaces, while it can only derive from one class. So default interface implementations amount to a form of multiple inheritance! (This provoked much whingeing in <a href="https://github.com/dotnet/csharplang/issues/288">the discussion on GitHub</a>.)</p>
 <p>The optics library I’ve outlined above makes central use of multiple inheritance. <code>ILens</code> inherits its <code>MultiGet</code> implementation from <code>IGetter</code> and its <code>Map</code> implementation from <code>IMultiLens</code>. So it wouldn’t work with abstract classes; before C#8 we wouldn’t have been able to write this program. Default interface implementations add new expressive power to the language.</p>
 <h2 id="production-worthiness"><a href="#production-worthiness">Production-Worthiness
 
@@ -384,17 +341,13 @@ class List&lt;T&gt; : IEnumerable&lt;T&gt;
 <ul>
 <li>
 <p><strong>Type inference</strong>. C# has only minimal support for type inference. This makes generic lenses unpleasant to use. The following lens picks out a <code>KeyValuePair</code>’s <code>Value</code>:</p>
-<pre><code class="language-csharp">class ValueL&lt;K, V&gt; : ILens&lt;KeyValuePair&lt;K, V&gt;, V&gt;
-{
-    public V Get(KeyValuePair&lt;K, V&gt; kvp) =&gt; kvp.Value;
-    public KeyValuePair&lt;K, V&gt; Set(KeyValuePair&lt;K, V&gt; kvp, V val)
-        =&gt; new KeyValuePair&lt;K, V&gt;(kvp.Key, val);
-}
-</code></pre>
-<p>You can’t use <code>ValueL</code> without explicitly mentioning the concrete type parameters at which you’re using it:</p>
-<pre><code class="language-csharp">new ValueL&lt;string, int&gt;().Set(new KeyValuePair&lt;string, int&gt;(&quot;foo&quot;, 3), 7);
-</code></pre>
-<p>Ideally the compiler would be able to deduce the <code>&lt;string, int&gt;</code> part by noticing that we’re using it on a <code>KeyValuePair&lt;string, int&gt;</code>. This is difficult to implement in a subtyping-based language, though.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ValueL<span class="op">&lt;</span>K<span class="op">,</span> V<span class="op">&gt;</span> <span class="op">:</span> ILens<span class="op">&lt;</span>KeyValuePair<span class="op">&lt;</span>K<span class="op">,</span> V<span class="op">&gt;,</span> V<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> V <span class="fu">Get</span><span class="op">(</span>KeyValuePair<span class="op">&lt;</span>K<span class="op">,</span> V<span class="op">&gt;</span> kvp<span class="op">)</span> <span class="op">=&gt;</span> kvp<span class="op">.</span><span class="fu">Value</span><span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> KeyValuePair<span class="op">&lt;</span>K<span class="op">,</span> V<span class="op">&gt;</span> <span class="fu">Set</span><span class="op">(</span>KeyValuePair<span class="op">&lt;</span>K<span class="op">,</span> V<span class="op">&gt;</span> kvp<span class="op">,</span> V val<span class="op">)</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> KeyValuePair<span class="op">&lt;</span>K<span class="op">,</span> V<span class="op">&gt;(</span>kvp<span class="op">.</span><span class="fu">Key</span><span class="op">,</span> val<span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>You can’t use <code>ValueL</code> without explicitly mentioning the concrete type parameters at which you’re using it:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">new</span> ValueL<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;().</span><span class="fu">Set</span><span class="op">(</span><span class="kw">new</span> KeyValuePair<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;(</span><span class="st">&quot;foo&quot;</span><span class="op">,</span> <span class="dv">3</span><span class="op">),</span> <span class="dv">7</span><span class="op">);</span></span></code></pre></div><p>Ideally the compiler would be able to deduce the <code>&lt;string, int&gt;</code> part by noticing that we’re using it on a <code>KeyValuePair&lt;string, int&gt;</code>. This is difficult to implement in a subtyping-based language, though.</p>
 </li>
 <li>
 <p><strong>Generic type aliases</strong>. <a href="http://comonad.com/reader/2012/mirrored-lenses/">The most general formulation of lenses</a> actually has <em>four</em> type parameters: <code>ILens&lt;in S, out T, out A, in B&gt;</code>! This is to support lenses into generic types, allowing you to change the type of the resulting structure by writing a different type into the lens. (<code>new ValueL().Set(new KeyValuePair&lt;string, string&gt;(&quot;foo&quot;, &quot;bar&quot;), 3)</code> should return a <code>KeyValuePair&lt;string, int&gt;</code> — that is, a new <code>KeyValuePair</code> with a different type to the original.)</p>

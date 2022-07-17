@@ -20,9 +20,6 @@
 
             gtag('config', 'UA-115911217-1');
         </script>
-
-        <script async id="highlightjs-script" src="../js/third-party/highlight.js"></script>
-        <script async src="../js/main.js"></script>
     </head>
     <body>
         <header id="header">
@@ -51,102 +48,86 @@
 </blockquote>
 <h2 id="how-things-were"><a href="#how-things-were">How things were</a></h2>
 <p>I recently made a substantial change to Sawmill’s core <code>IRewritable</code> interface. Here’s what it used to look like:</p>
-<pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
-{
-    Children&lt;T&gt; GetChildren();
-    T SetChildren(Children&lt;T&gt; newChildren);
-    T RewriteChildren(Func&lt;T, T&gt; transformer);
-}
-</code></pre>
-<p>It’s a pleasingly simple interface with two core operations — <code>GetChildren</code> returns the current object’s immediate children and <code>SetChildren</code> replaces them. But there are also some warts.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    Children<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">();</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">SetChildren</span><span class="op">(</span>Children<span class="op">&lt;</span>T<span class="op">&gt;</span> newChildren<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">RewriteChildren</span><span class="op">(</span>Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>It’s a pleasingly simple interface with two core operations — <code>GetChildren</code> returns the current object’s immediate children and <code>SetChildren</code> replaces them. But there are also some warts.</p>
 <h3 id="wart-1-childrent"><a href="#wart-1-childrent">Wart 1: <code>Children&lt;T&gt;</code></a></h3>
 <p><code>Children&lt;T&gt;</code> is a custom struct, not a standard collection type:</p>
-<pre><code class="language-csharp">struct Children&lt;T&gt;
-{
-    public NumberOfChildren NumberOfChildren { get; }
-    public T First { get; }
-    public T Second { get; }
-    public ImmutableList&lt;T&gt; Many { get; }
-}
-enum NumberOfChildren
-{
-    None, One, Two, Many
-}
-</code></pre>
-<p>I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So <code>GetChildren</code> returns a <code>Children&lt;T&gt;</code>, passing up to two children on the stack and the rest in an <code>ImmutableList</code>. The <code>NumberOfChildren</code> property tells the library how many of the struct’s fields are filled in.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> Children<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> NumberOfChildren NumberOfChildren <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T First <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Second <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ImmutableList<span class="op">&lt;</span>T<span class="op">&gt;</span> Many <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="kw">enum</span> NumberOfChildren</span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    None<span class="op">,</span> One<span class="op">,</span> Two<span class="op">,</span> Many</span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>I wanted to avoid boxing when the object has a small number of children (which is fairly common in practice). So <code>GetChildren</code> returns a <code>Children&lt;T&gt;</code>, passing up to two children on the stack and the rest in an <code>ImmutableList</code>. The <code>NumberOfChildren</code> property tells the library how many of the struct’s fields are filled in.</p>
 <p>This custom collection type is an extra hurdle to understanding <code>IRewritable</code>’s API. It also makes certain parts of Sawmill’s implementation more complex — many internal methods have to <code>switch</code> on the <code>NumberOfChildren</code> they’re working with and do the same work in four different ways. It’s also relatively large for a <code>struct</code> (at least 16 bytes and probably more, depending on your processor architecture) so there is a marginal performance cost associated with copying it around.</p>
 <h3 id="wart-2-collections"><a href="#wart-2-collections">Wart 2: Collections</a></h3>
 <p>In fact, having <code>GetChildren</code> return a collection at all is problematic, because it forces implementations to allocate memory. If your object has three or more children (and they’re not already stored in an <code>ImmutableList</code>) then you have to create a new <code>ImmutableList</code> whenever <code>GetChildren</code> is called:</p>
-<pre><code class="language-csharp">class ThreeChildren : IRewritable&lt;ThreeChildren&gt;
-{
-    private readonly ThreeChildren _child1;
-    private readonly ThreeChildren _child2;
-    private readonly ThreeChildren _child3;
-
-    public Children&lt;ThreeChildren&gt; GetChildren()
-        =&gt; new Children&lt;ThreeChildren&gt;(
-            Children.Many,
-            ImmutableList.Create(_child1, _child2, _child3)
-        );
-    public ThreeChildren SetChildren(Children&lt;ThreeChildren&gt; newChildren)
-        =&gt; new ThreeChildren(
-            newChildren.Many[0],
-            newChildren.Many[1],
-            newChildren.Many[2]
-        );
-}
-</code></pre>
-<p>When Sawmill traverses a tree it typically calls <code>GetChildren()</code> for every node in the tree. That’s a lot of throwaway <code>ImmutableList</code>s!</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ThreeChildren <span class="op">:</span> IRewritable<span class="op">&lt;</span>ThreeChildren<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">readonly</span> ThreeChildren _child1<span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">readonly</span> ThreeChildren _child2<span class="op">;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">readonly</span> ThreeChildren _child3<span class="op">;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Children<span class="op">&lt;</span>ThreeChildren<span class="op">&gt;</span> <span class="fu">GetChildren</span><span class="op">()</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> Children<span class="op">&lt;</span>ThreeChildren<span class="op">&gt;(</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>            Children<span class="op">.</span><span class="fu">Many</span><span class="op">,</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>            ImmutableList<span class="op">.</span><span class="fu">Create</span><span class="op">(</span>_child1<span class="op">,</span> _child2<span class="op">,</span> _child3<span class="op">)</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="op">);</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ThreeChildren <span class="fu">SetChildren</span><span class="op">(</span>Children<span class="op">&lt;</span>ThreeChildren<span class="op">&gt;</span> newChildren<span class="op">)</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">ThreeChildren</span><span class="op">(</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>            newChildren<span class="op">.</span><span class="fu">Many</span><span class="op">[</span><span class="dv">0</span><span class="op">],</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>            newChildren<span class="op">.</span><span class="fu">Many</span><span class="op">[</span><span class="dv">1</span><span class="op">],</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>            newChildren<span class="op">.</span><span class="fu">Many</span><span class="op">[</span><span class="dv">2</span><span class="op">]</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>        <span class="op">);</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>When Sawmill traverses a tree it typically calls <code>GetChildren()</code> for every node in the tree. That’s a lot of throwaway <code>ImmutableList</code>s!</p>
 <p>One way to avoid creating all this garbage might be to redesign <code>IRewritable</code> to be buffer-oriented.</p>
-<pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
-{
-    int CountChildren();
-    void GetChildren(T[] buffer);
-    T SetChildren(T[] newChildren);
-}
-</code></pre>
-<p>With this design, Sawmill passes an array into <code>GetChildren</code> (after calling <code>CountChildren</code> to find out how big the array needs to be) and asks the object to copy its children into the array. Implementations of <code>IRewritable</code> no longer have to allocate memory for their return value. The memory is allocated (and hopefully reused) by the library. But this API is less safe — if an <code>IRewritable</code> implementation stores a reference to the buffer then it could get unexpectedly mutated.</p>
-<pre><code class="language-csharp">class Bad : IRewritable&lt;Bad&gt;
-{
-    private readonly Bad[] _children;
-
-    public int CountChildren() =&gt; _children.Length;
-    public void GetChildren(Bad[] buffer) =&gt; _children.CopyTo(buffer);
-    public Bad SetChildren(Bad[] newChildren) =&gt; new Bad(newChildren);  // BUG
-}
-</code></pre>
-<p>This is not a “pit of success” API — <code>SetChildren</code> looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each <code>GetChildren</code>/<code>SetChildren</code> call in order to be safe. So this design would end up allocating just as much as the <code>ImmutableList</code> version.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">();</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>T<span class="op">[]</span> buffer<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">SetChildren</span><span class="op">(</span>T<span class="op">[]</span> newChildren<span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>With this design, Sawmill passes an array into <code>GetChildren</code> (after calling <code>CountChildren</code> to find out how big the array needs to be) and asks the object to copy its children into the array. Implementations of <code>IRewritable</code> no longer have to allocate memory for their return value. The memory is allocated (and hopefully reused) by the library. But this API is less safe — if an <code>IRewritable</code> implementation stores a reference to the buffer then it could get unexpectedly mutated.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Bad <span class="op">:</span> IRewritable<span class="op">&lt;</span>Bad<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">readonly</span> Bad<span class="op">[]</span> _children<span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">()</span> <span class="op">=&gt;</span> _children<span class="op">.</span><span class="fu">Length</span><span class="op">;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>Bad<span class="op">[]</span> buffer<span class="op">)</span> <span class="op">=&gt;</span> _children<span class="op">.</span><span class="fu">CopyTo</span><span class="op">(</span>buffer<span class="op">);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Bad <span class="fu">SetChildren</span><span class="op">(</span>Bad<span class="op">[]</span> newChildren<span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">Bad</span><span class="op">(</span>newChildren<span class="op">);</span>  <span class="co">// </span><span class="al">BUG</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>This is not a “pit of success” API — <code>SetChildren</code> looks sensible but could go wrong if anyone else has a reference to the array. Sawmill would have to allocate a new array for each <code>GetChildren</code>/<code>SetChildren</code> call in order to be safe. So this design would end up allocating just as much as the <code>ImmutableList</code> version.</p>
 <p>(Keep the buffer idea in your head, though, because we’ll be coming back to it in a minute.)</p>
 <h3 id="wart-3-rewritechildren"><a href="#wart-3-rewritechildren">Wart 3: <code>RewriteChildren</code></a></h3>
 <p><code>RewriteChildren</code>, which applies a transformation function to the object’s immediate children (in other words, a one-level <code>Rewrite</code>), has a sensible implementation in terms of the other two methods: get the children, transform them, and put them back.</p>
-<pre><code class="language-csharp">public static T DefaultRewriteChildren&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
-    where T : IRewritable&lt;T&gt;
-{
-    var children = value.GetChildren();
-    var newChildren = children.Select(transformer);
-    return value.SetChildren(newChildren);
-}
-</code></pre>
-<p>(<a href="https://github.com/benjamin-hodgson/Sawmill/blob/87aea1e5757360b99457c8e2e6a7993fc2176f23/Sawmill/Rewriter.DefaultRewriteChildren.cs">The real <code>DefaultRewriteChildren</code></a> was a bit more complex than this, because it tried to avoid calling <code>SetChildren</code> if <code>transformer</code> didn’t actually change anything.)</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> T DefaultRewriteChildren<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T value<span class="op">,</span> Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> children <span class="op">=</span> value<span class="op">.</span><span class="fu">GetChildren</span><span class="op">();</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> newChildren <span class="op">=</span> children<span class="op">.</span><span class="fu">Select</span><span class="op">(</span>transformer<span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> value<span class="op">.</span><span class="fu">SetChildren</span><span class="op">(</span>newChildren<span class="op">);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>(<a href="https://github.com/benjamin-hodgson/Sawmill/blob/87aea1e5757360b99457c8e2e6a7993fc2176f23/Sawmill/Rewriter.DefaultRewriteChildren.cs">The real <code>DefaultRewriteChildren</code></a> was a bit more complex than this, because it tried to avoid calling <code>SetChildren</code> if <code>transformer</code> didn’t actually change anything.)</p>
 <p>In fact, I expect that most <code>IRewritable</code>s would just delegate <code>RewriteChildren</code> to <code>DefaultRewriteChildren</code>. So why did I put <code>RewriteChildren</code> on the interface? It’s because of Wart 2 — <code>GetChildren</code> can be expensive because it might have to create an <code>ImmutableList</code>. (And applying <code>transformer</code> to that <code>ImmutableList</code> using eg <a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.immutable.immutablelist-1.convertall?view=netcore-3.0"><code>ConvertAll</code></a> would have to create another one.) So <code>DefaultRewriteChildren</code> is slow; the idea of <code>RewriteChildren</code> was for objects to transform their children directly, without going via an <code>ImmutableList</code>.</p>
-<pre><code class="language-csharp">class ThreeChildren : IRewritable&lt;ThreeChildren&gt;
-{
-    // ...
-    public ThreeChildren RewriteChildren(Func&lt;ThreeChildren, ThreeChildren&gt; f)
-        =&gt; new ThreeChildren(f(_child1), f(_child2), f(_child3));  // no ImmutableList
-}
-</code></pre>
-<p>The extra method makes <code>IRewritable</code> harder to understand and harder to implement. Implementing <code>RewriteChildren</code> (without using <code>DefaultRewriteChildren</code>) can be tricky; if the transformer function doesn’t change anything you should avoid recreating the object.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ThreeChildren <span class="op">:</span> IRewritable<span class="op">&lt;</span>ThreeChildren<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ThreeChildren <span class="fu">RewriteChildren</span><span class="op">(</span>Func<span class="op">&lt;</span>ThreeChildren<span class="op">,</span> ThreeChildren<span class="op">&gt;</span> f<span class="op">)</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">ThreeChildren</span><span class="op">(</span><span class="fu">f</span><span class="op">(</span>_child1<span class="op">),</span> <span class="fu">f</span><span class="op">(</span>_child2<span class="op">),</span> <span class="fu">f</span><span class="op">(</span>_child3<span class="op">));</span>  <span class="co">// no ImmutableList</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>The extra method makes <code>IRewritable</code> harder to understand and harder to implement. Implementing <code>RewriteChildren</code> (without using <code>DefaultRewriteChildren</code>) can be tricky; if the transformer function doesn’t change anything you should avoid recreating the object.</p>
 <h2 id="the-new-way"><a href="#the-new-way">The new way</a></h2>
 <p>I’m pleased to say that <code>IRewritable</code>’s new design addresses all three of these warts. Remember the “buffer” idea from earlier?</p>
-<pre><code class="language-csharp">interface IRewritable&lt;T&gt; where T : IRewritable&lt;T&gt;
-{
-    int CountChildren();
-    void GetChildren(Span&lt;T&gt; buffer);
-    T SetChildren(ReadOnlySpan&lt;T&gt; newChildren);
-}
-</code></pre>
-<p>This design is almost identical to the one I outlined earlier — it uses <a href="https://docs.microsoft.com/en-us/dotnet/api/system.span-1?view=netcore-3.0"><code>Span</code></a>s instead of arrays. (For the uninitiated, a <code>Span</code> is basically a “slice” of an array. It can also be backed by <em>unmanaged</em> memory, though, making it more flexible than <code>ArraySegment</code>.)</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> <span class="fu">CountChildren</span><span class="op">();</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">GetChildren</span><span class="op">(</span>Span<span class="op">&lt;</span>T<span class="op">&gt;</span> buffer<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">SetChildren</span><span class="op">(</span>ReadOnlySpan<span class="op">&lt;</span>T<span class="op">&gt;</span> newChildren<span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>This design is almost identical to the one I outlined earlier — it uses <a href="https://docs.microsoft.com/en-us/dotnet/api/system.span-1?view=netcore-3.0"><code>Span</code></a>s instead of arrays. (For the uninitiated, a <code>Span</code> is basically a “slice” of an array. It can also be backed by <em>unmanaged</em> memory, though, making it more flexible than <code>ArraySegment</code>.)</p>
 <ul>
 <li><code>CountChildren</code> tells Sawmill how much space is needed to copy the children.
 </li>
@@ -158,33 +139,29 @@ enum NumberOfChildren
 <p>Here’s the important difference. Unlike an array, a <code>Span</code> <em>can’t be stored on the heap</em>. <code>Span</code> is defined using <a href="https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref?view=netcore-3.0#ref-struct-types">the <code>ref</code> keyword</a>, which tells the compiler to check that <code>Span</code>s are confined to the stack. If you pass a <code>Span</code> into a method as an argument, you can be confident that the <code>Span</code> won’t leave the scope of that method’s stack frame (just like <code>ref</code>).</p>
 <p>So <code>Span</code> thoroughly solves the safety issue with the array-oriented API. I don’t have to worry about mutating a <code>Span</code> which got stored inside a client object, because the <code>Span</code> can’t be stored! This allows Sawmill to safely reuse the memory behind a <code>Span</code>, rather than allocating a new array for each <code>GetChildren</code>/<code>SetChildren</code> call.</p>
 <p>So Sawmill’s methods like <code>RewriteChildren</code> can be implemented without allocating memory. In this example I’m using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1?view=netcore-3.0"><code>ArrayPool</code></a> to avoid creating a new array for every <code>RewriteChildren</code> call.</p>
-<pre><code class="language-csharp">public static T RewriteChildren&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
-    where T : IRewritable&lt;T&gt;
-{
-    var count = value.CountChildren();
-    var array = ArrayPool&lt;T&gt;.Shared.Rent(count);
-    // ArrayPool can return arrays bigger than you asked for
-    var span = array.AsSpan().Slice(count);
-
-    value.GetChildren(span);
-    
-    for (var i = 0; i &lt; span.Length; i++)
-    {
-        span[i] = transformer(span[i]);
-    }
-
-    var result = value.SetChildren(newChildren);
-    ArrayPool&lt;T&gt;.Shared.Return(array);
-    return result;
-}
-</code></pre>
-<p>The main reason for having <code>RewriteChildren</code> be a method on the interface was to avoid allocating memory (for the <code>GetChildren</code> calls). So we don’t need it on the interface any more — this extension method serves as a single universal implementation. Likewise, <code>Children&lt;T&gt;</code>’s purpose was also to avoid allocating memory, so we can do away with it too.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> T RewriteChildren<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T value<span class="op">,</span> Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> count <span class="op">=</span> value<span class="op">.</span><span class="fu">CountChildren</span><span class="op">();</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> array <span class="op">=</span> ArrayPool<span class="op">&lt;</span>T<span class="op">&gt;.</span><span class="fu">Shared</span><span class="op">.</span><span class="fu">Rent</span><span class="op">(</span>count<span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ArrayPool can return arrays bigger than you asked for</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> span <span class="op">=</span> array<span class="op">.</span><span class="fu">AsSpan</span><span class="op">().</span><span class="fu">Slice</span><span class="op">(</span>count<span class="op">);</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    value<span class="op">.</span><span class="fu">GetChildren</span><span class="op">(</span>span<span class="op">);</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> <span class="op">(</span><span class="dt">var</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> span<span class="op">.</span><span class="fu">Length</span><span class="op">;</span> i<span class="op">++)</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        span<span class="op">[</span>i<span class="op">]</span> <span class="op">=</span> <span class="fu">transformer</span><span class="op">(</span>span<span class="op">[</span>i<span class="op">]);</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> result <span class="op">=</span> value<span class="op">.</span><span class="fu">SetChildren</span><span class="op">(</span>newChildren<span class="op">);</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>    ArrayPool<span class="op">&lt;</span>T<span class="op">&gt;.</span><span class="fu">Shared</span><span class="op">.</span><span class="fu">Return</span><span class="op">(</span>array<span class="op">);</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result<span class="op">;</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>The main reason for having <code>RewriteChildren</code> be a method on the interface was to avoid allocating memory (for the <code>GetChildren</code> calls). So we don’t need it on the interface any more — this extension method serves as a single universal implementation. Likewise, <code>Children&lt;T&gt;</code>’s purpose was also to avoid allocating memory, so we can do away with it too.</p>
 <h2 id="relieving-arraypool-pressure"><a href="#relieving-arraypool-pressure">Relieving <code>ArrayPool</code> pressure</a></h2>
 <p>There’s one operational problem with this implementation: it can end up renting a large number of arrays from the pool. <code>Rewrite</code>, which applies a transformation function to every node in a tree (not just one layer), is implemented something like this:</p>
-<pre><code class="language-csharp">public static T Rewrite(this T value, Func&lt;T, T&gt; transformer) where T : IRewritable&lt;T&gt;
-    =&gt; transformer(t.RewriteChildren(child =&gt; child.Rewrite(transformer)));
-</code></pre>
-<p>The lambda which is passed to <code>RewriteChildren</code> contains a recursive call to <code>Rewrite</code>. Let’s think through the operational behaviour of <code>Rewrite</code>:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> T <span class="fu">Rewrite</span><span class="op">(</span><span class="kw">this</span> T value<span class="op">,</span> Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">transformer</span><span class="op">(</span>t<span class="op">.</span><span class="fu">RewriteChildren</span><span class="op">(</span>child <span class="op">=&gt;</span> child<span class="op">.</span><span class="fu">Rewrite</span><span class="op">(</span>transformer<span class="op">)));</span></span></code></pre></div><p>The lambda which is passed to <code>RewriteChildren</code> contains a recursive call to <code>Rewrite</code>. Let’s think through the operational behaviour of <code>Rewrite</code>:</p>
 <ol>
 <li><code>Rewrite</code> calls <code>RewriteChildren</code>
 </li>
@@ -202,238 +179,220 @@ enum NumberOfChildren
 <p>Since steps 1-3 are repeated before step 5 happens, you can end up renting many arrays (a number equal to the height of the tree) before returning any of them to the pool. So the array pool could run out of arrays!</p>
 <p>To fix this problem, we want to rent a small number of large arrays from the array pool, rather than a large number of small ones. We can lean on the fact that each array only lives as long as a single method — the array is <code>Rent</code>ed at the start of <code>RewriteChildren</code> and then <code>Return</code>ed at the end. The memory usage is stack-shaped.</p>
 <p>So here’s the plan. We’re going to rent a large array from the pool at <code>Rewrite</code>’s beginning, and <code>RewriteChildren</code> will take a chunk from that array each time it’s called. Each chunk will be freed up before any previously-allocated chunks are freed.</p>
-<pre><code class="language-csharp">public static T Rewrite&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
-    where T : IRewritable&lt;T&gt;
-{
-    using (var chunks = new ChunkStack&lt;T&gt;())
-    {
-        T Go(T x)
-            =&gt; transformer(t.RewriteChildrenInternal(Go, chunks));
-        return Go(value);
-    }
-}
-
-public static T RewriteChildren&lt;T&gt;(this T value, Func&lt;T, T&gt; transformer)
-    where T : IRewritable&lt;T&gt;
-{
-    using (var chunks = new ChunkStack&lt;T&gt;())
-    {
-        return RewriteChildrenInternal(t, transformer, chunks);
-    }
-}
-
-private static T RewriteChildrenInternal&lt;T&gt;(
-    this T value,
-    Func&lt;T, T&gt; transformer,
-    ChunkStack&lt;T&gt; chunks
-) where T : IRewritable&lt;T&gt;
-{
-    var count = value.CountChildren();
-    var span = chunks.Allocate(count);
-
-    value.GetChildren(span);
-    
-    for (var i = 0; i &lt; span.Length; i++)
-    {
-        span[i] = transformer(span[i]);
-    }
-
-    var result = value.SetChildren(newChildren);
-    chunks.Free(span);
-    return result;
-}
-</code></pre>
-<p><code>ChunkStack</code> contains an array and a count of how much of that array is in use. <code>Allocate</code> and <code>Free</code> increase and decrease that count.</p>
-<pre><code class="language-csharp">class ChunkStack&lt;T&gt; : IDisposable
-{
-    private T[] _array = ArrayPool&lt;T&gt;.Shared.Rent(512);
-    private int _used = 0;
-
-    public Span&lt;T&gt; Allocate(int count)
-    {
-        var span = _array.Slice(_used, count);
-        _used += count;
-        return span;
-    }
-    public void Free(Span&lt;T&gt; span)
-    {
-        _used -= span.Length;
-    }
-    public void Dispose()
-    {
-        if (_array != null)
-        {
-            ArrayPool&lt;T&gt;.Shared.Return(_array);
-            _array = null;
-        }
-    }
-}
-</code></pre>
-<p>I’ve glossed over an important part of <code>ChunkStack</code>’s implementation: what happens when the array fills up? The <a href="https://github.com/benjamin-hodgson/Sawmill/blob/bf652359023a76d3ea395d7d743db1a8d6559ec2/Sawmill/ChunkStack.cs">real implementation</a> manages a collection of “regions”, taking a new region from the array pool when existing regions fill up.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> T Rewrite<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T value<span class="op">,</span> Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> chunks <span class="op">=</span> <span class="kw">new</span> ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;())</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        T <span class="fu">Go</span><span class="op">(</span>T x<span class="op">)</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>            <span class="op">=&gt;</span> <span class="fu">transformer</span><span class="op">(</span>t<span class="op">.</span><span class="fu">RewriteChildrenInternal</span><span class="op">(</span>Go<span class="op">,</span> chunks<span class="op">));</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="fu">Go</span><span class="op">(</span>value<span class="op">);</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> T RewriteChildren<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">this</span> T value<span class="op">,</span> Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">)</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> chunks <span class="op">=</span> <span class="kw">new</span> ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;())</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="fu">RewriteChildrenInternal</span><span class="op">(</span>t<span class="op">,</span> transformer<span class="op">,</span> chunks<span class="op">);</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> T RewriteChildrenInternal<span class="op">&lt;</span>T<span class="op">&gt;(</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T value<span class="op">,</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">,</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>    ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;</span> chunks</span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> count <span class="op">=</span> value<span class="op">.</span><span class="fu">CountChildren</span><span class="op">();</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> span <span class="op">=</span> chunks<span class="op">.</span><span class="fu">Allocate</span><span class="op">(</span>count<span class="op">);</span></span>
+<span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a>    value<span class="op">.</span><span class="fu">GetChildren</span><span class="op">(</span>span<span class="op">);</span></span>
+<span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="32"><a href="#32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> <span class="op">(</span><span class="dt">var</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> span<span class="op">.</span><span class="fu">Length</span><span class="op">;</span> i<span class="op">++)</span></span>
+<span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="34"><a href="#34" aria-hidden="true" tabindex="-1"></a>        span<span class="op">[</span>i<span class="op">]</span> <span class="op">=</span> <span class="fu">transformer</span><span class="op">(</span>span<span class="op">[</span>i<span class="op">]);</span></span>
+<span id="35"><a href="#35" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="36"><a href="#36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="37"><a href="#37" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> result <span class="op">=</span> value<span class="op">.</span><span class="fu">SetChildren</span><span class="op">(</span>newChildren<span class="op">);</span></span>
+<span id="38"><a href="#38" aria-hidden="true" tabindex="-1"></a>    chunks<span class="op">.</span><span class="fu">Free</span><span class="op">(</span>span<span class="op">);</span></span>
+<span id="39"><a href="#39" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result<span class="op">;</span></span>
+<span id="40"><a href="#40" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p><code>ChunkStack</code> contains an array and a count of how much of that array is in use. <code>Allocate</code> and <code>Free</code> increase and decrease that count.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> IDisposable</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> T<span class="op">[]</span> _array <span class="op">=</span> ArrayPool<span class="op">&lt;</span>T<span class="op">&gt;.</span><span class="fu">Shared</span><span class="op">.</span><span class="fu">Rent</span><span class="op">(</span><span class="dv">512</span><span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="dt">int</span> _used <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> Span<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">Allocate</span><span class="op">(</span><span class="dt">int</span> count<span class="op">)</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> span <span class="op">=</span> _array<span class="op">.</span><span class="fu">Slice</span><span class="op">(</span>_used<span class="op">,</span> count<span class="op">);</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        _used <span class="op">+=</span> count<span class="op">;</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> span<span class="op">;</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Free</span><span class="op">(</span>Span<span class="op">&lt;</span>T<span class="op">&gt;</span> span<span class="op">)</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>        _used <span class="op">-=</span> span<span class="op">.</span><span class="fu">Length</span><span class="op">;</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Dispose</span><span class="op">()</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> <span class="op">(</span>_array <span class="op">!=</span> <span class="kw">null</span><span class="op">)</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>            ArrayPool<span class="op">&lt;</span>T<span class="op">&gt;.</span><span class="fu">Shared</span><span class="op">.</span><span class="fu">Return</span><span class="op">(</span>_array<span class="op">);</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>            _array <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>I’ve glossed over an important part of <code>ChunkStack</code>’s implementation: what happens when the array fills up? The <a href="https://github.com/benjamin-hodgson/Sawmill/blob/bf652359023a76d3ea395d7d743db1a8d6559ec2/Sawmill/ChunkStack.cs">real implementation</a> manages a collection of “regions”, taking a new region from the array pool when existing regions fill up.</p>
 <p>In the pathological case of a <em>very</em> large tree, this version of <code>Rewrite</code> can still exhaust the array pool, but it’ll happen much less quickly.</p>
 <h2 id="hackalloc"><a href="#hackalloc"></a></h2>
 <p>I mentioned earlier that a <code>Span</code> is not necessarily backed by an array. <code>Span</code> represents <em>a contiguous block of memory</em>, with no assumptions about where that memory is or how it’s managed. A <code>Span</code> could be a slice of an array, or it could be a chunk of unmanaged memory, or it could be an area of the stack. Under the hood it’s <em>just a pointer</em>; <code>Span</code> doesn’t care exactly where the pointer points.</p>
 <p>In fact, C# has built in support for that last case. The <code>stackalloc</code> keyword works like C’s <code>alloca</code>: it carves out a chunk of memory directly in the current stack frame, which becomes invalid when the current method returns. Until recently, <code>stackalloc</code> was only available in an <code>unsafe</code> context, but today it’s available in safe code thanks to <code>Span</code>.</p>
-<pre><code class="language-csharp">public void StackallocExample()
-{
-    // allocate space for three ints in the current stack frame
-    Span&lt;int&gt; myInts = stackalloc int[3];
-    myInts[0] = 123;
-    myInts[1] = 456;
-    myInts[2] = myInts[0] + myInts[1];
-    Console.WriteLine(myInts[2]);  // prints 579
-}
-</code></pre>
-<p>I want to use <code>stackalloc</code> to avoid taking memory from the <code>ChunkStack</code> when an object has a small number (say, 4) of children. This is fairly common in practice. Stack memory tends to be marginally faster than heap memory because it’s more likely to be in the processor cache, so this may have a modest performance benefit as well as relieving pressure on the array pool. If there are more than 4 children we can just fall back on the <code>ChunkStack</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">StackallocExample</span><span class="op">()</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// allocate space for three ints in the current stack frame</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    Span<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> myInts <span class="op">=</span> <span class="kw">stackalloc</span> <span class="dt">int</span><span class="op">[</span><span class="dv">3</span><span class="op">];</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    myInts<span class="op">[</span><span class="dv">0</span><span class="op">]</span> <span class="op">=</span> <span class="dv">123</span><span class="op">;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    myInts<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="op">=</span> <span class="dv">456</span><span class="op">;</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    myInts<span class="op">[</span><span class="dv">2</span><span class="op">]</span> <span class="op">=</span> myInts<span class="op">[</span><span class="dv">0</span><span class="op">]</span> <span class="op">+</span> myInts<span class="op">[</span><span class="dv">1</span><span class="op">];</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span>myInts<span class="op">[</span><span class="dv">2</span><span class="op">]);</span>  <span class="co">// prints 579</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>I want to use <code>stackalloc</code> to avoid taking memory from the <code>ChunkStack</code> when an object has a small number (say, 4) of children. This is fairly common in practice. Stack memory tends to be marginally faster than heap memory because it’s more likely to be in the processor cache, so this may have a modest performance benefit as well as relieving pressure on the array pool. If there are more than 4 children we can just fall back on the <code>ChunkStack</code>.</p>
 <p>Here’s the new <code>RewriteChildrenInternal</code>:</p>
-<pre><code class="language-csharp">private static T RewriteChildrenInternal&lt;T&gt;(
-    this T value,
-    Func&lt;T, T&gt; transformer,
-    ChunkStack&lt;T&gt; chunks
-) where T : IRewritable&lt;T&gt;
-{
-    var count = value.CountChildren();
-
-    Span&lt;T&gt; span = stackalloc T[4];
-    if (count &gt; 4)
-    {
-        span = chunks.Allocate(count);
-    }
-
-    value.GetChildren(span);
-    
-    for (var i = 0; i &lt; span.Length; i++)
-    {
-        span[i] = transformer(span[i]);
-    }
-
-    var result = value.SetChildren(newChildren);
-
-    if (count &gt; 4)
-    {
-        chunks.Free(span);
-    }
-    return result;
-}
-</code></pre>
-<p>Sadly this doesn’t work. The compiler complains about the <code>stackalloc T</code> line: “Cannot take the address of, get the size of, or declare a pointer to a managed type (‘T’)”. Basically, the CLR doesn’t support <code>stackalloc</code> with reference types — you can only use <code>stackalloc</code> with primitives or structs containing primitives. (A type parameter <code>T</code> <em>might</em> be a reference type, so you still can’t use it with <code>stackalloc</code>.) Under the hood, <code>stackalloc</code> is untyped; the garbage collector doesn’t know how to follow pointers that are stored in <code>stackalloc</code>ed memory because it doesn’t even know there are pointers there.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> T RewriteChildrenInternal<span class="op">&lt;</span>T<span class="op">&gt;(</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T value<span class="op">,</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">,</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;</span> chunks</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> count <span class="op">=</span> value<span class="op">.</span><span class="fu">CountChildren</span><span class="op">();</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    Span<span class="op">&lt;</span>T<span class="op">&gt;</span> span <span class="op">=</span> <span class="kw">stackalloc</span> T<span class="op">[</span><span class="dv">4</span><span class="op">];</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>count <span class="op">&gt;</span> <span class="dv">4</span><span class="op">)</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>        span <span class="op">=</span> chunks<span class="op">.</span><span class="fu">Allocate</span><span class="op">(</span>count<span class="op">);</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    value<span class="op">.</span><span class="fu">GetChildren</span><span class="op">(</span>span<span class="op">);</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> <span class="op">(</span><span class="dt">var</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> span<span class="op">.</span><span class="fu">Length</span><span class="op">;</span> i<span class="op">++)</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>        span<span class="op">[</span>i<span class="op">]</span> <span class="op">=</span> <span class="fu">transformer</span><span class="op">(</span>span<span class="op">[</span>i<span class="op">]);</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> result <span class="op">=</span> value<span class="op">.</span><span class="fu">SetChildren</span><span class="op">(</span>newChildren<span class="op">);</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>count <span class="op">&gt;</span> <span class="dv">4</span><span class="op">)</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a>        chunks<span class="op">.</span><span class="fu">Free</span><span class="op">(</span>span<span class="op">);</span></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result<span class="op">;</span></span>
+<span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Sadly this doesn’t work. The compiler complains about the <code>stackalloc T</code> line: “Cannot take the address of, get the size of, or declare a pointer to a managed type (‘T’)”. Basically, the CLR doesn’t support <code>stackalloc</code> with reference types — you can only use <code>stackalloc</code> with primitives or structs containing primitives. (A type parameter <code>T</code> <em>might</em> be a reference type, so you still can’t use it with <code>stackalloc</code>.) Under the hood, <code>stackalloc</code> is untyped; the garbage collector doesn’t know how to follow pointers that are stored in <code>stackalloc</code>ed memory because it doesn’t even know there are pointers there.</p>
 <p>I still think the idea’s a good one, though. Can we unsafely hack it up?</p>
 <p>I’m going to use the following <code>struct</code> as a “poor man’s <code>stackalloc[4]</code>”:</p>
-<pre><code class="language-csharp">struct Four&lt;T&gt;
-{
-    public T First;
-    public T Second;
-    public T Third;
-    public T Fourth;
-}
-</code></pre>
-<p>A variable of type <code>Four&lt;T&gt;</code> has enough room for four <code>T</code>s — so when the variable is a local variable (in an ordinary method) it’s functionally equivalent to a <code>stackalloc T[4]</code>. We won’t be using the <code>First</code>, <code>Second</code>, <code>Third</code> and <code>Fourth</code> properties directly — we’ll be (unsafely) addressing them relative to the start of the struct. In this example I’m using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.0"><code>System.Runtime.CompilerServices.Unsafe</code></a> to address <code>Third</code> by looking 2 elements beyond <code>First</code>:</p>
-<pre><code class="language-csharp">var four = new Four&lt;T&gt;();
-ref T third = ref Unsafe.Add(ref four.First, 2);
-Assert.True(Unsafe.AreSame(ref four.Third, ref third));
-</code></pre>
-<p>The plan is to create a <code>Span</code> whose pointer refers to the start of a <code>Four&lt;T&gt;</code> on the stack. <code>span[0]</code> will address <code>four.First</code>, <code>span[1]</code> will address <code>Second</code>, and so on. My first idea to implement this was to use <code>System.Runtime.CompilerServices.Unsafe</code> to coerce a <code>ref Four&lt;T&gt;</code> to an unmanaged pointer, and then put that in a <code>Span</code>:</p>
-<pre><code class="language-csharp">unsafe
-{
-    var four = new Four&lt;T&gt;();
-    void* ptr = Unsafe.AsPointer(ref four);
-    var span = new Span&lt;T&gt;(ptr, 4);
-}
-</code></pre>
-<p>Sadly the <code>Span</code> constructor throws an exception when <code>T</code> is a reference type. At this point I went for a poke around in the .NET source code. I wanted to know how <code>array.AsSpan()</code> works. I found <a href="https://github.com/dotnet/corefx/blob/7e9a177824cbefaee8985a9b517ebb0ea2e17a81/src/Common/src/CoreLib/System/Span.Fast.cs#L123">an internal constructor</a> which takes a <code>ref T</code>. We can illictly call that constructor using reflection, although of course we want to avoid the performance costs of reflection. So the actual plan is to use runtime code generation to call the internal <code>Span</code> constructor. Ordinarily I’d use <code>Expression</code> to do this runtime code generation, but <code>Expression</code> doesn’t support <code>ref</code> parameters, so we have to write the IL by hand.</p>
-<pre><code class="language-csharp">private static class SpanFactory&lt;T&gt;
-{
-    private delegate Span&lt;T&gt; SpanCtor(ref T value, int length);
-    private static readonly SpanCtor _spanCtor;
-
-    static SpanFactory()
-    {
-        var ctor = typeof(Span&lt;T&gt;)
-            .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-            .Single(c =&gt;
-                c.GetParameters().Length == 2
-                &amp;&amp; c.GetParameters()[0].ParameterType.IsByRef
-            );
-
-        var method = new DynamicMethod(
-            &quot;&quot;,
-            typeof(Span&lt;T&gt;),
-            new[] { typeof(T).MakeByRefType(), typeof(int) }
-        );
-
-        var il = method.GetILGenerator();
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldarg_1);
-        il.Emit(OpCodes.Newobj, ctor);
-        il.Emit(OpCodes.Ret);
-
-        _spanCtor = (SpanCtor)method.CreateDelegate(typeof(SpanCtor));
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span&lt;T&gt; Create(ref T value, int length)
-        =&gt; _spanCtor(ref value, length);
-}
-</code></pre>
-<p>Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> Four<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T First<span class="op">;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Second<span class="op">;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Third<span class="op">;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> T Fourth<span class="op">;</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>A variable of type <code>Four&lt;T&gt;</code> has enough room for four <code>T</code>s — so when the variable is a local variable (in an ordinary method) it’s functionally equivalent to a <code>stackalloc T[4]</code>. We won’t be using the <code>First</code>, <code>Second</code>, <code>Third</code> and <code>Fourth</code> properties directly — we’ll be (unsafely) addressing them relative to the start of the struct. In this example I’m using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe?view=netcore-3.0"><code>System.Runtime.CompilerServices.Unsafe</code></a> to address <code>Third</code> by looking 2 elements beyond <code>First</code>:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> four <span class="op">=</span> <span class="kw">new</span> Four<span class="op">&lt;</span>T<span class="op">&gt;();</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">ref</span> T third <span class="op">=</span> <span class="kw">ref</span> Unsafe<span class="op">.</span><span class="fu">Add</span><span class="op">(</span><span class="kw">ref</span> four<span class="op">.</span><span class="fu">First</span><span class="op">,</span> <span class="dv">2</span><span class="op">);</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>Assert<span class="op">.</span><span class="fu">True</span><span class="op">(</span>Unsafe<span class="op">.</span><span class="fu">AreSame</span><span class="op">(</span><span class="kw">ref</span> four<span class="op">.</span><span class="fu">Third</span><span class="op">,</span> <span class="kw">ref</span> third<span class="op">));</span></span></code></pre></div><p>The plan is to create a <code>Span</code> whose pointer refers to the start of a <code>Four&lt;T&gt;</code> on the stack. <code>span[0]</code> will address <code>four.First</code>, <code>span[1]</code> will address <code>Second</code>, and so on. My first idea to implement this was to use <code>System.Runtime.CompilerServices.Unsafe</code> to coerce a <code>ref Four&lt;T&gt;</code> to an unmanaged pointer, and then put that in a <code>Span</code>:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">unsafe</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> four <span class="op">=</span> <span class="kw">new</span> Four<span class="op">&lt;</span>T<span class="op">&gt;();</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span><span class="op">*</span> ptr <span class="op">=</span> Unsafe<span class="op">.</span><span class="fu">AsPointer</span><span class="op">(</span><span class="kw">ref</span> four<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> span <span class="op">=</span> <span class="kw">new</span> Span<span class="op">&lt;</span>T<span class="op">&gt;(</span>ptr<span class="op">,</span> <span class="dv">4</span><span class="op">);</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Sadly the <code>Span</code> constructor throws an exception when <code>T</code> is a reference type. At this point I went for a poke around in the .NET source code. I wanted to know how <code>array.AsSpan()</code> works. I found <a href="https://github.com/dotnet/corefx/blob/7e9a177824cbefaee8985a9b517ebb0ea2e17a81/src/Common/src/CoreLib/System/Span.Fast.cs#L123">an internal constructor</a> which takes a <code>ref T</code>. We can illictly call that constructor using reflection, although of course we want to avoid the performance costs of reflection. So the actual plan is to use runtime code generation to call the internal <code>Span</code> constructor. Ordinarily I’d use <code>Expression</code> to do this runtime code generation, but <code>Expression</code> doesn’t support <code>ref</code> parameters, so we have to write the IL by hand.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> <span class="kw">class</span> SpanFactory<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">delegate</span> Span<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">SpanCtor</span><span class="op">(</span><span class="kw">ref</span> T value<span class="op">,</span> <span class="dt">int</span> length<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="kw">static</span> <span class="kw">readonly</span> SpanCtor _spanCtor<span class="op">;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">static</span> <span class="fu">SpanFactory</span><span class="op">()</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> ctor <span class="op">=</span> <span class="kw">typeof</span><span class="op">(</span>Span<span class="op">&lt;</span>T<span class="op">&gt;)</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">GetConstructors</span><span class="op">(</span>BindingFlags<span class="op">.</span><span class="fu">NonPublic</span> <span class="op">|</span> BindingFlags<span class="op">.</span><span class="fu">Instance</span><span class="op">)</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Single</span><span class="op">(</span>c <span class="op">=&gt;</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>                c<span class="op">.</span><span class="fu">GetParameters</span><span class="op">().</span><span class="fu">Length</span> <span class="op">==</span> <span class="dv">2</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>                <span class="op">&amp;&amp;</span> c<span class="op">.</span><span class="fu">GetParameters</span><span class="op">()[</span><span class="dv">0</span><span class="op">].</span><span class="fu">ParameterType</span><span class="op">.</span><span class="fu">IsByRef</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>            <span class="op">);</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> method <span class="op">=</span> <span class="kw">new</span> <span class="fu">DynamicMethod</span><span class="op">(</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;&quot;</span><span class="op">,</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>            <span class="kw">typeof</span><span class="op">(</span>Span<span class="op">&lt;</span>T<span class="op">&gt;),</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span><span class="op">[]</span> <span class="op">{</span> <span class="kw">typeof</span><span class="op">(</span>T<span class="op">).</span><span class="fu">MakeByRefType</span><span class="op">(),</span> <span class="kw">typeof</span><span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="op">}</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>        <span class="op">);</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> il <span class="op">=</span> method<span class="op">.</span><span class="fu">GetILGenerator</span><span class="op">();</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>        il<span class="op">.</span><span class="fu">Emit</span><span class="op">(</span>OpCodes<span class="op">.</span><span class="fu">Ldarg_0</span><span class="op">);</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>        il<span class="op">.</span><span class="fu">Emit</span><span class="op">(</span>OpCodes<span class="op">.</span><span class="fu">Ldarg_1</span><span class="op">);</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>        il<span class="op">.</span><span class="fu">Emit</span><span class="op">(</span>OpCodes<span class="op">.</span><span class="fu">Newobj</span><span class="op">,</span> ctor<span class="op">);</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>        il<span class="op">.</span><span class="fu">Emit</span><span class="op">(</span>OpCodes<span class="op">.</span><span class="fu">Ret</span><span class="op">);</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>        _spanCtor <span class="op">=</span> <span class="op">(</span>SpanCtor<span class="op">)</span>method<span class="op">.</span><span class="fu">CreateDelegate</span><span class="op">(</span><span class="kw">typeof</span><span class="op">(</span>SpanCtor<span class="op">));</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="fu">MethodImpl</span><span class="op">(</span>MethodImplOptions<span class="op">.</span><span class="fu">AggressiveInlining</span><span class="op">)]</span></span>
+<span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> Span<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">Create</span><span class="op">(</span><span class="kw">ref</span> T value<span class="op">,</span> <span class="dt">int</span> length<span class="op">)</span></span>
+<span id="32"><a href="#32" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">_spanCtor</span><span class="op">(</span><span class="kw">ref</span> value<span class="op">,</span> length<span class="op">);</span></span>
+<span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.</p>
 <blockquote>
 <p><strong>Update</strong>: On .NET Core, there is an officially-supported API to do this: <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=netcore-3.0"><code>MemoryMarshal.CreateSpan</code></a>. I didn’t know it existed at the time that I wrote this.</p>
 </blockquote>
 <p>There are also risks associated with mixing pointers and references like this. You have to be very careful that the <code>Span</code> doesn’t live longer than the <code>Four</code> it points to. That means the <code>Four</code> has to be discarded at the end of the method along with the <code>Span</code>, and it has to be stored in a “real” local variable, not in temporary storage on the evaluation stack. I’ll address that by mentioning the variable (as a parameter to a non-inlined “keep-alive” method) at the end of the method.</p>
 <p>You also need to be certain that the <code>Four</code> is stored on the stack and not the heap. Data stored on the heap is liable to get moved by the garbage collector, which would invalidate the pointer inside the <code>Span</code>. Beware that local variables are not always safe from being moved! Methods containing <code>await</code>s, <code>yield</code>s, and lambdas are liable to store their local variables on the heap, so if <code>RewriteChildrenInternal</code> were not an ordinary method this hack would not be safe.</p>
 <p>Here’s the final implementation of <code>RewriteChildrenInternal</code>. <code>var four = new Four&lt;T&gt;();</code> allocates space for four <code>T</code>s in <code>RewriteChildrenInternal</code>’s stack frame. Then, when I call <code>GetSpan</code>, I’m passing in the address of the start of that <code>Four</code> using the <code>ref</code> keyword. <code>GetSpan</code> returns a <code>Span</code> which either points at the start of <code>four</code> or at a chunk taken from the <code>ChunkStack</code>, depending on how many children we need to store. <code>ReleaseSpan</code> returns the <code>Span</code> to the <code>ChunkStack</code> if it came from there, and the <code>KeepAlive</code> call ensures the <code>four</code> isn’t deallocated too early.</p>
-<pre><code class="language-csharp">private static T RewriteChildrenInternal&lt;T&gt;(
-    this T value,
-    Func&lt;T, T&gt; transformer,
-    ChunkStack&lt;T&gt; chunks
-) where T : IRewritable&lt;T&gt;
-{
-    var count = value.CountChildren();
-
-    var four = new Four&lt;T&gt;();
-    var span = GetSpan(count, chunks, ref four);
-
-    value.GetChildren(span);
-    
-    for (var i = 0; i &lt; span.Length; i++)
-    {
-        span[i] = transformer(span[i]);
-    }
-
-    var result = value.SetChildren(newChildren);
-
-    ReleaseSpan(span, chunks);
-    KeepAlive(ref four);
-    return result;
-}
-private static Span&lt;T&gt; GetSpan&lt;T&gt;(int count, ChunkStack&lt;T&gt; chunks, ref Four&lt;T&gt; four)
-{
-    if (count == 0)
-    {
-        return new Span&lt;T&gt;();
-    }
-    else if (count &lt;= 4)
-    {
-        return SpanFactory&lt;T&gt;.Create(ref four.First, count);
-    }
-    else
-    {
-        return chunks.Allocate(count);
-    }
-}
-private static void ReleaseSpan&lt;T&gt;(Span&lt;T&gt; span, ChunkStack&lt;T&gt; chunks)
-{
-    if (span.Length &gt; 4)
-    {
-        chunks.Free(span);
-    }
-}
-[MethodImpl(MethodImplOptions.NoInlining)]
-private static void KeepAlive&lt;T&gt;(ref Four&lt;T&gt; four)
-{
-}
-</code></pre>
-<p>As far as I know, the designers of <code>Span</code> were thinking primarily about applications such as serialisation and parsing — the sort of low-level code you’d find in a <a href="https://github.com/aspnet/AspNetCore">high performance web server</a>. But <code>Span</code> also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my <code>IRewritable</code> abstraction, but I’m also leaning on its flexibility to implement that abstraction as efficiently as possible.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> T RewriteChildrenInternal<span class="op">&lt;</span>T<span class="op">&gt;(</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T value<span class="op">,</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">,</span> T<span class="op">&gt;</span> transformer<span class="op">,</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;</span> chunks</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> count <span class="op">=</span> value<span class="op">.</span><span class="fu">CountChildren</span><span class="op">();</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> four <span class="op">=</span> <span class="kw">new</span> Four<span class="op">&lt;</span>T<span class="op">&gt;();</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> span <span class="op">=</span> <span class="fu">GetSpan</span><span class="op">(</span>count<span class="op">,</span> chunks<span class="op">,</span> <span class="kw">ref</span> four<span class="op">);</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    value<span class="op">.</span><span class="fu">GetChildren</span><span class="op">(</span>span<span class="op">);</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> <span class="op">(</span><span class="dt">var</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> span<span class="op">.</span><span class="fu">Length</span><span class="op">;</span> i<span class="op">++)</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>        span<span class="op">[</span>i<span class="op">]</span> <span class="op">=</span> <span class="fu">transformer</span><span class="op">(</span>span<span class="op">[</span>i<span class="op">]);</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> result <span class="op">=</span> value<span class="op">.</span><span class="fu">SetChildren</span><span class="op">(</span>newChildren<span class="op">);</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ReleaseSpan</span><span class="op">(</span>span<span class="op">,</span> chunks<span class="op">);</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">KeepAlive</span><span class="op">(</span><span class="kw">ref</span> four<span class="op">);</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result<span class="op">;</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> Span<span class="op">&lt;</span>T<span class="op">&gt;</span> GetSpan<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="dt">int</span> count<span class="op">,</span> ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;</span> chunks<span class="op">,</span> <span class="kw">ref</span> Four<span class="op">&lt;</span>T<span class="op">&gt;</span> four<span class="op">)</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>count <span class="op">==</span> <span class="dv">0</span><span class="op">)</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">new</span> Span<span class="op">&lt;</span>T<span class="op">&gt;();</span></span>
+<span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span>count <span class="op">&lt;=</span> <span class="dv">4</span><span class="op">)</span></span>
+<span id="32"><a href="#32" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> SpanFactory<span class="op">&lt;</span>T<span class="op">&gt;.</span><span class="fu">Create</span><span class="op">(</span><span class="kw">ref</span> four<span class="op">.</span><span class="fu">First</span><span class="op">,</span> count<span class="op">);</span></span>
+<span id="34"><a href="#34" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="35"><a href="#35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span></span>
+<span id="36"><a href="#36" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="37"><a href="#37" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> chunks<span class="op">.</span><span class="fu">Allocate</span><span class="op">(</span>count<span class="op">);</span></span>
+<span id="38"><a href="#38" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="39"><a href="#39" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="40"><a href="#40" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> <span class="dt">void</span> ReleaseSpan<span class="op">&lt;</span>T<span class="op">&gt;(</span>Span<span class="op">&lt;</span>T<span class="op">&gt;</span> span<span class="op">,</span> ChunkStack<span class="op">&lt;</span>T<span class="op">&gt;</span> chunks<span class="op">)</span></span>
+<span id="41"><a href="#41" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="42"><a href="#42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>span<span class="op">.</span><span class="fu">Length</span> <span class="op">&gt;</span> <span class="dv">4</span><span class="op">)</span></span>
+<span id="43"><a href="#43" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="44"><a href="#44" aria-hidden="true" tabindex="-1"></a>        chunks<span class="op">.</span><span class="fu">Free</span><span class="op">(</span>span<span class="op">);</span></span>
+<span id="45"><a href="#45" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="46"><a href="#46" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="47"><a href="#47" aria-hidden="true" tabindex="-1"></a><span class="op">[</span><span class="fu">MethodImpl</span><span class="op">(</span>MethodImplOptions<span class="op">.</span><span class="fu">NoInlining</span><span class="op">)]</span></span>
+<span id="48"><a href="#48" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> <span class="dt">void</span> KeepAlive<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">ref</span> Four<span class="op">&lt;</span>T<span class="op">&gt;</span> four<span class="op">)</span></span>
+<span id="49"><a href="#49" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="50"><a href="#50" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>As far as I know, the designers of <code>Span</code> were thinking primarily about applications such as serialisation and parsing — the sort of low-level code you’d find in a <a href="https://github.com/aspnet/AspNetCore">high performance web server</a>. But <code>Span</code> also really shines in this high-level library of recursion patterns. Its guarantees about storage proved crucial to the safety of my <code>IRewritable</code> abstraction, but I’m also leaning on its flexibility to implement that abstraction as efficiently as possible.</p>
 <p>Sawmill version 3.0 is now available <a href="https://www.nuget.org/packages/Sawmill">on Nuget</a>, and you can read all of this code in <a href="https://github.com/benjamin-hodgson/Sawmill">the GitHub repo</a>.</p>
 
 

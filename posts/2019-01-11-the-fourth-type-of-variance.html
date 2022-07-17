@@ -20,9 +20,6 @@
 
             gtag('config', 'UA-115911217-1');
         </script>
-
-        <script async id="highlightjs-script" src="../js/third-party/highlight.js"></script>
-        <script async src="../js/main.js"></script>
     </head>
     <body>
         <header id="header">
@@ -51,42 +48,34 @@
 
 </a></h2>
 <p>Probably the most familiar situation is when the parameterised types are related in the same way as the parameter. This is the type of variance exhibited by most “container” types, like <code>List</code>.</p>
-<pre><code class="language-scala">sealed abstract class List[+A]
-
-val cats : List[Cat] = List(Cat(&quot;Tilly&quot;), Cat(&quot;Charlie&quot;), Cat(&quot;Izzy&quot;))
-val animals : List[Animal] = cats
-</code></pre>
-<p><code>List</code>’s parameter <code>A</code> is annotated with <code>+</code>, so it’ll be treated as covariant. This allows you to use a <code>List[Cat]</code> any time you need a <code>List[Animal]</code>. A list of <code>Cat</code>s is a list of <code>Animal</code>s, because every <code>Cat</code> is an <code>Animal</code>. The subtype relationship of the container goes in the same direction as the subtype relationship of the elements. (In C# <code>+</code> is pronounced <code>out</code>, as in <code>IEnumerable&lt;out T&gt;</code>.)</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">sealed</span> <span class="kw">abstract</span> <span class="kw">class</span> <span class="ex">List</span><span class="op">[+</span>A<span class="op">]</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> cats <span class="op">:</span> <span class="ex">List</span><span class="op">[</span>Cat<span class="op">]</span> <span class="op">=</span> <span class="ex">List</span><span class="op">(</span><span class="fu">Cat</span><span class="op">(</span><span class="st">&quot;Tilly&quot;</span><span class="op">),</span> <span class="fu">Cat</span><span class="op">(</span><span class="st">&quot;Charlie&quot;</span><span class="op">),</span> <span class="fu">Cat</span><span class="op">(</span><span class="st">&quot;Izzy&quot;</span><span class="op">))</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> animals <span class="op">:</span> <span class="ex">List</span><span class="op">[</span>Animal<span class="op">]</span> <span class="op">=</span> cats</span></code></pre></div><p><code>List</code>’s parameter <code>A</code> is annotated with <code>+</code>, so it’ll be treated as covariant. This allows you to use a <code>List[Cat]</code> any time you need a <code>List[Animal]</code>. A list of <code>Cat</code>s is a list of <code>Animal</code>s, because every <code>Cat</code> is an <code>Animal</code>. The subtype relationship of the container goes in the same direction as the subtype relationship of the elements. (In C# <code>+</code> is pronounced <code>out</code>, as in <code>IEnumerable&lt;out T&gt;</code>.)</p>
 <p>Variance is visible even in non-subtyping-based languages. Haskellers’ll be familiar with <em>covariant functors</em>. It’s the type of functor exhibited the the standard <code>Functor</code> class.</p>
-<pre><code class="language-haskell">class Functor f where
-    fmap :: (a -&gt; b) -&gt; f a -&gt; f b
-
-instance Functor [] where
-    fmap f xs = [f x | x &lt;- xs]
-</code></pre>
-<p>This chimes with the intuition that a functor <code>f</code> is a container of sorts. If you can write a function to convert each <code>a</code> in the container into a <code>b</code>, then <code>fmap</code> can convert a container of <code>a</code>s into a container of <code>b</code>s by converting each item in the container.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Functor</span> f <span class="kw">where</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> [] <span class="kw">where</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> f xs <span class="ot">=</span> [f x <span class="op">|</span> x <span class="ot">&lt;-</span> xs]</span></code></pre></div><p>This chimes with the intuition that a functor <code>f</code> is a container of sorts. If you can write a function to convert each <code>a</code> in the container into a <code>b</code>, then <code>fmap</code> can convert a container of <code>a</code>s into a container of <code>b</code>s by converting each item in the container.</p>
 <p>In general, a type is covariant if its parameter is used as an output. An object which produces <code>Cat</code>s can be used to produce <code>Animal</code>s. All you have to do is ignore the cattiness of the animals you get out of the producer.</p>
 <h2 id="contravariance"><a href="#contravariance">Contravariance
 
 </a></h2>
 <p><em>Contravariance</em>, covariance’s evil twin, is the word for when the parameterised types are related in the opposite way as the parameters. Scala’s <code>Ordering</code>, which determines which way round to put two objects (like C#’s <code>IComparer</code>), is an example of a contravariant type.</p>
-<pre><code class="language-scala">trait Ordering[-A] {
-    def apply(x : A, y : A) : Int
-}
-val animalOrdering : Ordering[Animal] = Ordering.by[Animal, Int](x =&gt; x.cuteness)
-val catOrdering : Ordering[Cat] = animalOrdering
-</code></pre>
-<p>The <code>-</code> symbol denotes a contravariant parameter, allowing us to use an <code>Ordering[Animal]</code> as an <code>Ordering[Cat]</code>. (C#ers say <code>in</code>, as in <code>IComparer&lt;in T&gt;</code>.) If you know how to compare two <code>Animal</code>s (perhaps by comparing their cuteness), you can certainly compare two <code>Cat</code>s. The subtype relationship of the comparers goes in the opposite direction to that of the parameters.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Ordering<span class="op">[-</span>A<span class="op">]</span> <span class="op">{</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">apply</span><span class="op">(</span>x <span class="op">:</span> A<span class="op">,</span> y <span class="op">:</span> A<span class="op">)</span> <span class="op">:</span> <span class="bu">Int</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> animalOrdering <span class="op">:</span> Ordering<span class="op">[</span>Animal<span class="op">]</span> <span class="op">=</span> Ordering<span class="op">.</span>by<span class="op">[</span>Animal<span class="op">,</span> <span class="bu">Int</span><span class="op">](</span>x <span class="op">=&gt;</span> x<span class="op">.</span>cuteness<span class="op">)</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> catOrdering <span class="op">:</span> Ordering<span class="op">[</span>Cat<span class="op">]</span> <span class="op">=</span> animalOrdering</span></code></pre></div><p>The <code>-</code> symbol denotes a contravariant parameter, allowing us to use an <code>Ordering[Animal]</code> as an <code>Ordering[Cat]</code>. (C#ers say <code>in</code>, as in <code>IComparer&lt;in T&gt;</code>.) If you know how to compare two <code>Animal</code>s (perhaps by comparing their cuteness), you can certainly compare two <code>Cat</code>s. The subtype relationship of the comparers goes in the opposite direction to that of the parameters.</p>
 <p>The class of contravariant functors in Haskell is just like <code>Functor</code> but with the direction of one of the arrows flipped.</p>
-<pre><code class="language-haskell">class Contravariant f where
-    contramap :: (b -&gt; a) -&gt; f a -&gt; f b
-
-newtype Comparer a = Comparer (a -&gt; a -&gt; Ord)
-
-instance Contravariant Comparer where
-    contramap f (Comparer p) = Comparer (\x y -&gt; p (f x) (f y))
-</code></pre>
-<p>If you can turn <code>b</code>s into <code>a</code>s, then you can turn a comparer of <code>a</code>s into a comparer of <code>b</code>s by converting the <code>b</code>s into <code>a</code>s before they go into the comparer. Note how <code>f</code> is applied to <code>p</code>’s inputs in the implementation of <code>contramap</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Contravariant</span> f <span class="kw">where</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    contramap ::</span> (b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Comparer</span> a <span class="ot">=</span> <span class="dt">Comparer</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ord</span>)</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Contravariant</span> <span class="dt">Comparer</span> <span class="kw">where</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    contramap f (<span class="dt">Comparer</span> p) <span class="ot">=</span> <span class="dt">Comparer</span> (\x y <span class="ot">-&gt;</span> p (f x) (f y))</span></code></pre></div><p>If you can turn <code>b</code>s into <code>a</code>s, then you can turn a comparer of <code>a</code>s into a comparer of <code>b</code>s by converting the <code>b</code>s into <code>a</code>s before they go into the comparer. Note how <code>f</code> is applied to <code>p</code>’s inputs in the implementation of <code>contramap</code>.</p>
 <p>In general, a type is contravariant if its parameter appears as an input. An object which consumes <code>Animals</code> can be used to consume <code>Cat</code>s. All you have to do is forget about the cattiness of the animals before you put them into the consumer.</p>
 <p>Julie Moronuki has <a href="https://typeclasses.com/contravariance">the best explanation of contravariance</a> that I know of.</p>
 <h2 id="invariance"><a href="#invariance">Invariance
@@ -94,33 +83,25 @@ instance Contravariant Comparer where
 </a></h2>
 <p><em>Invariance</em> is the word for when there’s no relationship at all between different usages of a parameterised type.</p>
 <p>In Scala a type parameter unadorned with a sign is invariant. The following mutable set type is invariant:</p>
-<pre><code class="language-scala">trait Set[A] {
-    // A appears as both an input and an output
-    def add(item: A): Unit
-    def remove(item: A): Unit
-    def contains(item: A): Boolean
-    def items(): Iterable[A]
-}
-</code></pre>
-<p>In general, a type is invariant if its parameter appears as both an input and an output. You can’t use <code>Set</code> covariantly, because <code>A</code> appears as an input to <code>contains</code>, and you can’t use it contravariantly because <code>A</code> appears in <code>items</code>’s output. There’s no subtyping relationship between the parameter and the type. A <code>Set[Cat]</code> is not a <code>Set[Animal]</code>. If it was, you’d be allowed to upcast it and then call <code>add</code> with a <code>Dog</code>:</p>
-<pre><code class="language-scala">val catSet = new Set[Cat](Cat(&quot;Tilly&quot;))
-val animalSet: Set[Animal] = catSet
-
-animalSet.add(Dog(&quot;Richard&quot;))
-for (cat: Cat &lt;- catSet.items()) {}  // uh oh, one of the cats will actually be a dog!
-</code></pre>
-<p>The same logic applies to the opposite situation. A <code>Set[Animal]</code> is not a <code>Set[Cat]</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> <span class="ex">Set</span><span class="op">[</span>A<span class="op">]</span> <span class="op">{</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// A appears as both an input and an output</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">add</span><span class="op">(</span>item<span class="op">:</span> A<span class="op">):</span> <span class="bu">Unit</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">remove</span><span class="op">(</span>item<span class="op">:</span> A<span class="op">):</span> <span class="bu">Unit</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">contains</span><span class="op">(</span>item<span class="op">:</span> A<span class="op">):</span> <span class="ex">Boolean</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">items</span><span class="op">():</span> <span class="ex">Iterable</span><span class="op">[</span>A<span class="op">]</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>In general, a type is invariant if its parameter appears as both an input and an output. You can’t use <code>Set</code> covariantly, because <code>A</code> appears as an input to <code>contains</code>, and you can’t use it contravariantly because <code>A</code> appears in <code>items</code>’s output. There’s no subtyping relationship between the parameter and the type. A <code>Set[Cat]</code> is not a <code>Set[Animal]</code>. If it was, you’d be allowed to upcast it and then call <code>add</code> with a <code>Dog</code>:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> catSet <span class="op">=</span> <span class="kw">new</span> <span class="ex">Set</span><span class="op">[</span>Cat<span class="op">](</span><span class="fu">Cat</span><span class="op">(</span><span class="st">&quot;Tilly&quot;</span><span class="op">))</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> animalSet<span class="op">:</span> <span class="ex">Set</span><span class="op">[</span>Animal<span class="op">]</span> <span class="op">=</span> catSet</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>animalSet<span class="op">.</span><span class="fu">add</span><span class="op">(</span><span class="fu">Dog</span><span class="op">(</span><span class="st">&quot;Richard&quot;</span><span class="op">))</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> <span class="op">(</span>cat<span class="op">:</span> Cat <span class="op">&lt;-</span> catSet<span class="op">.</span><span class="fu">items</span><span class="op">())</span> <span class="op">{}</span>  <span class="co">// uh oh, one of the cats will actually be a dog!</span></span></code></pre></div><p>The same logic applies to the opposite situation. A <code>Set[Animal]</code> is not a <code>Set[Cat]</code>.</p>
 <p>Here’s a Haskell class defining <code>Invariant</code> functors.</p>
-<pre><code class="language-haskell">class Invariant f where
-    invmap :: (a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
-</code></pre>
-<p>You have to be able to map <code>a</code>s and <code>b</code>s in both directions to convert an invariant functor. This implies that the functor both consumes and produces <code>a</code>s: you map items on the way out and on the way in.</p>
-<pre><code class="language-haskell">newtype Operation a = Operation (a -&gt; a -&gt; a)
-
-instance Invariant Operation where
-    invmap f g (Operation op) = Operation (\x y -&gt; f (g x `op` g y))
-</code></pre>
-<p>Note how we use <code>f</code> on the output of <code>op</code> and <code>g</code> on the inputs.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Invariant</span> f <span class="kw">where</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    invmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span></code></pre></div><p>You have to be able to map <code>a</code>s and <code>b</code>s in both directions to convert an invariant functor. This implies that the functor both consumes and produces <code>a</code>s: you map items on the way out and on the way in.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Operation</span> a <span class="ot">=</span> <span class="dt">Operation</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a)</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Invariant</span> <span class="dt">Operation</span> <span class="kw">where</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    invmap f g (<span class="dt">Operation</span> op) <span class="ot">=</span> <span class="dt">Operation</span> (\x y <span class="ot">-&gt;</span> f (g x <span class="ot">`op`</span> g y))</span></code></pre></div><p>Note how we use <code>f</code> on the output of <code>op</code> and <code>g</code> on the inputs.</p>
 <p>The only time I’ve actually seen this class used is in <a href="http://comonad.com/reader/2008/rotten-bananas/">Ed Kmett’s old article about attempting to represent higher-order abstract syntax generically</a>.</p>
 <p>Let me spell out the similarity between <code>Invariant</code> functors and Scala’s subtype invariance. For <code>Operation a</code> to be convertible to <code>Operation b</code>, <code>a</code> must be convertible to <code>b</code> <em>and</em> <code>b</code> must be convertible to <code>a</code>. For <code>Set[A]</code> to be a subtype of <code>Set[B]</code>, <code>A</code> must be a subtype of <code>B</code> <em>and</em> <code>B</code> must be a subtype of <code>A</code> (that is, they must be the same type).</p>
 <p>Note that variance is a property of the type parameter (<code>A</code>), not the type constructor (<code>List</code>/<code>Ordering</code>). A given type constructor may have multiple parameters with different variances. <code>Function1[-A, +B]</code>, for example.</p>
@@ -129,80 +110,60 @@ instance Invariant Operation where
 
 </a></h2>
 <p>An object which produces a producer of <code>A</code>s effectively produces <code>A</code>s. A type with a covariant type as an output is itself covariant.</p>
-<pre><code class="language-scala">// Container returns a covariant type, so Container is covariant
-trait Container[+A] {
-    def toList(): List[A]
-}
-</code></pre>
-<p>Consuming a producer of <code>A</code>s is basically the same as consuming <code>A</code>s. A type which has a covariant type as an input is contravariant.</p>
-<pre><code class="language-scala">// Printer consumes a covariant type, so it's contravariant
-trait Printer[-A] {
-    def printAll(items: List[A]): Unit
-}
-</code></pre>
-<p>Producing a consumer of <code>A</code>s is like consuming <code>A</code>s. A type with a contravariant type as an output is contravariant.</p>
-<pre><code class="language-scala">// Produces a contravariant type, so contravariant
-trait OrderingFactory[-A] {
-    def getOrdering(): Ordering[A]
-}
-</code></pre>
-<p>A consumer of consumers is itself a producer. (You have to be able to produce <code>A</code>s in order to feed them to the consumer.) A type with a contravariant type as an input is covariant.</p>
-<pre><code class="language-scala">// Consumes a contravariant type, so covariant
-trait Sortable[+A] {  
-    def sortBy(ordering: Ordering[A]): Unit
-}
-</code></pre>
-<p>Mnemonically, you can think of input parameters as meaning “times -1”. <code>Ordering</code> takes <code>A</code>s as its inputs, so <code>Ordering</code> is negative. <code>Sortable</code> takes a (negative) <code>Ordering</code> as an input, so it’s positive (-1 * -1 = 1). Printer takes a (positive) <code>List</code> as input, so it’s negative. This explains Scala’s choice of <code>+</code> and <code>-</code> as the syntax for its variance annotations.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="co">// Container returns a covariant type, so Container is covariant</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> <span class="ex">Container</span><span class="op">[+</span>A<span class="op">]</span> <span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">toList</span><span class="op">():</span> <span class="ex">List</span><span class="op">[</span>A<span class="op">]</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Consuming a producer of <code>A</code>s is basically the same as consuming <code>A</code>s. A type which has a covariant type as an input is contravariant.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="co">// Printer consumes a covariant type, so it's contravariant</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Printer<span class="op">[-</span>A<span class="op">]</span> <span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">printAll</span><span class="op">(</span>items<span class="op">:</span> <span class="ex">List</span><span class="op">[</span>A<span class="op">]):</span> <span class="bu">Unit</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Producing a consumer of <code>A</code>s is like consuming <code>A</code>s. A type with a contravariant type as an output is contravariant.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="co">// Produces a contravariant type, so contravariant</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> OrderingFactory<span class="op">[-</span>A<span class="op">]</span> <span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">getOrdering</span><span class="op">():</span> Ordering<span class="op">[</span>A<span class="op">]</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>A consumer of consumers is itself a producer. (You have to be able to produce <code>A</code>s in order to feed them to the consumer.) A type with a contravariant type as an input is covariant.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="co">// Consumes a contravariant type, so covariant</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Sortable<span class="op">[+</span>A<span class="op">]</span> <span class="op">{</span>  </span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">sortBy</span><span class="op">(</span>ordering<span class="op">:</span> Ordering<span class="op">[</span>A<span class="op">]):</span> <span class="bu">Unit</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Mnemonically, you can think of input parameters as meaning “times -1”. <code>Ordering</code> takes <code>A</code>s as its inputs, so <code>Ordering</code> is negative. <code>Sortable</code> takes a (negative) <code>Ordering</code> as an input, so it’s positive (-1 * -1 = 1). Printer takes a (positive) <code>List</code> as input, so it’s negative. This explains Scala’s choice of <code>+</code> and <code>-</code> as the syntax for its variance annotations.</p>
 <h2 id="the-semilattice-of-variances"><a href="#the-semilattice-of-variances">The Semilattice of Variances
 
 </a></h2>
 <p>Now, it turns out that these three types of variance have a relationship to each other. Invariance generalises both covariance and contravariance. Covariant things are also invariant, and contravariant things are also also invariant.</p>
-<pre><code class="language-haskell">defaultInvmapCo :: Functor f =&gt; (a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
-defaultInvmapCo f _ x = fmap f x
-
-defaultInvmapContra :: Contravariant f =&gt; (a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
-defaultInvmapContra _ g x = contramap g x
-</code></pre>
-<p>If I was in the business of redesigning Haskell’s libraries, I’d even consider making <code>Invariant</code> a superclass of <code>Functor</code> and <code>Contravariant</code>.</p>
-<pre><code class="language-haskell">class Invariant f where {- ... -}
-
-class Invariant f =&gt; Functor f where {- ... -}
-
-class Invariant f =&gt; Contravariant f where {- ... -}
-</code></pre>
-<img src="../images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" />
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="ot">defaultInvmapCo ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>defaultInvmapCo f _ x <span class="ot">=</span> <span class="fu">fmap</span> f x</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">defaultInvmapContra ::</span> <span class="dt">Contravariant</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>defaultInvmapContra _ g x <span class="ot">=</span> contramap g x</span></code></pre></div><p>If I was in the business of redesigning Haskell’s libraries, I’d even consider making <code>Invariant</code> a superclass of <code>Functor</code> and <code>Contravariant</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Invariant</span> f <span class="kw">where</span> <span class="co">{- ... -}</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Invariant</span> f <span class="ot">=&gt;</span> <span class="dt">Functor</span> f <span class="kw">where</span> <span class="co">{- ... -}</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Invariant</span> f <span class="ot">=&gt;</span> <span class="dt">Contravariant</span> f <span class="kw">where</span> <span class="co">{- ... -}</span></span></code></pre></div><img src="../images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" />
 <p>So there’s this interesting relationship between the three types of variance. They form a little semilattice, of which <code>Invariant</code> is the supremum.</p>
 <p>But, hmm, the picture seems asymmetric. Is variance really only a semilattice? Or is there something lurking at the bottom of that picture?</p>
 <h2 id="phantom-variance"><a href="#phantom-variance">Phantom Variance
 
 </a></h2>
 <p>Looking at the code above, it appears that <code>Functor</code> and <code>Contravariant</code> both specialise <code>Invariant</code> by ignoring one of <code>Invariant</code>’s function parameters. What if we ignored both of them?</p>
-<pre><code class="language-haskell">class (Functor f, Contravariant f) =&gt; Phantom f where
-    pmap :: f a -&gt; f b
-</code></pre>
-<p>This strange class says that you can map an <code>f a</code> to an <code>f b</code> without needing to map <code>a</code>s or <code>b</code>s at all! Intuitively, you can only convert <code>f a</code> to <code>f b</code> for free when <code>f</code> doesn’t mention <code>a</code> anywhere in its body.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> (<span class="dt">Functor</span> f, <span class="dt">Contravariant</span> f) <span class="ot">=&gt;</span> <span class="dt">Phantom</span> f <span class="kw">where</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    pmap ::</span> f a <span class="ot">-&gt;</span> f b</span></code></pre></div><p>This strange class says that you can map an <code>f a</code> to an <code>f b</code> without needing to map <code>a</code>s or <code>b</code>s at all! Intuitively, you can only convert <code>f a</code> to <code>f b</code> for free when <code>f</code> doesn’t mention <code>a</code> anywhere in its body.</p>
 <p>A functor is <code>Invariant</code> when it has <code>a</code>s both as inputs and outputs. <code>Functor</code> specialises <code>Invariant</code> by promising that <code>f</code> doesn’t have any input <code>a</code>s, so all you need to do is map the outputs. <code>Contravariant</code> specialises <code>Invariant</code> by promising that there are no output <code>a</code>s and all you need to do is map the inputs. <code>Phantom</code>, being a special case of both covariance and contravariance, guarantees that there are no <code>a</code>s at all in the <code>f</code>.</p>
 <p>So the four types of variance form a nice lattice.</p>
 <img src="../images/2019-01-11-the-fourth-type-of-variance/lattice.jpg" />
 <p>For completeness, here’s the proof that the superclass constraints make sense:</p>
-<pre><code class="language-haskell">defaultFmap :: Phantom f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
-defaultFmap _ = pmap
-
-defaultContramap :: Phantom f =&gt; (b -&gt; a) -&gt; f a -&gt; f b
-defaultContramap _ = pmap
-</code></pre>
-<p>Phantom types show up every now and then in Haskell. They’re used to decorate ordinary values with additional type-level information, either to layer on additional type safety or to give GHC a hint for type inference.</p>
-<pre><code class="language-haskell">data Proxy a = Proxy  -- from Data.Proxy
-instance Phantom Proxy where
-    pmap _ = Proxy
-</code></pre>
-<p>Haskell is the only language I know of with proper support for phantom types, in its <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles">role system</a>. (<code>Phantom</code> roughly means <code>forall a b. Coercible (f a) (f b)</code>.) Scala doesn’t support it, but it’d mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.</p>
-<pre><code class="language-scala">case class Proxy[±A]  // fantasy syntax
-
-val catProxy = Proxy[Cat]()
-val dogProxy : Proxy[Dog] = catProxy
-</code></pre>
-<p><code>Proxy[A]</code> is always a subtype of <code>Proxy[B]</code> (and vice versa!), even when <code>A</code> and <code>B</code> are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry — two different types can both be a subtype of each other — so subtyping is no longer a partial order. As a language feature, phantom variance probably isn’t actually all that desirable.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="ot">defaultFmap ::</span> <span class="dt">Phantom</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>defaultFmap _ <span class="ot">=</span> pmap</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">defaultContramap ::</span> <span class="dt">Phantom</span> f <span class="ot">=&gt;</span> (b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>defaultContramap _ <span class="ot">=</span> pmap</span></code></pre></div><p>Phantom types show up every now and then in Haskell. They’re used to decorate ordinary values with additional type-level information, either to layer on additional type safety or to give GHC a hint for type inference.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Proxy</span> a <span class="ot">=</span> <span class="dt">Proxy</span>  <span class="co">-- from Data.Proxy</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Phantom</span> <span class="dt">Proxy</span> <span class="kw">where</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    pmap _ <span class="ot">=</span> <span class="dt">Proxy</span></span></code></pre></div><p>Haskell is the only language I know of with proper support for phantom types, in its <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#roles">role system</a>. (<code>Phantom</code> roughly means <code>forall a b. Coercible (f a) (f b)</code>.) Scala doesn’t support it, but it’d mean that a type is always a subtype of any other instantiation of that type, even if the type arguments have no relationship.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="kw">class</span> <span class="ex">Proxy</span><span class="op">[</span>±A<span class="op">]</span>  <span class="co">// fantasy syntax</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> catProxy <span class="op">=</span> <span class="ex">Proxy</span><span class="op">[</span>Cat<span class="op">]()</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> dogProxy <span class="op">:</span> <span class="ex">Proxy</span><span class="op">[</span>Dog<span class="op">]</span> <span class="op">=</span> catProxy</span></code></pre></div><p><code>Proxy[A]</code> is always a subtype of <code>Proxy[B]</code> (and vice versa!), even when <code>A</code> and <code>B</code> are nothing to do with each other. To a certain extent this defeats the purpose of phantom types. It also breaks antisymmetry — two different types can both be a subtype of each other — so subtyping is no longer a partial order. As a language feature, phantom variance probably isn’t actually all that desirable.</p>
 
 
         </article>

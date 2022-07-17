@@ -20,9 +20,6 @@
 
             gtag('config', 'UA-115911217-1');
         </script>
-
-        <script async id="highlightjs-script" src="../js/third-party/highlight.js"></script>
-        <script async src="../js/main.js"></script>
     </head>
     <body>
         <header id="header">
@@ -77,15 +74,11 @@
 </a></h2>
 <p>Let’s start with the basics and build upwards. Prolog is a <em>whitespace-insensitive</em> language, so we need a way to skip over the whitespace in the source code. We’ll use a convention where each component <code>Parser</code> will consume any whitespace <em>after</em> parsing any relevant non-whitespace characters.</p>
 <p>Here’s a method which creates a <code>Parser</code> which consumes a specific character, skips over any whitespace, and then returns the original character.</p>
-<pre><code class="language-csharp">static Parser&lt;char, char&gt; Tok(char value)  // for &quot;token&quot;
-    =&gt; Char(value).Before(SkipWhitespaces);
-</code></pre>
-<p>(<code>Char</code> comes from the <code>Pidgin.Parser</code> static class; all of today’s code is in a file with <code>using static Pidgin.Parser</code> and <code>using static Pidgin.Parser&lt;char&gt;</code> at the top.) <code>Char</code> is a parser which matches a specific character; <code>SkipWhitespaces</code> greedily consumes and discards a sequence of whitespace characters; and <code>Before</code> glues two parsers together sequentially, keeping only the result of the first one. So <code>Tok('(')</code> will match the input strings <code>&quot;(&quot;</code> and <code>&quot;(    &quot;</code> but not <code>&quot; (&quot;</code> or <code>&quot;)&quot;</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">char</span><span class="op">&gt;</span> <span class="fu">Tok</span><span class="op">(</span><span class="dt">char</span> value<span class="op">)</span>  <span class="co">// for &quot;token&quot;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">Char</span><span class="op">(</span>value<span class="op">).</span><span class="fu">Before</span><span class="op">(</span>SkipWhitespaces<span class="op">);</span></span></code></pre></div><p>(<code>Char</code> comes from the <code>Pidgin.Parser</code> static class; all of today’s code is in a file with <code>using static Pidgin.Parser</code> and <code>using static Pidgin.Parser&lt;char&gt;</code> at the top.) <code>Char</code> is a parser which matches a specific character; <code>SkipWhitespaces</code> greedily consumes and discards a sequence of whitespace characters; and <code>Before</code> glues two parsers together sequentially, keeping only the result of the first one. So <code>Tok('(')</code> will match the input strings <code>&quot;(&quot;</code> and <code>&quot;(    &quot;</code> but not <code>&quot; (&quot;</code> or <code>&quot;)&quot;</code>.</p>
 <p>Here’s an equivalent parser for a specific string:</p>
-<pre><code class="language-csharp">static Parser&lt;char, string&gt; Tok(string value)
-    =&gt; Try(String(value)).Before(SkipWhitespaces);
-</code></pre>
-<p>Why am I using the <em>backtracking</em> function <code>Try</code> here? Remember, a parser consumes its input one character at a time, and makes decisions based only on the current character. If the first character of the input looks like it matches <code>value</code>, Pidgin will commit to running the <code>String(value)</code> parser; if matching the string fails after the first character then the parser needs to return to where it was so that it can try any alternative ways to parse from that location.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> <span class="fu">Tok</span><span class="op">(</span><span class="dt">string</span> value<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">Try</span><span class="op">(</span><span class="fu">String</span><span class="op">(</span>value<span class="op">)).</span><span class="fu">Before</span><span class="op">(</span>SkipWhitespaces<span class="op">);</span></span></code></pre></div><p>Why am I using the <em>backtracking</em> function <code>Try</code> here? Remember, a parser consumes its input one character at a time, and makes decisions based only on the current character. If the first character of the input looks like it matches <code>value</code>, Pidgin will commit to running the <code>String(value)</code> parser; if matching the string fails after the first character then the parser needs to return to where it was so that it can try any alternative ways to parse from that location.</p>
 <p>For an example of why we need <code>Try</code>, consider the parser <code>String(&quot;prolog&quot;).Or(String(&quot;programming&quot;))</code>. <code>Or</code> is Pidgin’s <em>choice</em> function — it attempts to run one parser, and falls back on the other one if the first parser failed without consuming any input. Here’s our parser represented pictorally:</p>
 <pre><code>             +--Or--+
              |      |
@@ -108,37 +101,31 @@ p r o <b>g</b> r a m m i n g
 <p>Now that we’re looking at a <code>g</code>, it’s clear that the input doesn’t match the string <code>prolog</code>. The <code>prolog</code> parser fails and yields control back to <code>Or</code>. Because the <code>prolog</code> parser consumed input and did not backtrack, <code>Or</code> will not attempt to apply the <code>programming</code> parser. (If it did try, it would fail anyway because we’re no longer looking at a <code>p</code>.) If the <code>prolog</code> parser were wrapped in a <code>Try</code>, it would have backtracked to the <code>p</code> upon failing, allowing <code>Or</code> to fall back on the <code>programming</code> parser.</p>
 <p>It’s common to use <code>Try</code> for each word and symbol in your language’s grammar; I’m going to use <code>Tok</code> for each of my low level component parsers.</p>
 <p>Finally, we can generalise these <code>Tok</code> methods to run an arbitrary <code>Parser</code> with backtracking and whitespace.</p>
-<pre><code class="language-csharp">static Parser&lt;char, T&gt; Tok&lt;T&gt;(Parser&lt;char, T&gt; p)
-    =&gt; Try(p).Before(SkipWhitespaces);
-
-static Parser&lt;char, char&gt; Tok(char value) =&gt; Tok(Char(value));
-static Parser&lt;char, string&gt; Tok(string value) =&gt; Tok(String(value));
-</code></pre>
-<p>I have a half-baked plan to add this <code>Tok</code> parser, along with some other tools for handling whitespace, to the Pidgin library itself, so you don’t have to write it yourself every time you write a parser.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> T<span class="op">&gt;</span> Tok<span class="op">&lt;</span>T<span class="op">&gt;(</span>Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> T<span class="op">&gt;</span> p<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">Try</span><span class="op">(</span>p<span class="op">).</span><span class="fu">Before</span><span class="op">(</span>SkipWhitespaces<span class="op">);</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">char</span><span class="op">&gt;</span> <span class="fu">Tok</span><span class="op">(</span><span class="dt">char</span> value<span class="op">)</span> <span class="op">=&gt;</span> <span class="fu">Tok</span><span class="op">(</span><span class="fu">Char</span><span class="op">(</span>value<span class="op">));</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> <span class="fu">Tok</span><span class="op">(</span><span class="dt">string</span> value<span class="op">)</span> <span class="op">=&gt;</span> <span class="fu">Tok</span><span class="op">(</span><span class="fu">String</span><span class="op">(</span>value<span class="op">));</span></span></code></pre></div><p>I have a half-baked plan to add this <code>Tok</code> parser, along with some other tools for handling whitespace, to the Pidgin library itself, so you don’t have to write it yourself every time you write a parser.</p>
 <p>Some useful token parsers for Prolog:</p>
-<pre><code class="language-csharp">static readonly Parser&lt;char, char&gt; _comma = Tok(',');
-static readonly Parser&lt;char, char&gt; _openParen = Tok('(');
-static readonly Parser&lt;char, char&gt; _closeParen = Tok(')');
-static readonly Parser&lt;char, char&gt; _dot = Tok('.');
-static readonly Parser&lt;char, string&gt; _colonDash = Tok(&quot;:-&quot;);
-</code></pre>
-<h2 id="names"><a href="#names">Names
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">char</span><span class="op">&gt;</span> _comma <span class="op">=</span> <span class="fu">Tok</span><span class="op">(</span><span class="ch">','</span><span class="op">);</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">char</span><span class="op">&gt;</span> _openParen <span class="op">=</span> <span class="fu">Tok</span><span class="op">(</span><span class="ch">'('</span><span class="op">);</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">char</span><span class="op">&gt;</span> _closeParen <span class="op">=</span> <span class="fu">Tok</span><span class="op">(</span><span class="ch">')'</span><span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">char</span><span class="op">&gt;</span> _dot <span class="op">=</span> <span class="fu">Tok</span><span class="op">(</span><span class="ch">'.'</span><span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> _colonDash <span class="op">=</span> <span class="fu">Tok</span><span class="op">(</span><span class="st">&quot;:-&quot;</span><span class="op">);</span></span></code></pre></div><h2 id="names"><a href="#names">Names
 
 </a></h2>
 <p>Prolog has two types of names — <em>atoms</em> start with a lowercase letter and <em>variables</em> start with an uppercase letter or an underscore.</p>
-<pre><code class="language-csharp">static readonly Parser&lt;char, string&gt; _atomName = Tok(
-    from first in Lowercase
-    // OneOf is like Or, but it works with more than two parsers
-    from rest in OneOf(Letter, Digit, Char('_')).ManyString()
-    select first + rest
-);
-static readonly Parser&lt;char, string&gt; _variableName = Tok(
-    from first in Uppercase.Or(Char('_'))
-    from rest in OneOf(Letter, Digit, Char('_')).ManyString()
-    select first + rest
-);
-</code></pre>
-<p>One of the fun things about C#’s <code>from...select</code> syntax is that it’s <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers — <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> _atomName <span class="op">=</span> <span class="fu">Tok</span><span class="op">(</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    from first <span class="kw">in</span> Lowercase</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// OneOf is like Or, but it works with more than two parsers</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span><span class="op">(</span>Letter<span class="op">,</span> Digit<span class="op">,</span> <span class="fu">Char</span><span class="op">(</span><span class="ch">'_'</span><span class="op">)).</span><span class="fu">ManyString</span><span class="op">()</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    select first <span class="op">+</span> rest</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> _variableName <span class="op">=</span> <span class="fu">Tok</span><span class="op">(</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    from first <span class="kw">in</span> Uppercase<span class="op">.</span><span class="fu">Or</span><span class="op">(</span><span class="fu">Char</span><span class="op">(</span><span class="ch">'_'</span><span class="op">))</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    from rest <span class="kw">in</span> <span class="fu">OneOf</span><span class="op">(</span>Letter<span class="op">,</span> Digit<span class="op">,</span> <span class="fu">Char</span><span class="op">(</span><span class="ch">'_'</span><span class="op">)).</span><span class="fu">ManyString</span><span class="op">()</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    select first <span class="op">+</span> rest</span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span></code></pre></div><p>One of the fun things about C#’s <code>from...select</code> syntax is that it’s <a href="https://en.wikipedia.org/wiki/Duck_typing"><em>duck-typed</em></a>. The C# compiler allows you to use <code>from...select</code> with any object which has eligible <code>Select</code> and <code>SelectMany</code> methods, not just <code>IEnumerable</code>. Pidgin allows you to (ab)use this notation to sequence parsers — <code>from x in p1 from y in p2 select f(x, y)</code> is equivalent to <code>p1.Then(p2, (x,y) =&gt; f(x,y))</code>. So when you see a parser defined using <code>from...select</code> you should read it from top to bottom as a script.</p>
 <p><code>ManyString</code> takes a parser and greedily runs it in a loop, then packs all of that parser’s results into a string. <code>Uppercase</code>, <code>Lowercase</code>, <code>Letter</code> and <code>Digit</code> all consume and return a single character of their respective types.</p>
 <p>So, taken as a whole, <code>_atomName</code> consumes and returns a string as long as it’s a valid Prolog atom. Here’s how it works:</p>
 <ol>
@@ -152,92 +139,80 @@ static readonly Parser&lt;char, string&gt; _variableName = Tok(
 </li>
 </ol>
 <p><code>_variableName</code> works just the same, except in step 1 it consumes an uppercase letter or an underscore. Let’s de-duplicate them:</p>
-<pre><code class="language-csharp">static Parser&lt;char, string&gt; Name(Parser&lt;char, char&gt; firstLetter)
-    =&gt; Tok(
-        from first in firstLetter
-        from rest in OneOf(Letter, Digit, Char('_')).ManyString()
-        select first + rest
-    );
-</code></pre>
-<h2 id="terms"><a href="#terms">Terms
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> <span class="fu">Name</span><span class="op">(</span>Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> <span class="dt">char</span><span class="op">&gt;</span> firstLetter<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">Tok</span><span class="op">(</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        from first <span class="kw">in</span> firstLetter</span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        from rest <span class="kw">in</span> <span class="fu">OneOf</span><span class="op">(</span>Letter<span class="op">,</span> Digit<span class="op">,</span> <span class="fu">Char</span><span class="op">(</span><span class="ch">'_'</span><span class="op">)).</span><span class="fu">ManyString</span><span class="op">()</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        select first <span class="op">+</span> rest</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span></code></pre></div><h2 id="terms"><a href="#terms">Terms
 
 </a></h2>
 <p>Terms in Prolog have a recursive structure, as <a href="../posts/2019-12-01-write-you-a-prolog.html">discussed previously</a>. A predicate’s arguments can be any term, including another predicate. This circularity poses a problem for our parser code — the <code>_predicate</code> parser needs to call <code>_term</code>, but <code>_term</code> needs to call <code>_predicate</code>, so what order can you put the declarations in?</p>
 <p>Pidgin’s built-in <code>Rec</code> function enables forward references like this. The idea is to use a lambda to delay the access to the field until after it’s been initialised.</p>
-<pre><code class="language-csharp">static readonly Parser&lt;char, Term&gt; _term = Rec(() =&gt; OneOf(
-    _variable,
-    // upcast the Parser&lt;char, Predicate&gt; into a Parser&lt;char, Term&gt;
-    _predicate.Cast&lt;Term&gt;(),
-    _atom
-)).Labelled(&quot;term&quot;);
-</code></pre>
-<p><code>_predicate</code> is textually below <code>_term</code>, so when <code>_term</code> is initialised <code>_predicate</code> will be <code>null</code>. By putting the <code>_predicate</code> reference inside a lambda and passing it to <code>Rec</code>, we can prevent <code>_predicate</code> from being accessed until after it’s been initialised. (<code>Rec</code> returns a parser which calls the lambda the first time it’s run.)</p>
-<pre><code class="language-csharp">static readonly Parser&lt;char, Term&gt; _atom
-    = Name(Lowercase)
-        .Select(name =&gt; (Term)new Atom(name))
-        .Labelled(&quot;atom&quot;);
-
-static readonly Parser&lt;char, Term&gt; _variable
-    = Name(Uppercase.Or(Char('_')))
-        .Select(name =&gt; (Term)new Variable(name))
-        .Labelled(&quot;variable&quot;);
-
-static readonly Parser&lt;char, Predicate&gt; _predicate = (
-    from name in Try(Name(Lowercase).Before(_openParen))
-    from args in CommaSeparated(_term).Before(_closeParen)
-    select new Predicate(name, args)
-).Labelled(&quot;predicate&quot;);
-
-static Parser&lt;char, ImmutableArray&lt;T&gt;&gt; CommaSeparated&lt;T&gt;(Parser&lt;char, T&gt; p)
-    =&gt; p.Separated(_comma).Select(x =&gt; x.ToImmutableArray());
-</code></pre>
-<p>I’m using <code>Try</code> again in the <code>_predicate</code> parser. This is to disambiguate predicates from atoms. Both start in the same way (a lowercase letter) and you can’t be sure you’re parsing a predicate until you see a parenthesis. So our <code>_term</code> parser first attempts to read a predicate, but if it doesn’t see a parenthesis then it backtracks and reads the name as an atom instead. The order of <code>OneOf</code>’s arguments matters!</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> Term<span class="op">&gt;</span> _term <span class="op">=</span> <span class="fu">Rec</span><span class="op">(()</span> <span class="op">=&gt;</span> <span class="fu">OneOf</span><span class="op">(</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    _variable<span class="op">,</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// upcast the Parser&lt;char, Predicate&gt; into a Parser&lt;char, Term&gt;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    _predicate<span class="op">.</span><span class="fu">Cast</span><span class="op">&lt;</span>Term<span class="op">&gt;(),</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    _atom</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">)).</span><span class="fu">Labelled</span><span class="op">(</span><span class="st">&quot;term&quot;</span><span class="op">);</span></span></code></pre></div><p><code>_predicate</code> is textually below <code>_term</code>, so when <code>_term</code> is initialised <code>_predicate</code> will be <code>null</code>. By putting the <code>_predicate</code> reference inside a lambda and passing it to <code>Rec</code>, we can prevent <code>_predicate</code> from being accessed until after it’s been initialised. (<code>Rec</code> returns a parser which calls the lambda the first time it’s run.)</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> Term<span class="op">&gt;</span> _atom</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="fu">Name</span><span class="op">(</span>Lowercase<span class="op">)</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>name <span class="op">=&gt;</span> <span class="op">(</span>Term<span class="op">)</span><span class="kw">new</span> <span class="fu">Atom</span><span class="op">(</span>name<span class="op">))</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Labelled</span><span class="op">(</span><span class="st">&quot;atom&quot;</span><span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> Term<span class="op">&gt;</span> _variable</span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="fu">Name</span><span class="op">(</span>Uppercase<span class="op">.</span><span class="fu">Or</span><span class="op">(</span><span class="fu">Char</span><span class="op">(</span><span class="ch">'_'</span><span class="op">)))</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Select</span><span class="op">(</span>name <span class="op">=&gt;</span> <span class="op">(</span>Term<span class="op">)</span><span class="kw">new</span> <span class="fu">Variable</span><span class="op">(</span>name<span class="op">))</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Labelled</span><span class="op">(</span><span class="st">&quot;variable&quot;</span><span class="op">);</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> Predicate<span class="op">&gt;</span> _predicate <span class="op">=</span> <span class="op">(</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    from name <span class="kw">in</span> <span class="fu">Try</span><span class="op">(</span><span class="fu">Name</span><span class="op">(</span>Lowercase<span class="op">).</span><span class="fu">Before</span><span class="op">(</span>_openParen<span class="op">))</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    from args <span class="kw">in</span> <span class="fu">CommaSeparated</span><span class="op">(</span>_term<span class="op">).</span><span class="fu">Before</span><span class="op">(</span>_closeParen<span class="op">)</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    select <span class="kw">new</span> <span class="fu">Predicate</span><span class="op">(</span>name<span class="op">,</span> args<span class="op">)</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a><span class="op">).</span><span class="fu">Labelled</span><span class="op">(</span><span class="st">&quot;predicate&quot;</span><span class="op">);</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> ImmutableArray<span class="op">&lt;</span>T<span class="op">&gt;&gt;</span> CommaSeparated<span class="op">&lt;</span>T<span class="op">&gt;(</span>Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> T<span class="op">&gt;</span> p<span class="op">)</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> p<span class="op">.</span><span class="fu">Separated</span><span class="op">(</span>_comma<span class="op">).</span><span class="fu">Select</span><span class="op">(</span>x <span class="op">=&gt;</span> x<span class="op">.</span><span class="fu">ToImmutableArray</span><span class="op">());</span></span></code></pre></div><p>I’m using <code>Try</code> again in the <code>_predicate</code> parser. This is to disambiguate predicates from atoms. Both start in the same way (a lowercase letter) and you can’t be sure you’re parsing a predicate until you see a parenthesis. So our <code>_term</code> parser first attempts to read a predicate, but if it doesn’t see a parenthesis then it backtracks and reads the name as an atom instead. The order of <code>OneOf</code>’s arguments matters!</p>
 <h2 id="rules-queries-and-whole-programs"><a href="#rules-queries-and-whole-programs">Rules, Queries and Whole Programs
 
 </a></h2>
 <p>We’re on the home straight. A Prolog program consists of a collection of top-level <em>rules</em> and <em>facts</em>. A rule consists of a predicate followed by the symbol <code>:-</code> and a comma-separated list of predicates, and ends with a <code>.</code> symbol. A fact is just a rule with no right-hand side.</p>
-<pre><code class="language-csharp">static readonly Parser&lt;char, Rule&gt; _rule
-    = Map(
-        (head, body) =&gt; new Rule(head, body),
-        _predicate,
-        _colonDash
-            .Then(CommaSeparatedAtLeastOnce(_predicate))
-            .Or(Return(ImmutableArray&lt;Predicate&gt;.Empty))
-    )
-    .Before(_dot)
-    .Labelled(&quot;rule&quot;);
-
-static Parser&lt;char, ImmutableArray&lt;T&gt;&gt; CommaSeparatedAtLeastOnce&lt;T&gt;(Parser&lt;char, T&gt; p)
-    =&gt; p.SeparatedAtLeastOnce(_comma).Select(x =&gt; x.ToImmutableArray());
-</code></pre>
-<p>(<code>Map</code> is another way of writing <code>Then</code>; <code>Return</code> is a parser which always returns the given value without touching the input string.) Note that <code>.Or(Return(...))</code> is applied to the result of <code>_colonDash.Then(...)</code>. If the parser encounters the <code>:-</code> symbol then it commits to reading at least one item in the rule’s body. <code>name(args) :- .</code> is not valid Prolog; if a programmer wants a rule with no body then they have to omit the <code>:-</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> Rule<span class="op">&gt;</span> _rule</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="fu">Map</span><span class="op">(</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        <span class="op">(</span>head<span class="op">,</span> body<span class="op">)</span> <span class="op">=&gt;</span> <span class="kw">new</span> <span class="fu">Rule</span><span class="op">(</span>head<span class="op">,</span> body<span class="op">),</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        _predicate<span class="op">,</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        _colonDash</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Then</span><span class="op">(</span><span class="fu">CommaSeparatedAtLeastOnce</span><span class="op">(</span>_predicate<span class="op">))</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>            <span class="op">.</span><span class="fu">Or</span><span class="op">(</span><span class="fu">Return</span><span class="op">(</span>ImmutableArray<span class="op">&lt;</span>Predicate<span class="op">&gt;.</span><span class="fu">Empty</span><span class="op">))</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">Before</span><span class="op">(</span>_dot<span class="op">)</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">Labelled</span><span class="op">(</span><span class="st">&quot;rule&quot;</span><span class="op">);</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> ImmutableArray<span class="op">&lt;</span>T<span class="op">&gt;&gt;</span> CommaSeparatedAtLeastOnce<span class="op">&lt;</span>T<span class="op">&gt;(</span>Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> T<span class="op">&gt;</span> p<span class="op">)</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> p<span class="op">.</span><span class="fu">SeparatedAtLeastOnce</span><span class="op">(</span>_comma<span class="op">).</span><span class="fu">Select</span><span class="op">(</span>x <span class="op">=&gt;</span> x<span class="op">.</span><span class="fu">ToImmutableArray</span><span class="op">());</span></span></code></pre></div><p>(<code>Map</code> is another way of writing <code>Then</code>; <code>Return</code> is a parser which always returns the given value without touching the input string.) Note that <code>.Or(Return(...))</code> is applied to the result of <code>_colonDash.Then(...)</code>. If the parser encounters the <code>:-</code> symbol then it commits to reading at least one item in the rule’s body. <code>name(args) :- .</code> is not valid Prolog; if a programmer wants a rule with no body then they have to omit the <code>:-</code>.</p>
 <p>Finally, a Prolog program consists of a sequence of rules. We’re also going to need a parser for individual queries typed at the interactive prompt.</p>
-<pre><code class="language-csharp">static readonly Parser&lt;char, ImmutableArray&lt;Rule&gt;&gt; _program =
-    from _ in SkipWhitespaces
-    from rules in _rule.Many()
-    select rules.ToImmutableArray();
-
-static readonly Parser&lt;char, Predicate&gt; _query = SkipWhitespaces.Then(_predicate);
-
-public static ImmutableArray&lt;Rule&gt; ParseProgram(string input) = _program.ParseOrThrow(input);
-public static Predicate ParseQuery(string input) = _query.ParseOrThrow(input);
-</code></pre>
-<p>Since by convention each of our component parsers has been consuming whitespaces <em>after</em> the text they match, we need to remember to <code>SkipWhitespaces</code> at the start of the file.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> ImmutableArray<span class="op">&lt;</span>Rule<span class="op">&gt;&gt;</span> _program <span class="op">=</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    from _ <span class="kw">in</span> SkipWhitespaces</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    from rules <span class="kw">in</span> _rule<span class="op">.</span><span class="fu">Many</span><span class="op">()</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    select rules<span class="op">.</span><span class="fu">ToImmutableArray</span><span class="op">();</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> Parser<span class="op">&lt;</span><span class="dt">char</span><span class="op">,</span> Predicate<span class="op">&gt;</span> _query <span class="op">=</span> SkipWhitespaces<span class="op">.</span><span class="fu">Then</span><span class="op">(</span>_predicate<span class="op">);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> ImmutableArray<span class="op">&lt;</span>Rule<span class="op">&gt;</span> <span class="fu">ParseProgram</span><span class="op">(</span><span class="dt">string</span> input<span class="op">)</span> <span class="op">=</span> _program<span class="op">.</span><span class="fu">ParseOrThrow</span><span class="op">(</span>input<span class="op">);</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> Predicate <span class="fu">ParseQuery</span><span class="op">(</span><span class="dt">string</span> input<span class="op">)</span> <span class="op">=</span> _query<span class="op">.</span><span class="fu">ParseOrThrow</span><span class="op">(</span>input<span class="op">);</span></span></code></pre></div><p>Since by convention each of our component parsers has been consuming whitespaces <em>after</em> the text they match, we need to remember to <code>SkipWhitespaces</code> at the start of the file.</p>
 <p>That’s our whole parser! Less than 80 lines of code is not bad, I think. A quick test of our <code>last</code> example from the previous post:</p>
-<pre><code class="language-csharp">static void Main(string[] args)
-{
-    var program = PrologParser.ParseProgram(@&quot;
-last(cons(X, nil), X).
-last(cons(X, Xs), Y) :- last(Xs, Y).
-&quot;);
-
-    Console.WriteLine(string.Join(&quot;\n&quot;, program));
-    // prints out:
-    // last(cons(X, nil), X).
-    // last(cons(X, Xs), Y) :- last(Xs, Y).
-}
-</code></pre>
-<p>Here are a couple of exercises you might try:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span><span class="op">(</span><span class="dt">string</span><span class="op">[]</span> args<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> program <span class="op">=</span> PrologParser<span class="op">.</span><span class="fu">ParseProgram</span><span class="op">(</span>@<span class="st">&quot;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="fu">last</span><span class="op">(</span><span class="fu">cons</span><span class="op">(</span>X<span class="op">,</span> nil<span class="op">),</span> X<span class="op">).</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="fu">last</span><span class="op">(</span><span class="fu">cons</span><span class="op">(</span>X<span class="op">,</span> Xs<span class="op">),</span> Y<span class="op">)</span> <span class="op">:-</span> <span class="fu">last</span><span class="op">(</span>Xs<span class="op">,</span> Y<span class="op">).</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;);</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="dt">string</span><span class="op">.</span><span class="fu">Join</span><span class="op">(</span><span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> program<span class="op">));</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// prints out:</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// last(cons(X, nil), X).</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// last(cons(X, Xs), Y) :- last(Xs, Y).</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Here are a couple of exercises you might try:</p>
 <ul>
 <li>Extend this code to support numbers, building on the exercise from the end of the <a href="../posts/2019-12-01-write-you-a-prolog.html">last post</a>.
 </li>
