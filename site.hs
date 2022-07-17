@@ -8,6 +8,7 @@ import qualified Data.Time as Time
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Text.Lazy
+import Data.Foldable (for_)
 import Data.Traversable (for)
 import System.Environment (getArgs)
 
@@ -54,7 +55,7 @@ main = do
                 items <- loadAll "css/*"
                 makeItem $ compressCss $ concatMap itemBody items
 
-        match "contact.md" $ do
+        for_ ["contact.md", "404.md"] $ \pat -> match pat $ do
             route   $ setExtension "html"
             compile $ commonmarkCompiler
                 >>= loadAndApplyTemplate "templates/default.html" defaultContext
