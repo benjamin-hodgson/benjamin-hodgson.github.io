@@ -102,7 +102,7 @@ add sp delta = SourcePos {
 }
 ```
 
-When the delta spans multiple lines, we discard `sp^.col` and only take `delta^.Cols`. This reflects the behaviour of `computeSourcePos`, which resets the column counter when a new line is encountered. The asymmetry is interesting, though; the `line` calculation depends only on the two `lines` fields, but the `col` field has some interference from the `lines`.
+When the delta spans multiple lines, we discard `col sp` and only take `cols delta`. This reflects the behaviour of `computeSourcePos`, which resets the column counter when a new line is encountered. The asymmetry is interesting, though; the `line` calculation depends only on the two `lines` fields, but the `col` field has some interference from the `lines`.
 
 Likewise, you can find the difference between two `SourcePos`es to get the path that would take you from one to the other:
 
