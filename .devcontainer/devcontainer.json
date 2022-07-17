@@ -32,5 +32,5 @@
 
     "forwardPorts": [8888],
     "postCreateCommand": "cabal build",
-    "postStartCommand": "nohup zsh -lic 'cabal run benjamin-pizza watch -- --no-server & live-server _site --port=8888 &'"
+    "postStartCommand": "cabal run benjamin-pizza watch -- --no-server &> _logs/hakyll.log &! live-server _site --port=8888 &> _logs/server.log &!"
 }
