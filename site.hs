@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralisedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 
 import Data.Functor.Identity (Identity(runIdentity))
@@ -10,9 +11,12 @@ import qualified Data.Text.Lazy as Text.Lazy
 import Data.Traversable (for)
 import System.Environment (getArgs)
 
-import Commonmark
-import Commonmark.Blocks (BlockParser, BPState(nodeStack), BlockData(..), BlockSpec(blockType))
-import Commonmark.Extensions (footnoteSpec, attributesSpec, autoIdentifiersAsciiSpec, implicitHeadingReferencesSpec, strikethroughSpec, smartPunctuationSpec)
+import qualified Text.Blaze.Html as Blaze
+import qualified Text.Blaze.Html.Renderer.Text as Blaze
+import qualified Commonmark as Md
+import qualified Commonmark.Blocks as Md
+import qualified Commonmark.Extensions as Md
+import qualified Skylighting
 import Hakyll
 import Text.Parsec (getState, updateState)
 
@@ -148,47 +152,86 @@ commonmarkCompiler :: Compiler (Item String)
 commonmarkCompiler = cached "Benjamin.Pizza.commonmarkCompiler" $ do
     body <- fmap Text.pack <$> getResourceBody
     path <- getResourceFilePath
-    for body $ \md -> case runIdentity $ commonmarkWith benjaminFlavouredMarkdown path md of
+    for body $ \md -> case runIdentity $ Md.commonmarkWith benjaminFlavouredMarkdown path md of
         Left err -> fail (show err)
-        Right html -> return $ Text.Lazy.unpack (renderHtml html)
+        Right (Html html) -> return $ Text.Lazy.unpack (Md.renderHtml html)
 
+newtype Html = Html { getHtml :: Md.Html () }
+    deriving (
+        Show,
+        Semigroup,
+        Monoid,
+        Md.Rangeable,
+        Md.HasAttributes,
+        Md.IsInline,
+        Md.HasQuoted,
+        Md.HasStrikethrough,
+        Md.ToPlainText
+    )
 
-benjaminFlavouredMarkdown :: SyntaxSpec Identity (Html ()) (Html ())
+instance Md.HasFootnote Html Html where
+  footnote num txt = Html . Md.footnote num txt . getHtml
+  footnoteList = Html . Md.footnoteList . map getHtml
+  footnoteRef num txt = Html . Md.footnoteRef num txt . getHtml
+instance Md.IsBlock Html Html where
+  paragraph = Html . Md.paragraph . getHtml
+  plain = Html . Md.plain . getHtml
+  thematicBreak = Html Md.thematicBreak
+  blockQuote = Html . Md.blockQuote . getHtml
+  codeBlock = highlightCodeBlock
+  heading lvl = Html . Md.heading lvl . getHtml
+  rawBlock fmt txt = Html (Md.rawBlock fmt txt)
+  referenceLinkDefinition txt info = Html (Md.referenceLinkDefinition txt info)
+  list ty spacing = Html . Md.list ty spacing . map getHtml
+
+benjaminFlavouredMarkdown :: Md.SyntaxSpec Identity Html Html
 benjaminFlavouredMarkdown = mconcat [
-    smartPunctuationSpec,
-    strikethroughSpec,
-    attributesSpec,
-    autoIdentifiersAsciiSpec,
-    footnoteSpec,
-    implicitHeadingReferencesSpec,
+    Md.smartPunctuationSpec,
+    Md.strikethroughSpec,
+    Md.attributesSpec,
+    Md.autoIdentifiersAsciiSpec,
+    Md.footnoteSpec,
+    Md.implicitHeadingReferencesSpec,
     linkifyHeadersSpec,
-    defaultSyntaxSpec
+    Md.defaultSyntaxSpec
     ]
 
-linkifyHeadersSpec :: SyntaxSpec Identity (Html ()) (Html ())
+linkifyHeadersSpec :: Md.SyntaxSpec Identity Html Html
 linkifyHeadersSpec = mempty {
-        syntaxFinalParsers = [linkifyHeaders]
+        Md.syntaxFinalParsers = [linkifyHeaders]
     }
 
-linkifyHeaders :: BlockParser Identity (Html ()) (Html ()) (Html ())
+linkifyHeaders :: Md.BlockParser Identity Html Html Html
 linkifyHeaders = do
-    nodes <- nodeStack <$> getState
-    updateState $ \st -> st { nodeStack = [fmap setLink t | t <- nodes] }
+    nodes <- Md.nodeStack <$> getState
+    updateState $ \st -> st { Md.nodeStack = [fmap setLink t | t <- nodes] }
     return mempty
 
     where
         setLink bd
-            | blockType (blockSpec bd) `elem` ["ATXHeading", "SetextHeading"] =
-                case lookup "id" (blockAttributes bd) of
+            | Md.blockType (Md.blockSpec bd) `elem` ["ATXHeading", "SetextHeading"] =
+                case lookup "id" (Md.blockAttributes bd) of
                     Nothing -> bd
-                    Just ident -> bd { blockLines = addLink (blockLines bd) ident }
+                    Just ident -> bd { Md.blockLines = addLink (Md.blockLines bd) ident }
             | otherwise = bd
 
         addLink [line@(_:_)] ident =
-            let (start, end) = (tokPos (head line), tokPos (last line))
-                linkDest = [sym '(' end, sym '#' end] ++ tokenize "" ident ++ [sym ')' end]
+            let (start, end) = (Md.tokPos (head line), Md.tokPos (last line))
+                linkDest = [sym '(' end, sym '#' end] ++ Md.tokenize "" ident ++ [sym ')' end]
                 newLine = [sym '[' start] ++ line ++ [sym ']' end] ++ linkDest
             in [newLine]
         addLink lines _ = lines
 
-        sym s loc = Tok (Symbol s) loc (Text.singleton s)
+        sym s loc = Md.Tok (Md.Symbol s) loc (Text.singleton s)
+
+highlightCodeBlock :: Text -> Text -> Html
+highlightCodeBlock lang txt =
+    let result = do
+            syntax <- Skylighting.lookupSyntax lang Skylighting.defaultSyntaxMap
+            lines <- foldMap Just $ Skylighting.tokenize defaultTokeniserConfig syntax txt
+            return $ Skylighting.formatHtmlBlock Skylighting.defaultFormatOpts lines
+    in case result of
+        Just blaze -> Html $ Md.htmlRaw $ Text.Lazy.toStrict $ Blaze.renderHtml blaze
+        Nothing -> Html $ Md.codeBlock lang txt 
+
+defaultTokeniserConfig = Skylighting.TokenizerConfig Skylighting.defaultSyntaxMap False

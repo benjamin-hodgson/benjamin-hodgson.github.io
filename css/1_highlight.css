@@ -1,4 +1,4 @@
-.hljs {
+.sourceCode {
     /* https://github.com/highlightjs/highlight.js/blob/3209cca58146c1287123c3d3bb3eb982174d64fd/src/styles/github.css */
     /* prettylights-syntax-keyword */
     --keyword: #d73a49;
@@ -14,26 +14,14 @@
     --comment: #6a737d;
     /* prettylights-syntax-entity-tag */
     --entity-tag: #22863a;
-    /* prettylights-syntax-storage-modifier-import */
-    --storage-modifier-import: #24292e;
-    /* prettylights-syntax-markup-heading */
-    --markup-heading: #005cc5;
-    /* prettylights-syntax-markup-list */
-    --markup-list: #735c0f;
-    /* prettylights-syntax-markup-italic */
-    --markup-italic: #24292e;
-    /* prettylights-syntax-markup-bold */
-    --markup-bold: #24292e;
-    /* prettylights-syntax-markup-inserted */
-    --markup-inserted: #22863a;
-    --markup-inserted-bg: #f0fff4;
-    /* prettylights-syntax-markup-deleted */
-    --markup-deleted: #b31d28;
-    --markup-deleted-bg: #ffeef0;
+
+    /* borrowed from https://stackoverflow.design/product/base/colors/#danger-and-error */
+    --error: #d0393e;
+    --warn: #cea81c;
 }
 
 @media (prefers-color-scheme: dark) {
-    .hljs {
+    .sourceCode {
         /* https://github.com/highlightjs/highlight.js/blob/3209cca58146c1287123c3d3bb3eb982174d64fd/src/styles/github-dark.css */
         /* prettylights-syntax-keyword */
         --keyword: #ff7b72;
@@ -49,116 +37,83 @@
         --comment: #8b949e;
         /* prettylights-syntax-entity-tag */
         --entity-tag: #7ee787;
-        /* prettylights-syntax-storage-modifier-import */
-        --storage-modifier-import: #c9d1d9;
-        /* prettylights-syntax-markup-heading */
-        --markup-heading: #1f6feb;
-        /* prettylights-syntax-markup-list */
-        --markup-list: #f2cc60;
-        /* prettylights-syntax-markup-italic */
-        --markup-italic: #c9d1d9;
-        /* prettylights-syntax-markup-bold */
-        --markup-bold: #c9d1d9;
-        /* prettylights-syntax-markup-inserted */
-        --markup-inserted: #aff5b4;
-        --markup-inserted-bg: #033a16;
-        /* prettylights-syntax-markup-deleted */
-        --markup-deleted: #ffdcd7;
-        --markup-deleted-bg: #67060c;
+
+        /* borrowed from https://stackoverflow.design/product/base/colors/#danger-and-error */
+        --error: #c4514f;
+        --warn: #dab941;
     }
 }
 
-.hljs-built_in,
-.hljs-doctag,
-.hljs-keyword,
-.hljs-meta .hljs-keyword,
-.hljs-template-tag,
-.hljs-template-variable,
-.hljs-variable.language_ {
+/* KeywordTok, ImportTok, ControlFlowTok */
+.sourceCode .kw,
+.sourceCode .im,
+.sourceCode .cf,
+.sourceCode .bu {
     color: var(--keyword);
 }
 
-.hljs-title,
-.hljs-title.class_,
-.hljs-title.class_.inherited__,
-.hljs-title.function_,
-.hljs-type {
+/* DataTypeTok, FunctionTok, ExtensionTok */
+.sourceCode .dt,
+.sourceCode .fu,
+.sourceCode .ex {
     color: var(--entity);
 }
 
-.hljs-attr,
-.hljs-attribute,
-.hljs-literal,
-.hljs-meta,
-.hljs-number,
-.hljs-operator,
-.hljs-variable,
-.hljs-selector-attr,
-.hljs-selector-class,
-.hljs-selector-id {
+/* DecValTok, BaseNTok, FloatTok, ConstantTok */
+.sourceCode span.dv,
+.sourceCode span.bn,
+.sourceCode span.fl,
+.sourceCode span.cn {
     color: var(--constant);
 }
 
-.hljs-regexp,
-.hljs-string,
-.hljs-meta .hljs-string {
+/* CharTok, StringTok, SpecialCharTok, VerbatimStringTok, SpecialStringTok */
+.sourceCode span.ch,
+.sourceCode span.st,
+.sourceCode span.sc,
+.sourceCode span.vs,
+.sourceCode span.ss {
     color: var(--string);
 }
 
-.hljs-symbol {
+/* VariableTok */
+.sourceCode span.va {
     color: var(--variable);
 }
 
-.hljs-comment,
-.hljs-code,
-.hljs-formula {
+/* CommentTok, RegionMarkerTok, DocumentationTok, PreprocessorTok */
+.sourceCode span.co,
+.sourceCode span.re,
+.sourceCode span.do,
+.sourceCode span.pp {
     color: var(--comment);
 }
 
-.hljs-name,
-.hljs-quote,
-.hljs-selector-tag,
-.hljs-selector-pseudo {
-    color: var(--entity-tag);
-}
-
-.hljs-subst {
-    color: var(--storage-modifier-import);
-}
-
-.hljs-section {
-    color: var(--markup-heading);
-    font-weight: bold;
-}
-
-.hljs-bullet {
-    color: var(--markup-list);
-}
-
-.hljs-emphasis {
-    color: var(--markup-italic);
+/* AnnotationTok, CommentVarTok, InformationTok, WarningTok */
+.sourceCode span.an,
+.sourceCode span.cv,
+.sourceCode span.in,
+.sourceCode span.wa {
+    color: var(--comment);
     font-style: italic;
 }
 
-.hljs-strong {
-    color: var(--markup-bold);
-    font-weight: bold;
+/* AttributeTok */
+.sourceCode span.at {
+    color: var(--entity-tag);
 }
 
-.hljs-addition {
-    color: var(--markup-inserted);
-    background-color: var(--markup-inserted-bg);
+/* AlertTok */
+.sourceCode span.al {
+    text-decoration: 1px underline wavy var(--warn);
+}
+/* ErrorTok */
+.sourceCode span.er {
+    text-decoration: 1px underline wavy var(--error);
 }
 
-.hljs-deletion {
-    color: var(--markup-deleted);
-    background-color: var(--markup-deleted-bg);
-}
-
-.hljs-char.escape_,
-.hljs-link,
-.hljs-params,
-.hljs-property,
-.hljs-punctuation,
-.hljs-tag {/* purposely ignored */
+/* OperatorTok, OtherTok */
+.sourceCode span.op,
+.sourceCode span.ot {
+    /* purposely ignored */
 }

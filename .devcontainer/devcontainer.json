@@ -19,9 +19,18 @@
         }
     },
 
+    "containerEnv": {
+        "LC_ALL": "en_US.UTF-8",
+        "LANG": "en_US.UTF-8"
+    },
+    "remoteEnv": {
+        "PATH": "/home/codespace/.ghcup/bin:${containerEnv:PATH}",
+        "SHELL": "/usr/bin/zsh"
+    },
+
     "remoteUser": "codespace",
 
     "forwardPorts": [8888],
     "postCreateCommand": "cabal build",
-    "postStartCommand": "cabal update && nohup zsh -lic 'cabal run benjamin-pizza watch -- --no-server & live-server _site --port=8888 &'"
+    "postStartCommand": "nohup zsh -lic 'cabal run benjamin-pizza watch -- --no-server & live-server _site --port=8888 &'"
 }

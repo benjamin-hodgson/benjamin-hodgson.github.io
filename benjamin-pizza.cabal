@@ -17,10 +17,12 @@ executable benjamin-pizza
     build-depends:
         base >= 4.16.0,
         hakyll,
+        blaze-html,
         containers,
         commonmark,
         commonmark-extensions,
         parsec,
+        skylighting,
         time,
         text,
         unordered-containers
