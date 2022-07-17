@@ -123,7 +123,7 @@ add sp delta = SourcePos {
     col = (if lines delta == 0 then col sp else 0) + cols delta
 }
 </code></pre>
-<p>When the delta spans multiple lines, we discard <code>sp^.col</code> and only take <code>delta^.Cols</code>. This reflects the behaviour of <code>computeSourcePos</code>, which resets the column counter when a new line is encountered. The asymmetry is interesting, though; the <code>line</code> calculation depends only on the two <code>lines</code> fields, but the <code>col</code> field has some interference from the <code>lines</code>.</p>
+<p>When the delta spans multiple lines, we discard <code>col sp</code> and only take <code>cols delta</code>. This reflects the behaviour of <code>computeSourcePos</code>, which resets the column counter when a new line is encountered. The asymmetry is interesting, though; the <code>line</code> calculation depends only on the two <code>lines</code> fields, but the <code>col</code> field has some interference from the <code>lines</code>.</p>
 <p>Likewise, you can find the difference between two <code>SourcePos</code>es to get the path that would take you from one to the other:</p>
 <pre><code class="language-haskell">subtract :: SourcePos -&gt; SourcePos -&gt; SourcePosDelta
 subtract start end = SourcePosDelta {
