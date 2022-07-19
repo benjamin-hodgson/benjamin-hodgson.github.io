@@ -1,6 +1,9 @@
 time {
     /* see also rule for `code` */
     padding: 1.75px 3.5px;
+
+    font-size: smaller;
+    vertical-align: text-bottom;
 }
 
 /* pasting blockquote styles from water.css */

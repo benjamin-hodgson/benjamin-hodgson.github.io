@@ -1,4 +1,7 @@
 code {
+    /* see also rule for `time` */
+    padding: 1.75px 3.5px;
+
     font-size: 1.1em;
 }
 pre {
@@ -18,14 +21,4 @@ pre code > span::before {
     padding-right: 0.3em;
     color: var(--text-muted);
     text-align: right;
-}
-
-code {
-    /* see also rule for `time` */
-    padding: 1.75px 3.5px;
-}
-
-time {
-    font-size: smaller;
-    vertical-align: text-bottom;
 }
