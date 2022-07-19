@@ -1,0 +1,20 @@
+.subtitle {
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    color: var(--text-bright);
+}
+h1 a::after, h2 a::after, h3 a::after, h4 a::after, h5 a::after, h6 a::after {
+    content: " §";
+    display: none;
+    font-weight: normal;
+    color: var(--text-muted);
+}
+h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
+    text-decoration: none;
+}
+h1:hover a::after, h2:hover a::after, h3:hover a::after, h4:hover a::after, h5:hover a::after, h6:hover a::after {
+    display: inline;
+}
