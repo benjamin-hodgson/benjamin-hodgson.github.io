@@ -21,7 +21,7 @@ jobs:
         id: should_run
         run: |
           lastBuild=$(gh run list -w Build --json conclusion,createdAt -q "map(select(.conclusion == \"success\")).[0].createdAt")
-          python build/find_new_posts.py $lastBuild
+          python scripts/find_new_posts.py $lastBuild
   
   trigger_build:
     needs: find_scheduled
