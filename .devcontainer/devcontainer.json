@@ -1,36 +1,22 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.236.0/containers/codespaces-linux
 {
-    "name": "GitHub Codespaces (Default)",
-
-    "build": {
-        "dockerfile": "Dockerfile"
-    },
-
-    // Configure tool-specific properties.
-    "customizations": {
-        // Configure properties specific to VS Code.
-        "vscode": {
-            // Add the IDs of extensions you want installed when the container is created.
-            "extensions": [
-                "GitHub.vscode-pull-request-github",
-                "haskell.haskell"
-            ]
-        }
-    },
-
-    "containerEnv": {
-        "LC_ALL": "en_US.UTF-8",
-        "LANG": "en_US.UTF-8"
-    },
-    "remoteEnv": {
-        "PATH": "/home/codespace/.ghcup/bin:${containerEnv:PATH}",
-        "SHELL": "/usr/bin/zsh"
-    },
-
-    "remoteUser": "codespace",
-
-    "forwardPorts": [8888],
-    "postCreateCommand": "cabal build",
-    "postStartCommand": "./scripts/codespace-start.sh"
+  "name": "Haskell (Community)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  // Configure tool-specific properties.
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      // Set *default* container specific settings.json values on container create.
+      "settings": {
+        "haskell.manageHLS": "GHCup"
+      },
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+        "haskell.haskell"
+      ]
+    }
+  },
+  // Comment out to connect as root instead. To add a non-root user, see: https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "vscode"
 }
