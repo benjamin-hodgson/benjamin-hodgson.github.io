@@ -16,7 +16,7 @@ executable benjamin-pizza
     ghc-options: -threaded
     build-depends:
         base >= 4.16.0,
-        hakyll,
+        hakyll >= 4.15.1.1,
         blaze-html,
         containers,
         commonmark,
@@ -24,5 +24,4 @@ executable benjamin-pizza
         parsec,
         skylighting,
         time,
-        text,
-        unordered-containers
+        text

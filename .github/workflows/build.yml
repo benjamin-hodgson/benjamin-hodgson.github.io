@@ -16,6 +16,9 @@ jobs:
       # v2.0.2
       - uses: haskell/actions/setup@97d6391f4afce6357da121cd189e6a1cce8d13ec
         id: setup-haskell
+        with:
+          ghc-version: 9.2
+          cabal-version: 3.6
 
       - uses: actions/cache@v3
         with:
@@ -26,7 +29,7 @@ jobs:
 
       - name: Build deps & executable
         run: cabal build
-      
+
       - name: Generate website
         run: cabal run benjamin-pizza build
 
