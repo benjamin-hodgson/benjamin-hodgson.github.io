@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>benjamin.pizza - Incremental T4 Text Templating</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2.1.1/out/water.min.css" integrity="sha256-QST90Wzz4PEr5KlclQaOCsjc00FTyf86Wrj41oqZB4w=" crossorigin="anonymous" />
+        <link rel="stylesheet" type="text/css" href="../all.css" />
+        <link rel="icon" href="../favicon.ico" type="image/x-icon" />
+        <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon" />
+
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-115911217-1"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'UA-115911217-1');
+        </script>
+    </head>
+    <body>
+        <header id="header">
+            <nav id="navigation">
+                <ul>
+                    <li id="logo"><a href="../">benjamin.pizza</a></li>
+                    <li><a href="../contact.html">Contact</a></li>
+                    <li><a href="../archive.html">Archive</a></li>
+                    <li><a href="../atom.xml"><img src="../images/Feed-icon.svg" style="width: 14pt; margin-bottom: -3px;"></a></li>
+                </ul>
+            </header>
+        </header>
+
+        <article>
+            <header>
+                <h1>Incremental T4 Text Templating</h1>
+                
+                    <p class="subtitle">Dispatches From The Build Tooling Front Lines</p>
+                
+                
+                    <p><time datetime="2022-11-28">November 28, 2022</time></p>
+                
+            </header>
+
+            
+<p>Since starting at Microsoft earlier this year I’ve done a lot of maintenance work on my team’s build system. One of the things I’ve been working on has been <em>incremental building</em>: if you run a build in Visual Studio, and then run another build straight away, it should detect that nothing has changed and skip rebuilding. Incremental building is very important for day-to-day productivity, especially in large codebases, since rebuilding one project usually forces all of its downstream dependents to rebuild too. (The devs in my department typically have around 60 projects loaded into Visual Studio; the whole repo consists of around 1300 projects(!). So as you can imagine a cascading incremental build failure can take quite some time and be a major productivity drag.)</p>
+<p>Anyway, here’s one of the incremental build issues I fixed. It’s a bit outside my usual wheelhouse but I wanted to write it down because I couldn’t find anything online when I was first investigating this issue.</p>
+<h2 id="debugging-the-up-to-date-check"><a href="#debugging-the-up-to-date-check">Debugging the Up-To-Date Check
+
+</a></h2>
+<p>I noticed that my team’s project wasn’t building incrementally: whenever I tried to re-run a unit test I had to wait for the whole project to recompile. The first thing to do, when you notice yourself feeling annoyed by recompilation, is to <a href="https://github.com/dotnet/project-system/blob/main/docs/up-to-date-check.md#sdk-style-projects">enable Up-To-Date Check Logging in Visual Studio</a>. (I recommend just leaving the logging on “minimal” mode at all times.) The “Up-To-Date Check” is the component of Visual Studio which is responsible for incremental builds. It works by looking at the timestamps of the project’s input and output files; if all of the output files are newer than all of the input files then the project doesn’t need to be rebuilt.</p>
+<p>After turning on the logging and rebuilding, I saw this message in the Output window:</p>
+<pre><code>FastUpToDate: Input Compile item 'CodeGen\Templates\AdapterTextTemplate.cs' is newer than earliest output 'bin\net472\ScopeCompiler.dll', not up-to-date.
+</code></pre>
+<p>That <code>AdapterTextTemplate.cs</code> file is generated using <a href="https://learn.microsoft.com/en-us/visualstudio/modeling/code-generation-and-t4-text-templates">T4 Text Templating</a>. We’d set T4 up to run as part of the build, so we didn’t need to check in the generated files and you didn’t have to manually run T4 before building. We did this by setting <code>TransformOnBuild</code> in the <code>csproj</code> file, and adding a <code>Target</code> to include any newly generated <code>cs</code> files:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">PropertyGroup</span>&gt;</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!--</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="co">        In MSBuild parlance, a &quot;property&quot; is a scalar (string) value.</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="co">        Anything appearing inside a `PropertyGroup` is a property.</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="co">        The `TransformOnBuild` property tells T4 to run at build time.</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="co">    --&gt;</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">TransformOnBuild</span>&gt;true&lt;/<span class="kw">TransformOnBuild</span>&gt;</span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">PropertyGroup</span>&gt;</span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!--</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="co">        MSBuild manages lists of &quot;items&quot;; an item roughly corresponds</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a><span class="co">        to a file. Inside an `ItemGroup` you can add items to a list</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a><span class="co">        using `Include`. So this line of code adds all of the `tt`</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a><span class="co">        files in the `CodeGen\Templates` folder to the list of</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a><span class="co">        `T4Transform` items.</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="co">    --&gt;</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">T4Transform</span><span class="ot"> Include=</span><span class="st">&quot;CodeGen\Templates\*.tt&quot;</span> /&gt;</span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!-- Make the .tt files visible in Visual Studio --&gt;</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">None</span><span class="ot"> Include=</span><span class="st">&quot;CodeGen\Templates\*.tt&quot;</span> /&gt;</span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">ItemGroup</span>&gt;</span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- This `targets` file contains code to read the `T4Transform` item list and invoke T4. --&gt;</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Import</span><span class="ot"> Project=</span><span class="st">&quot;$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TextTemplating\Microsoft.TextTemplating.targets&quot;</span> /&gt;</span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a><span class="co">    A &quot;target&quot; is a coarse-grained unit of work —</span></span>
+<span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a><span class="co">    a stage in MSBuild's pluggable pipeline.</span></span>
+<span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a><span class="co">    This target runs in between the `ExecuteTransformations`</span></span>
+<span id="32"><a href="#32" aria-hidden="true" tabindex="-1"></a><span class="co">    target (from `Microsoft.TextTemplating.targets`) and the</span></span>
+<span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a><span class="co">    standard `Compile` target. It adds any output files that</span></span>
+<span id="34"><a href="#34" aria-hidden="true" tabindex="-1"></a><span class="co">    were generated by T4 (the `GeneratedFiles` item list)</span></span>
+<span id="35"><a href="#35" aria-hidden="true" tabindex="-1"></a><span class="co">    to the list of `Compile` items.</span></span>
+<span id="36"><a href="#36" aria-hidden="true" tabindex="-1"></a><span class="co">--&gt;</span></span>
+<span id="37"><a href="#37" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Target</span><span class="ot"> Name=</span><span class="st">&quot;IncludeT4GeneratedFiles&quot;</span></span>
+<span id="38"><a href="#38" aria-hidden="true" tabindex="-1"></a><span class="ot">        AfterTargets=</span><span class="st">&quot;ExecuteTransformations&quot;</span></span>
+<span id="39"><a href="#39" aria-hidden="true" tabindex="-1"></a><span class="ot">        BeforeTargets=</span><span class="st">&quot;Compile&quot;</span>&gt;</span>
+<span id="40"><a href="#40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="41"><a href="#41" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="42"><a href="#42" aria-hidden="true" tabindex="-1"></a>        <span class="co">&lt;!-- Don't include already included files --&gt;</span></span>
+<span id="43"><a href="#43" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">Compile</span><span class="ot"> Include=</span><span class="st">&quot;@(GeneratedFiles)&quot;</span><span class="ot"> Exclude=</span><span class="st">&quot;@(Compile)&quot;</span> /&gt;</span>
+<span id="44"><a href="#44" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">ItemGroup</span>&gt;</span>
+<span id="45"><a href="#45" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><p>I realised that the incremental build failure was due to an interaction between build-time text templating and MSBuild’s <a href="https://learn.microsoft.com/en-us/dotnet/core/project-sdk/overview#default-includes-and-excludes">default includes</a>. The Up-To-Date Check scans the source tree for any <code>cs</code> files; if any of them have changed (or been created) since the last time a build ran, then the project needs rebuilding. Then, during the build (before compilation), T4 runs and generates some <code>cs</code> files; by default these <code>cs</code> files are placed alongside the <code>tt</code> file — ie, in the source tree. The next time you run a build, Visual Studio sees that the generated <code>cs</code> files have been touched, meaning the project needs to be rebuilt, meaning that T4 needs to run, which touches the generated <code>cs</code> files…</p>
+<h2 id="the-fix"><a href="#the-fix">The Fix
+
+</a></h2>
+<p>For the fix I made a few changes:</p>
+<ol>
+<li>I excluded the generated <code>cs</code> files from the default list of files to track in the Up-To-Date Check.
+</li>
+<li>Instead, I included them dynamically, after T4 has run. (Visual Studio doesn’t look at dynamically added items when determining whether a project needs rebuilding.)
+</li>
+<li>I configured MSBuild to run T4 only if the input <code>tt</code> files have changed.
+</li>
+</ol>
+<h3 id="excluding-the-generated-files"><a href="#excluding-the-generated-files">Excluding the Generated Files</a></h3>
+<p>One way to do this would be to tell T4 to put the generated files in the <code>obj</code> directory by default:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- An `ItemDefinitionGroup` contains default metadata definitions for items. --&gt;</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">ItemDefinitionGroup</span>&gt;</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">T4Transform</span>&gt;</span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">OutputFilePath</span>&gt;$(MSBuildProjectDirectory)$(IntermediateOutputPath)&lt;/<span class="kw">OutputFilePath</span>&gt;</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">T4Transform</span>&gt;</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">T4Preprocess</span>&gt;</span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">OutputFilePath</span>&gt;$(MSBuildProjectDirectory)$(IntermediateOutputPath)&lt;/<span class="kw">OutputFilePath</span>&gt;</span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">T4Preprocess</span>&gt;</span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">ItemDefinitionGroup</span>&gt;</span></code></pre></div><p>(As far as I can tell the <code>OutputFilePath</code> metadata is not documented anywhere; I found it by decompiling the <code>TransformTemplatesBase</code> task in <code>Microsoft.TextTemplating.Build.Tasks.dll</code>.)</p>
+<p>This probably would’ve been the cleaner way to do it, as it doesn’t pollute the source tree with generated files, but I didn’t want to break my teammates’ workflow by making it harder to find the generated code. Instead, I simply removed the generated files’ <code>Compile</code> items:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!-- by convention, an underscore denotes private implementation details --&gt;</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">_T4OutputFile</span><span class="ot"> Include=</span><span class="st">&quot;@(T4Preprocess -&gt; '%(RelativeDir)%(Filename).cs')&quot;</span> /&gt;</span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">_T4OutputFile</span><span class="ot"> Include=</span><span class="st">&quot;@(T4Transform -&gt; '%(RelativeDir)%(Filename).cs')&quot;</span> /&gt;</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">Compile</span><span class="ot"> Remove=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span> /&gt;</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">ItemGroup</span>&gt;</span></code></pre></div><p>T4 can generate any text file, not just <code>cs</code> files, so you’d need to tweak this code if your project happens to have T4 templates which generate other files.</p>
+<h3 id="including-the-generated-files-dynamically"><a href="#including-the-generated-files-dynamically">Including the Generated Files Dynamically</a></h3>
+<p>Top-level properties and items are evaluated up-front, at the start of a build, but you can also <a href="https://learn.microsoft.com/en-us/visualstudio/msbuild/msbuild-items?view=vs-2022#create-items-during-execution">manipulate properties and item lists dynamically</a> by nesting them inside a <code>Target</code>. So all I had to do was plug in to the <code>TransformDuringBuild</code> target (implemented in <code>Microsoft.TextTemplating.targets</code>) and include the <code>_T4OutputFile</code>s after they’d been generated — much like the <code>IncludeT4GeneratedFiles</code> target I mentioned earlier.</p>
+<p>I could’ve used <code>AfterTargets=&quot;TransformDuringBuild&quot;</code> but instead I decided to <strong>override</strong> the <code>TransformDuringBuild</code> target. (To override a target, you just define a new target with the same name — last one wins. Overriding targets is usually not a good idea, but I had a good reason which will shortly become apparent.) The standard <code>TransformDuringBuild</code> target is defined like this:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Target</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="ot">    Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="ot">    DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span>&gt;</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><p>It’s a no-op target which simply causes another target (<code>TransformAll</code>) to be run when the <code>TransformOnBuild</code> property is set. So, for my override, I pasted that code and added an <code>ItemGroup</code> to the target’s body:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Target</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="ot">    Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="ot">    DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span>&gt;</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">Compile</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span>&gt;</span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>            &lt;<span class="kw">AutoGen</span>&gt;True&lt;/<span class="kw">AutoGen</span>&gt;</span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>            &lt;<span class="kw">DesignTime</span>&gt;True&lt;/<span class="kw">DesignTime</span>&gt;</span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        &lt;/<span class="kw">Compile</span>&gt;</span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>        <span class="co">&lt;!--</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a><span class="co">            Add `FileWrites` items in order to make the generated</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a><span class="co">            files get deleted by Visual Studio's &quot;clean&quot; operation</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a><span class="co">        --&gt;</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">FileWrites</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span> /&gt;</span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">ItemGroup</span>&gt;</span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><h3 id="running-t4-incrementally"><a href="#running-t4-incrementally">Running T4 Incrementally</a></h3>
+<p>MSBuild supports incremental building at the target level (so, finer-grained than a whole project). You can tell MSBuild to skip a target if its input files haven’t changed, using the <code>Inputs</code> and <code>Outputs</code> attributes. If all of the files listed in the <code>Outputs</code> are newer than the <code>Inputs</code>, then MSBuild will skip the target to save time. (Any items and properties defined in the target will still be included — it caches them from the last time the target was run.) This is why I decided to override the <code>TransformDuringBuild</code> target above — I wanted to give it <code>Inputs</code> and <code>Outputs</code>.</p>
+<p>My final <code>TransformDuringBuild</code> target looked like this:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Target</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="ot">    Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="ot">    DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="ot">    Inputs=</span><span class="st">&quot;@(T4Preprocess);@(T4Transform)&quot;</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="ot">    Outputs=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span>&gt;</span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">Compile</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span>&gt;</span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>            &lt;<span class="kw">AutoGen</span>&gt;True&lt;/<span class="kw">AutoGen</span>&gt;</span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>            &lt;<span class="kw">DesignTime</span>&gt;True&lt;/<span class="kw">DesignTime</span>&gt;</span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        &lt;/<span class="kw">Compile</span>&gt;</span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">FileWrites</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span> /&gt;</span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">ItemGroup</span>&gt;</span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><h2 id="the-code"><a href="#the-code">The Code
+
+</a></h2>
+<p>I put all of this code in a file called <code>TextTemplating.CSharp.targets</code> and imported it into the projects which used T4.</p>
+<p>Here is the final file in handy pasteable form:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Project</span>&gt;</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">Import</span><span class="ot"> Project=</span><span class="st">&quot;$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TextTemplating\Microsoft.TextTemplating.targets&quot;</span> /&gt;</span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">Service</span><span class="ot"> Include=</span><span class="st">&quot;{508349b6-6b84-4df5-91f0-309beebad82d}&quot;</span> /&gt;</span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">AvailableItem</span><span class="ot"> Include=</span><span class="st">&quot;T4Preprocess&quot;</span> /&gt;</span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">AvailableItem</span><span class="ot"> Include=</span><span class="st">&quot;T4Transform&quot;</span> /&gt;</span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">ItemGroup</span>&gt;</span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">_T4OutputFile</span><span class="ot"> Include=</span><span class="st">&quot;@(T4Preprocess -&gt; '%(RelativeDir)%(Filename).cs')&quot;</span> /&gt;</span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">_T4OutputFile</span><span class="ot"> Include=</span><span class="st">&quot;@(T4Transform -&gt; '%(RelativeDir)%(Filename).cs')&quot;</span> /&gt;</span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>        <span class="co">&lt;!--</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a><span class="co">            Don't include the generated files before they've been generated</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="co">            as it causes incremental build failure. Instead, include them after</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a><span class="co">            running T4, in the (overridden) TransformDuringBuild target</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a><span class="co">        --&gt;</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">Compile</span><span class="ot"> Remove=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span> /&gt;</span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>        <span class="co">&lt;!-- make visible in visual studio --&gt;</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">None</span><span class="ot"> Include=</span><span class="st">&quot;@(T4Preprocess);@(T4Transform)&quot;</span> /&gt;</span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">None</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span> /&gt;</span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">ItemGroup</span>&gt;</span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!-- Override the target from MS.TextTemplating.targets in order to set the Inputs/Outputs --&gt;</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">Target</span></span>
+<span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a><span class="ot">        Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
+<span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a><span class="ot">        Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
+<span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a><span class="ot">        BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="32"><a href="#32" aria-hidden="true" tabindex="-1"></a><span class="ot">        DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span></span>
+<span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a><span class="ot">        Inputs=</span><span class="st">&quot;@(T4Preprocess);@(T4Transform)&quot;</span></span>
+<span id="34"><a href="#34" aria-hidden="true" tabindex="-1"></a><span class="ot">        Outputs=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span>&gt;</span>
+<span id="35"><a href="#35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="36"><a href="#36" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">ItemGroup</span>&gt;</span>
+<span id="37"><a href="#37" aria-hidden="true" tabindex="-1"></a>            &lt;<span class="kw">Compile</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span>&gt;</span>
+<span id="38"><a href="#38" aria-hidden="true" tabindex="-1"></a>                &lt;<span class="kw">AutoGen</span>&gt;True&lt;/<span class="kw">AutoGen</span>&gt;</span>
+<span id="39"><a href="#39" aria-hidden="true" tabindex="-1"></a>                &lt;<span class="kw">DesignTime</span>&gt;True&lt;/<span class="kw">DesignTime</span>&gt;</span>
+<span id="40"><a href="#40" aria-hidden="true" tabindex="-1"></a>            &lt;/<span class="kw">Compile</span>&gt;</span>
+<span id="41"><a href="#41" aria-hidden="true" tabindex="-1"></a>            &lt;<span class="kw">FileWrites</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span> /&gt;</span>
+<span id="42"><a href="#42" aria-hidden="true" tabindex="-1"></a>        &lt;/<span class="kw">ItemGroup</span>&gt;</span>
+<span id="43"><a href="#43" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">Target</span>&gt;</span>
+<span id="44"><a href="#44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="45"><a href="#45" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Project</span>&gt;</span></code></pre></div><p>That’s the general recipe when you need to generate something at build time: write a <code>Target</code> with <code>Inputs</code> and <code>Outputs</code>. Put an <code>ItemGroup</code> inside the target to inform the rest of the build pipeline about the newly generated bits.</p>
+
+
+        </article>
+
+        <footer id="footer">
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
