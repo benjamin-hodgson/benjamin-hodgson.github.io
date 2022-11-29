@@ -13,11 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # v2.0.0
-      - uses: haskell/actions/setup@f7b0997283589ea5a6b4f2ade6a239d70a412877
+      # v2.0.2
+      - uses: haskell/actions/setup@97d6391f4afce6357da121cd189e6a1cce8d13ec
         id: setup-haskell
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ${{ steps.setup-haskell.outputs.cabal-store }}
@@ -31,12 +31,13 @@ jobs:
         run: cabal run benjamin-pizza build
 
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@4.1.1
+        # v4.4.1
+        uses: JamesIves/github-pages-deploy-action@ba1486788b0490a235422264426c45848eac35c6
         with:
           branch: gh-pages
           folder: _site
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: site
           path: _site
