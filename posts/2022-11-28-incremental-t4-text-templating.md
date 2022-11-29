@@ -1,6 +1,7 @@
 ---
 title: Incremental T4 Text Templating
 subtitle: Dispatches From The Build Tooling Front Lines
+date: 2022-11-28
 ---
 
 Since starting at Microsoft earlier this year I've done a lot of maintenance work on my team's build system. One of the things I've been working on has been _incremental building_: if you run a build in Visual Studio, and then run another build straight away, it should detect that nothing has changed and skip rebuilding. Incremental building is very important for day-to-day productivity, especially in large codebases, since rebuilding one project usually forces all of its downstream dependents to rebuild too. (The devs in my department typically have around 60 projects loaded into Visual Studio; the whole repo consists of around 1300 projects(!). So as you can imagine a cascading incremental build failure can take quite some time and be a major productivity drag.)
