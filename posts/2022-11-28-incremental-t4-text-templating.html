@@ -136,13 +136,13 @@
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Target</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
 <span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="ot">    Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
-<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;CoreCompile&quot;</span></span>
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="ot">    DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span>&gt;</span>
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><p>It’s a no-op target which simply causes another target (<code>TransformAll</code>) to be run when the <code>TransformOnBuild</code> property is set. So, for my override, I pasted that code and added an <code>ItemGroup</code> to the target’s body:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Target</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
 <span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="ot">    Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
-<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;CoreCompile&quot;</span></span>
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="ot">    DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span>&gt;</span>
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">ItemGroup</span>&gt;</span>
@@ -162,7 +162,7 @@
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Target</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
 <span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="ot">    Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
-<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="ot">    BeforeTargets=</span><span class="st">&quot;CoreCompile&quot;</span></span>
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="ot">    DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span></span>
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="ot">    Inputs=</span><span class="st">&quot;@(T4Preprocess);@(T4Transform)&quot;</span></span>
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="ot">    Outputs=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span>&gt;</span>
@@ -209,7 +209,7 @@
 <span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">Target</span></span>
 <span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a><span class="ot">        Name=</span><span class="st">&quot;TransformDuringBuild&quot;</span></span>
 <span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a><span class="ot">        Condition=</span><span class="st">&quot;'$(TransformOnBuild)' == 'true'&quot;</span></span>
-<span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a><span class="ot">        BeforeTargets=</span><span class="st">&quot;BeforeBuild&quot;</span></span>
+<span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a><span class="ot">        BeforeTargets=</span><span class="st">&quot;CoreCompile&quot;</span></span>
 <span id="32"><a href="#32" aria-hidden="true" tabindex="-1"></a><span class="ot">        DependsOnTargets=</span><span class="st">&quot;TransformAll&quot;</span></span>
 <span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a><span class="ot">        Inputs=</span><span class="st">&quot;@(T4Preprocess);@(T4Transform)&quot;</span></span>
 <span id="34"><a href="#34" aria-hidden="true" tabindex="-1"></a><span class="ot">        Outputs=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span>&gt;</span>
