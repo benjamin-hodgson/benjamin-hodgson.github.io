@@ -125,7 +125,7 @@ I could've used `AfterTargets="TransformDuringBuild"` but instead I decided to *
 <Target
     Name="TransformDuringBuild"
     Condition="'$(TransformOnBuild)' == 'true'"
-    BeforeTargets="BeforeBuild"
+    BeforeTargets="CoreCompile"
     DependsOnTargets="TransformAll">
 </Target>
 ```
@@ -136,7 +136,7 @@ It's a no-op target which simply causes another target (`TransformAll`) to be ru
 <Target
     Name="TransformDuringBuild"
     Condition="'$(TransformOnBuild)' == 'true'"
-    BeforeTargets="BeforeBuild"
+    BeforeTargets="CoreCompile"
     DependsOnTargets="TransformAll">
 
     <ItemGroup>
@@ -164,7 +164,7 @@ My final `TransformDuringBuild` target looked like this:
 <Target
     Name="TransformDuringBuild"
     Condition="'$(TransformOnBuild)' == 'true'"
-    BeforeTargets="BeforeBuild"
+    BeforeTargets="CoreCompile"
     DependsOnTargets="TransformAll"
     Inputs="@(T4Preprocess);@(T4Transform)"
     Outputs="@(_T4OutputFile)">
@@ -219,7 +219,7 @@ Here is the final file in handy pasteable form:
     <Target
         Name="TransformDuringBuild"
         Condition="'$(TransformOnBuild)' == 'true'"
-        BeforeTargets="BeforeBuild"
+        BeforeTargets="CoreCompile"
         DependsOnTargets="TransformAll"
         Inputs="@(T4Preprocess);@(T4Transform)"
         Outputs="@(_T4OutputFile)">
