@@ -59,7 +59,7 @@
 <p>Let’s start by looking at (an abbreviated version of) Sawmill’s existing <code>Fold</code>. <code>Fold</code> says <em>if you give me a way to combine a node with the results of folding its children, I can recursively fold the entire tree to produce a single summary value</em>.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">static</span> U Fold<span class="op">&lt;</span>T<span class="op">,</span> U<span class="op">&gt;(</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span> T value<span class="op">,</span></span>
-<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">,</span> Children<span class="op">&lt;</span>U<span class="op">&gt;,</span> U<span class="op">&gt;</span> func<span class="op">,</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    Func<span class="op">&lt;</span>T<span class="op">,</span> Children<span class="op">&lt;</span>U<span class="op">&gt;,</span> U<span class="op">&gt;</span> func</span>
 <span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> where T <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">func</span><span class="op">(</span></span>
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        value<span class="op">,</span></span>
