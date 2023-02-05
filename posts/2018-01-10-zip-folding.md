@@ -83,7 +83,7 @@ func(
 public static U ZipFold<T, U>(
     this T value1,
     T value2
-    Func<T, T, IEnumerable<U>, U> zipFunc,
+    Func<T, T, IEnumerable<U>, U> zipFunc
 ) where T : IRewritable<T>
     => zipFunc(
         value1,
@@ -136,7 +136,7 @@ The `ZipFold` that you'll find in Sawmill is actually an _n_-ary zip-fold. Inste
 ```csharp
 public static U ZipFold<T, U>(
     this T[] values,
-    Func<T[], IEnumerable<U>, U> func,
+    Func<T[], IEnumerable<U>, U> func
 ) where T : IRewritable<T>
     => func(values, xs.ZipChildren(children => children.ZipFold(func)));
 
