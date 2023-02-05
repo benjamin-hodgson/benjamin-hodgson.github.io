@@ -40,7 +40,7 @@ Let's start by looking at (an abbreviated version of) Sawmill's existing `Fold`.
 ```csharp
 public static U Fold<T, U>(
     this T value,
-    Func<T, Children<U>, U> func,
+    Func<T, Children<U>, U> func
 ) where T : IRewritable<T>
     => func(
         value,
