@@ -6,7 +6,9 @@
     <id>http://www.benjamin.pizza/atom.xml</id>
     <author>
         <name>Benjamin Hodgson</name>
+        
         <email>bhodgson@stackoverflow.com</email>
+        
     </author>
     <updated>2022-11-28T00:00:00Z</updated>
     <entry>
