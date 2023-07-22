@@ -2,4 +2,4 @@
 title: Contact
 ---
 
-My email address is `bhodgson@stackoverflow.com`.
+You can reach me at [`boss@benjamin.pizza`](mailto:boss@benjamin.pizza).
