@@ -36,13 +36,10 @@ RUN mkdir -p "$HOME/.ghcup/bin" \
     && chmod +x "$HOME/.ghcup/bin/ghcup"
 ENV PATH="/home/$USERNAME/.cabal/bin:/home/$USERNAME/.ghcup/bin:$PATH"
 
-# [Choice] GHC version: recommended, latest, 9.2, 9.0, 8.10, 8.8, 8.6
-ARG GHC_VERSION="9.4.2"
-
 # Use GHCup to install versions of main utilities
 # If you prefer to let the Haskell extension install everything on demand,
 # comment out the lines below. In that case, you may need to manually run "cabal update""."
-RUN ghcup install ghc "${GHC_VERSION}" --set \
+RUN ghcup install ghc recommended --set \
     && ghcup install cabal recommended --set \
     && ghcup install stack recommended --set \
     && ghcup install hls recommended --set \
