@@ -4,21 +4,24 @@ code {
 
     font-size: 1.1em;
 }
+
 pre {
     overflow-x: auto;
     overflow-wrap: normal;  /* fix scrolling in safari */
-}
-pre code {
-    counter-reset: lineNumber;
-}
-pre code > span::before {
-    counter-increment: lineNumber;
-    content: counter(lineNumber);
-    width: 1.25em;
-    display: inline-block;
-    border-right: 1px solid var(--border);
-    margin-right: 0.3em;
-    padding-right: 0.3em;
-    color: var(--text-muted);
-    text-align: right;
+
+    & code {
+        counter-reset: lineNumber;
+
+        > span::before {
+            counter-increment: lineNumber;
+            content: counter(lineNumber);
+            width: 1.25em;
+            display: inline-block;
+            border-right: 1px solid var(--border);
+            margin-right: 0.3em;
+            padding-right: 0.3em;
+            color: var(--text-muted);
+            text-align: right;
+        }
+    }
 }

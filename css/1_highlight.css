@@ -18,10 +18,8 @@
     /* borrowed from https://stackoverflow.design/product/base/colors/#danger-and-error */
     --error: #d0393e;
     --warn: #cea81c;
-}
 
-@media (prefers-color-scheme: dark) {
-    .sourceCode {
+    @media (prefers-color-scheme: dark) {
         /* https://github.com/highlightjs/highlight.js/blob/3209cca58146c1287123c3d3bb3eb982174d64fd/src/styles/github-dark.css */
         /* prettylights-syntax-keyword */
         --keyword: #ff7b72;
@@ -42,78 +40,57 @@
         --error: #c4514f;
         --warn: #dab941;
     }
-}
 
-/* KeywordTok, ImportTok, ControlFlowTok */
-.sourceCode .kw,
-.sourceCode .im,
-.sourceCode .cf,
-.sourceCode .bu {
-    color: var(--keyword);
-}
+    /* KeywordTok, ImportTok, ControlFlowTok */
+    .kw, .im, .cf, .bu {
+        color: var(--keyword);
+    }
+    /* DataTypeTok, FunctionTok, ExtensionTok */
+    .dt, .fu, .ex {
+        color: var(--entity);
+    }
 
-/* DataTypeTok, FunctionTok, ExtensionTok */
-.sourceCode .dt,
-.sourceCode .fu,
-.sourceCode .ex {
-    color: var(--entity);
-}
+    /* DecValTok, BaseNTok, FloatTok, ConstantTok */
+    .dv, .bn, .fl, .cn {
+        color: var(--constant);
+    }
+    /* CharTok, StringTok, SpecialCharTok, VerbatimStringTok, SpecialStringTok */
+    .ch, .st, .sc, .vs, .ss {
+        color: var(--string);
+    }
 
-/* DecValTok, BaseNTok, FloatTok, ConstantTok */
-.sourceCode span.dv,
-.sourceCode span.bn,
-.sourceCode span.fl,
-.sourceCode span.cn {
-    color: var(--constant);
-}
+    /* VariableTok */
+    .va {
+        color: var(--variable);
+    }
 
-/* CharTok, StringTok, SpecialCharTok, VerbatimStringTok, SpecialStringTok */
-.sourceCode span.ch,
-.sourceCode span.st,
-.sourceCode span.sc,
-.sourceCode span.vs,
-.sourceCode span.ss {
-    color: var(--string);
-}
+    /* CommentTok, RegionMarkerTok, DocumentationTok, PreprocessorTok */
+    .co, .re, .do, .pp {
+        color: var(--comment);
+    }
 
-/* VariableTok */
-.sourceCode span.va {
-    color: var(--variable);
-}
+    /* AnnotationTok, CommentVarTok, InformationTok, WarningTok */
+    .an, .cv, .in, .wa {
+        color: var(--comment);
+        font-style: italic;
+    }
 
-/* CommentTok, RegionMarkerTok, DocumentationTok, PreprocessorTok */
-.sourceCode span.co,
-.sourceCode span.re,
-.sourceCode span.do,
-.sourceCode span.pp {
-    color: var(--comment);
-}
+    /* AttributeTok */
+    .at {
+        color: var(--entity-tag);
+    }
 
-/* AnnotationTok, CommentVarTok, InformationTok, WarningTok */
-.sourceCode span.an,
-.sourceCode span.cv,
-.sourceCode span.in,
-.sourceCode span.wa {
-    color: var(--comment);
-    font-style: italic;
-}
+    /* AlertTok */
+    .al {
+        text-decoration: 1px underline wavy var(--warn);
+    }
+    /* ErrorTok */
+    .er {
+        text-decoration: 1px underline wavy var(--error);
+    }
 
-/* AttributeTok */
-.sourceCode span.at {
-    color: var(--entity-tag);
-}
-
-/* AlertTok */
-.sourceCode span.al {
-    text-decoration: 1px underline wavy var(--warn);
-}
-/* ErrorTok */
-.sourceCode span.er {
-    text-decoration: 1px underline wavy var(--error);
-}
-
-/* OperatorTok, OtherTok */
-.sourceCode span.op,
-.sourceCode span.ot {
-    /* purposely ignored */
+    /* OperatorTok, OtherTok */
+    .op, .ot {
+        /* purposely ignored */
+    }
 }

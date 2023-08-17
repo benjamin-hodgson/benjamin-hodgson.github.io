@@ -1,0 +1,14 @@
+#nesting-error {
+    display: block;
+    background: hsl(47, 87%, 94%);
+    border-color: #cea81c;
+    border-style: solid;
+    border-radius: 6px;
+    border-width: 1px;
+}
+
+html {
+    #nesting-error {
+        display: none;
+    }
+}
