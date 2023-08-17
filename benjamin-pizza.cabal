@@ -6,7 +6,7 @@ homepage: https://github.com/benjamin-hodgson/benjamin-hodgson.github.io
 license: MIT AND CC-BY-4.0
 license-file: LICENSE.md
 author: Benjamin Hodgson
-copyright: 2017-2022 Benjamin Hodgson
+copyright: 2017-2023 Benjamin Hodgson
 category: Web
 build-type: Simple
 
@@ -16,7 +16,7 @@ executable benjamin-pizza
     ghc-options: -threaded
     build-depends:
         base >= 4.16.0,
-        hakyll >= 4.15.1.1,
+        hakyll >= 4.16.0.0,
         blaze-html,
         containers,
         commonmark,
