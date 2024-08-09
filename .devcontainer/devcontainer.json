@@ -1,7 +1,7 @@
 {
-  "name": "Haskell (Community)",
-  "build": {
-    "dockerfile": "Dockerfile"
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/haskell:2": { }
   },
   // Configure tool-specific properties.
   "customizations": {

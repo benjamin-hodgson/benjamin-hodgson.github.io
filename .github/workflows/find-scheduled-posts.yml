@@ -8,21 +8,21 @@ on:
 jobs:
   find_scheduled:
     runs-on: ubuntu-latest
-    
+
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
     outputs:
       should_run: ${{ steps.should_run.outputs.result }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Determine if build should be run
         id: should_run
         run: |
           lastBuild=$(gh run list -w Build --json conclusion,createdAt -q "map(select(.conclusion == \"success\")).[0].createdAt")
           python scripts/find_new_posts.py $lastBuild
-  
+
   trigger_build:
     needs: find_scheduled
     uses: ./.github/workflows/build.yml

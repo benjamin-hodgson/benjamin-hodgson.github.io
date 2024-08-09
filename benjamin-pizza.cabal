@@ -1,4 +1,4 @@
-cabal-version: 3.6
+cabal-version: 3.10
 
 name: benjamin-pizza
 version: 0.1.0.0
@@ -15,7 +15,7 @@ executable benjamin-pizza
     default-language: GHC2021
     ghc-options: -threaded
     build-depends:
-        base >= 4.16.0,
+        base >= 4.17.0,
         hakyll >= 4.16.0.0,
         blaze-html,
         containers,

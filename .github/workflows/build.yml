@@ -11,16 +11,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      # v2.0.2
-      - uses: haskell/actions/setup@97d6391f4afce6357da121cd189e6a1cce8d13ec
+      # v2.7.5
+      - uses: haskell-actions/setup@ec49483bfc012387b227434aba94f59a6ecd0900
         id: setup-haskell
         with:
-          ghc-version: 9.2
-          cabal-version: 3.6
+          ghc-version: 9.4
+          cabal-version: 3.10
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ${{ steps.setup-haskell.outputs.cabal-store }}
@@ -34,13 +34,13 @@ jobs:
         run: cabal run benjamin-pizza build
 
       - name: Deploy
-        # v4.4.1
-        uses: JamesIves/github-pages-deploy-action@ba1486788b0490a235422264426c45848eac35c6
+        # v4.6.3
+        uses: JamesIves/github-pages-deploy-action@94f3c658273cf92fb48ef99e5fbc02bd2dc642b2
         with:
           branch: gh-pages
           folder: _site
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: site
           path: _site
