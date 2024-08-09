@@ -4,12 +4,12 @@ LICENSE
 Articles
 --------
 
-<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons Licence" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />All prose and images on this blog are licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
+<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons Licence" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />All original prose and images on this website are licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
 
 Code
 ----
 
-The code used to build this website is derived from [Hakyll](https://github.com/jaspervdj/hakyll), which is [copyright Jasper Van der Jeugt and licensed under a BSD 3-clause license](https://github.com/jaspervdj/hakyll/blob/master/LICENSE). The site's CSS is derived from [water.css](https://github.com/kognise/water.css), which is [copyright Kognise and licensed under an MIT license](https://github.com/kognise/water.css/blob/master/LICENSE.md). All other code, including code within the text of articles hosted on this site, is licensed under an MIT license.
+The code used to build this website is derived from [Hakyll](https://github.com/jaspervdj/hakyll), which is [copyright Jasper Van der Jeugt and licensed under a BSD 3-clause license](https://github.com/jaspervdj/hakyll/blob/master/LICENSE). The site's CSS is derived from [water.css](https://github.com/kognise/water.css), which is [copyright Kognise and licensed under an MIT license](https://github.com/kognise/water.css/blob/master/LICENSE.md). All other code, including code within the text of articles hosted on this site, is copyright Benjamin Hodgson and licensed under an MIT license.
 
 ### The MIT license
 

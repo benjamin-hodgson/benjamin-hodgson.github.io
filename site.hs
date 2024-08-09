@@ -28,7 +28,7 @@ main = do
     command <- fromMaybe "" <$> listToMaybe <$> getArgs
     let postsPattern = postsPatternForCommand command
     metadataMatcher <- metadataMatcherForCommand command
-    
+
     hakyll $ do
         match "favicon.ico" $ do
             route   idRoute
@@ -44,7 +44,7 @@ main = do
 
         match "css/*" $ do
             compile getResourceBody
-            
+
         match "js/**" $ do
             route   idRoute
             compile getResourceBody
@@ -55,7 +55,7 @@ main = do
                 items <- loadAll "css/*"
                 makeItem $ compressCss $ concatMap itemBody items
 
-        for_ ["contact.md", "404.md"] $ \pat -> match pat $ do
+        for_ ["about.md", "404.md"] $ \pat -> match pat $ do
             route   $ setExtension "html"
             compile $ commonmarkCompiler
                 >>= loadAndApplyTemplate "templates/default.html" defaultContext
@@ -75,23 +75,9 @@ main = do
             ("posts/2019-12-22-building-prolog's-rules-engine.html", "2019-12-22-building-prologs-rules-engine.html")
             ]
 
-        create ["archive.html"] $ do
-            route idRoute
-            compile $ do
-                posts <- recentFirst =<< loadAll postsPattern
-                let archiveCtx =
-                        listField "posts" postCtx (return posts) `mappend`
-                        constField "title" "Archives"            `mappend`
-                        defaultContext
-
-                makeItem ""
-                    >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
-                    >>= loadAndApplyTemplate "templates/default.html" archiveCtx
-                    >>= relativizeUrls
-        
         create ["atom.xml"] $ do
             route idRoute
-            compile $ 
+            compile $
                 loadAllSnapshots postsPattern "content"
                     >>= recentFirst
                     >>= renderAtom feedConfig atomCtx
@@ -233,6 +219,6 @@ highlightCodeBlock lang txt =
             return $ Skylighting.formatHtmlBlock Skylighting.defaultFormatOpts lines
     in case result of
         Just blaze -> Html $ Md.htmlRaw $ Text.Lazy.toStrict $ Blaze.renderHtml blaze
-        Nothing -> Html $ Md.codeBlock lang txt 
+        Nothing -> Html $ Md.codeBlock lang txt
 
 defaultTokeniserConfig = Skylighting.TokenizerConfig Skylighting.defaultSyntaxMap False
