@@ -161,8 +161,9 @@
 <h2 id="span"><a href="#span"><code>Span</code>
 
 </a></h2>
-<blockquote>
-<p><strong>Note</strong>: You can watch <a href="https://twitter.com/g3rv4">my esteemed colleague Gervasio</a> and me carrying out the work I describe here in <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">a live-stream on YouTube</a>. It was pretty fun!</p>
+<blockquote class="callout callout-note">
+<h3>Note</h3>
+<p>You can watch <a href="https://twitter.com/g3rv4">my esteemed colleague Gervasio</a> and me carrying out the work I describe here in <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">a live-stream on YouTube</a>. It was pretty fun!</p>
 </blockquote>
 <p>I wanted to add support for parsing input stored in a <code>Span</code>. (<code>Span</code> is a new part of the BCL representing a reference to a contiguous block of memory such as a chunk of an array.) I already had functions which applied a <code>Parser</code> to a <code>string</code>, a <code>T[]</code>, a <code>Stream</code>, etc; I’d abstracted over these various input types using the aforementioned <code>IParseState</code> interface.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">internal</span> <span class="kw">interface</span> IParseState<span class="op">&lt;</span>TToken<span class="op">&gt;</span></span>
@@ -176,7 +177,7 @@
 <span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> <span class="dt">int</span> _current<span class="op">;</span></span>
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    TToken<span class="op">?</span> <span class="fu">Peek</span><span class="op">()</span> <span class="op">=&gt;</span> _current <span class="op">&gt;=</span> _span<span class="op">.</span><span class="fu">Length</span> <span class="op">?</span> <span class="kw">null</span> <span class="op">:</span> _span<span class="op">[</span>_current<span class="op">];</span></span>
-<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">Advance</span><span class="op">()</span></span>
 <span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
 <span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        _current<span class="op">++;</span></span>
@@ -212,7 +213,7 @@
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        _currentPosition <span class="op">&lt;</span> <span class="dv">0</span> <span class="op">||</span> _currentPosition <span class="op">&gt;=</span> _buffer<span class="op">.</span><span class="fu">Length</span></span>
 <span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>            <span class="op">?</span> <span class="kw">null</span></span>
 <span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>            <span class="op">:</span> _buffer<span class="op">[</span>_currentPosition<span class="op">];</span></span>
-<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Advance</span><span class="op">()</span></span>
 <span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
 <span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>        _currentPosition<span class="op">++;</span></span>
