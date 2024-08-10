@@ -14,3 +14,22 @@ aside {
     padding: 0.5em 1em;
     font-style: italic;
 }
+
+.callout {
+    border: none;
+    border-radius: 6px;
+    font-style: normal;  /* undo italic from blockquote */
+
+    h3 {
+        margin-top: 12px;
+    }
+
+    /* todo: others from https://help.obsidian.md/Editing+and+formatting/Callouts */
+    &.callout-note, &.callout-info {
+        background-color: hsla(from var(--focus) h s l / 8%);
+    }
+
+    &.callout-warning {
+        background-color: hsla(from var(--warning) h s l / 8%);
+    }
+}

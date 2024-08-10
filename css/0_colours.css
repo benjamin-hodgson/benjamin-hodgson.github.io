@@ -1,0 +1,47 @@
+:root {
+    --warning: #ec7500;
+
+    /* https://github.com/highlightjs/highlight.js/blob/3209cca58146c1287123c3d3bb3eb982174d64fd/src/styles/github.css */
+    /* prettylights-syntax-keyword */
+    --sourceCode-keyword: #d73a49;
+    /* prettylights-syntax-entity */
+    --sourceCode-entity: #6f42c1;
+    /* prettylights-syntax-constant */
+    --sourceCode-constant: #005cc5;
+    /* prettylights-syntax-string */
+    --sourceCode-string: #032f62;
+    /* prettylights-syntax-variable */
+    --sourceCode-variable: #e36209;
+    /* prettylights-syntax-comment */
+    --sourceCode-comment: #6a737d;
+    /* prettylights-syntax-entity-tag */
+    --sourceCode-entity-tag: #22863a;
+
+    /* borrowed from https://stackoverflow.design/product/base/colors/#danger-and-error */
+    --sourceCode-error: #d0393e;
+    --sourceCode-warn: #cea81c;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* https://github.com/highlightjs/highlight.js/blob/3209cca58146c1287123c3d3bb3eb982174d64fd/src/styles/github-dark.css */
+        /* prettylights-syntax-keyword */
+        --sourceCode-keyword: #ff7b72;
+        /* prettylights-syntax-entity */
+        --sourceCode-entity: #d2a8ff;
+        /* prettylights-syntax-constant */
+        --sourceCode-constant: #79c0ff;
+        /* prettylights-syntax-string */
+        --sourceCode-string: #a5d6ff;
+        /* prettylights-syntax-variable */
+        --sourceCode-variable: #ffa657;
+        /* prettylights-syntax-comment */
+        --sourceCode-comment: #8b949e;
+        /* prettylights-syntax-entity-tag */
+        --sourceCode-entity-tag: #7ee787;
+
+        /* borrowed from https://stackoverflow.design/product/base/colors/#danger-and-error */
+        --sourceCode-error: #c4514f;
+        --sourceCode-warn: #dab941;
+    }
+}

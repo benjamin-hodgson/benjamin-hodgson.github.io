@@ -163,7 +163,7 @@ public static T RewriteChildren<T>(this T value, Func<T, T> transformer)
     var span = array.AsSpan().Slice(count);
 
     value.GetChildren(span);
-    
+
     for (var i = 0; i < span.Length; i++)
     {
         span[i] = transformer(span[i]);
@@ -233,7 +233,7 @@ private static T RewriteChildrenInternal<T>(
     var span = chunks.Allocate(count);
 
     value.GetChildren(span);
-    
+
     for (var i = 0; i < span.Length; i++)
     {
         span[i] = transformer(span[i]);
@@ -317,7 +317,7 @@ private static T RewriteChildrenInternal<T>(
     }
 
     value.GetChildren(span);
-    
+
     for (var i = 0; i < span.Length; i++)
     {
         span[i] = transformer(span[i]);
@@ -408,7 +408,8 @@ private static class SpanFactory<T>
 
 Obviously relying on BCL internals like this is risky. The internal constructor could be removed, or changed to work differently, in which case my code could stop working or even segfault. That said, I think the likelihood of the internal constructor changing is quite low in this case.
 
-> **Update**: On .NET Core, there is an officially-supported API to do this: [`MemoryMarshal.CreateSpan`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=netcore-3.0). I didn't know it existed at the time that I wrote this.
+> [!note] Update
+> On .NET Core, there is an officially-supported API to do this: [`MemoryMarshal.CreateSpan`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=netcore-3.0). I didn't know it existed at the time that I wrote this.
 
 There are also risks associated with mixing pointers and references like this. You have to be very careful that the `Span` doesn't live longer than the `Four` it points to. That means the `Four` has to be discarded at the end of the method along with the `Span`, and it has to be stored in a "real" local variable, not in temporary storage on the evaluation stack. I'll address that by mentioning the variable (as a parameter to a non-inlined "keep-alive" method) at the end of the method.
 
@@ -429,7 +430,7 @@ private static T RewriteChildrenInternal<T>(
     var span = GetSpan(count, chunks, ref four);
 
     value.GetChildren(span);
-    
+
     for (var i = 0; i < span.Length; i++)
     {
         span[i] = transformer(span[i]);

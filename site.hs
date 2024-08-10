@@ -1,31 +1,40 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralisedNewtypeDeriving #-}
-{-# LANGUAGE ViewPatterns #-}
 
+import Data.Dynamic (toDyn)
+import Data.Functor (($>))
+import Data.Foldable (for_)
 import Data.Functor.Identity (Identity(runIdentity))
+import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe, listToMaybe)
-import qualified Data.Time as Time
+import Data.Monoid (First(..), Last(..))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Text.Lazy
-import Data.Foldable (for_)
+import qualified Data.Time as Time
 import Data.Traversable (for)
+import qualified Data.Tree as Tree
 import System.Environment (getArgs)
+import Debug.Trace
 
 import qualified Text.Blaze.Html as Blaze
 import qualified Text.Blaze.Html.Renderer.Text as Blaze
 import qualified Commonmark as Md
 import qualified Commonmark.Blocks as Md
 import qualified Commonmark.Extensions as Md
-import qualified Skylighting
+import qualified Commonmark.Tokens as Md
+import qualified Commonmark.TokParsers as Md
 import Hakyll
-import Text.Parsec (getState, updateState)
+import qualified Skylighting
+import Text.Parsec ((<|>))
+import qualified Text.Parsec as Parsec
+import qualified Text.Parsec.Char as Parsec
 
 
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-    command <- fromMaybe "" <$> listToMaybe <$> getArgs
+    command <- fromMaybe "" . listToMaybe <$> getArgs
     let postsPattern = postsPatternForCommand command
     metadataMatcher <- metadataMatcherForCommand command
 
@@ -179,19 +188,77 @@ benjaminFlavouredMarkdown = mconcat [
     Md.autoIdentifiersAsciiSpec,
     Md.footnoteSpec,
     Md.implicitHeadingReferencesSpec,
+    calloutSpec,
     linkifyHeadersSpec,
     Md.defaultSyntaxSpec
     ]
 
+calloutSpec :: Md.SyntaxSpec Identity Html Html
+calloutSpec = mempty { Md.syntaxFinalParsers = [modifyCallouts] }
+
+modifyCallouts :: Md.BlockParser Identity Html Html Html
+modifyCallouts = do
+    Parsec.updateState $ \st -> st { Md.nodeStack = [transformTree setCallout t | t <- Md.nodeStack st] }
+    return mempty
+
+    where
+        setCallout bn
+            | Md.blockType (Md.blockSpec (Tree.rootLabel bn)) == "BlockQuote" =
+                case getCallout bn of
+                    Nothing -> bn
+                    Just (calloutType, title) -> replaceTitle title $ addClass ("callout callout-" <> calloutType) bn
+            | otherwise = bn
+
+        getCallout bn = do
+            para <- listToMaybe $ Tree.subForest bn
+            -- Md.blockLines is in reverse order
+            firstLine <- listToMaybe $ reverse $ Md.blockLines $ Tree.rootLabel para
+            getFirst $ foldMap (First . Just) $ Parsec.runParser calloutParser () "" firstLine
+
+        calloutParser = do
+            Parsec.optional Md.whitespace
+            Md.symbol '['
+            Md.symbol '!'
+            ty <- Md.satisfyWord (const True)  -- a single word
+            Md.symbol ']'
+            title <- Md.restOfLine
+            let title' = if Md.WordChars `elem` [Md.tokType t | t <- title]
+                then title
+                else [ty { Md.tokContents = Text.toTitle (Md.tokContents ty) }]
+            return (Md.tokContents ty, title')
+
+        -- strip the [!type] line and replace it with an h3
+        replaceTitle title (Tree.Node bd (t:ts)) =
+            -- Md.blockLines is in reverse order
+            let remainingLines = init $ Md.blockLines $ Tree.rootLabel t
+                newT = t { Tree.rootLabel = (Tree.rootLabel t) { Md.blockLines = remainingLines } }
+                newH3 = (Md.defBlockData Md.atxHeadingSpec) {
+                    Md.blockLines = [title],
+                    Md.blockData = toDyn (3 :: Int),
+                    Md.blockStartPos = Md.blockStartPos bd
+                    }
+            in Tree.Node bd (Tree.Node newH3 [] : newT : ts)
+        replaceTitle _ _ = error "Can't happen"
+
+        addClass cls bn =
+            let newAttrs = addClassToAttrs cls (Md.blockAttributes (Tree.rootLabel bn))
+            in bn { Tree.rootLabel = (Tree.rootLabel bn) { Md.blockAttributes = newAttrs } }
+
+        addClassToAttrs cls [] = [("class", cls)]
+        addClassToAttrs cls (("class", oldCls):attrs) = ("class", oldCls <> " " <> cls) : attrs
+        addClassToAttrs cls (attr:attrs) = attr : addClassToAttrs cls attrs
+
+
+transformTree :: (Tree.Tree a -> Tree.Tree a) -> Tree.Tree a -> Tree.Tree a
+transformTree f t = f (t { Tree.subForest = map (transformTree f) (Tree.subForest t) })
+
+
 linkifyHeadersSpec :: Md.SyntaxSpec Identity Html Html
-linkifyHeadersSpec = mempty {
-        Md.syntaxFinalParsers = [linkifyHeaders]
-    }
+linkifyHeadersSpec = mempty { Md.syntaxFinalParsers = [linkifyHeaders] }
 
 linkifyHeaders :: Md.BlockParser Identity Html Html Html
 linkifyHeaders = do
-    nodes <- Md.nodeStack <$> getState
-    updateState $ \st -> st { Md.nodeStack = [fmap setLink t | t <- nodes] }
+    Parsec.updateState $ \st -> st { Md.nodeStack = [fmap setLink t | t <- Md.nodeStack st] }
     return mempty
 
     where

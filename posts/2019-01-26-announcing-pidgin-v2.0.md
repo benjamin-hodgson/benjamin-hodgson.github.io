@@ -152,7 +152,8 @@ Implementing this efficiently was a challenge. Parse errors actually occur quite
 `Span`
 ------
 
-> **Note**: You can watch [my esteemed colleague Gervasio](https://twitter.com/g3rv4) and me carrying out the work I describe here in [a live-stream on YouTube](https://www.youtube.com/watch?v=O23OLkQtiS4). It was pretty fun!
+> [!note]
+> You can watch [my esteemed colleague Gervasio](https://twitter.com/g3rv4) and me carrying out the work I describe here in [a live-stream on YouTube](https://www.youtube.com/watch?v=O23OLkQtiS4). It was pretty fun!
 
 I wanted to add support for parsing input stored in a `Span`. (`Span` is a new part of the BCL representing a reference to a contiguous block of memory such as a chunk of an array.) I already had functions which applied a `Parser` to a `string`, a `T[]`, a `Stream`, etc; I'd abstracted over these various input types using the aforementioned `IParseState` interface.
 
@@ -173,7 +174,7 @@ class SpanTokenStream<TToken> : ITokenStream<TToken>
     private int _current;
 
     TToken? Peek() => _current >= _span.Length ? null : _span[_current];
-    
+
     void Advance()
     {
         _current++;
@@ -233,7 +234,7 @@ struct ParseState<TToken>
         _currentPosition < 0 || _currentPosition >= _buffer.Length
             ? null
             : _buffer[_currentPosition];
-    
+
     public void Advance()
     {
         _currentPosition++;

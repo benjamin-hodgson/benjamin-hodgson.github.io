@@ -2,7 +2,11 @@
 title: Compiling Prolog
 ---
 
-> **Work in progress**: This article is gonna be lo-o-ong. I initially thought about splitting it into separate posts, but instead I decided to write a single article and post it section by section.
+
+
+> [!warning] Work in progress
+>
+> This article is gonna be lo-o-ong. I initially thought about splitting it into separate posts, but instead I decided to write a single article and post it section by section.
 
 Since we last saw each other, I've outfitted [my miniature Prolog interpreter](/posts/2019-12-01-write-you-a-prolog.html) with [a virtual machine and an x64 code generator](https://github.com/benjamin-hodgson/Amateurlog/tree/master/Machine). I wanted to document my work in guide form.
 
@@ -85,7 +89,7 @@ We also need a way to tell variables apart from structures, so all of our heap o
 Here's how the `wibble(wobble(X), wubble(X, Y))` example looks in the finalised version of its heap representation.
 
 ```
-wibble(..., ...)        
+wibble(..., ...)
 ↓
 0     1     2     3     4     5     6      7
 --------------------------------------------
@@ -182,7 +186,7 @@ class Machine
     private readonly int[] _stack = new int[160000];
     private int _topOfStack = -1;
     private int _frameBase = -1;
-    
+
     private void Push(int data)
     {
         _topOfStack++;
@@ -209,7 +213,7 @@ private bool Unify(int left, int right)
     _frameBase = _topOfStack;
     Push(left);
     Push(right);
-    
+
     // invariant: the stack contains an even number of items
     while (_topOfStack > _frameBase)
     {
