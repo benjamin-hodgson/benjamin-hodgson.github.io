@@ -15,20 +15,36 @@ jobs:
 
       # v2.7.5
       - uses: haskell-actions/setup@ec49483bfc012387b227434aba94f59a6ecd0900
-        id: setup-haskell
+        id: setup
         with:
           ghc-version: '9.4'
           cabal-version: '3.10'
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.setup-haskell.outputs.cabal-store }}
-            dist-newstyle
-          key: benjamin-pizza
+      - name: Create build plan
+        run: |
+          cabal build all --dry-run
 
-      - name: Build deps & executable
-        run: cabal build
+      - uses: actions/cache/restore@v4
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+          restore-keys: ${{ env.key }}-
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cabal build all --only-dependencies
+
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Build
+        run: cabal build all
 
       - name: Generate website
         run: cabal run benjamin-pizza build
