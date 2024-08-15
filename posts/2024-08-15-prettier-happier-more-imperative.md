@@ -1,6 +1,6 @@
 ---
 title: Prettier. Happier. More Imperative.
-date: 2024-08-13
+date: 2024-08-15
 ---
 Phil Wadler’s pearl [_A Prettier Printer_](https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf) is a classic example of functional design. Starting with a simple model and some algebraic laws, Wadler _derives_ an implementation of a well behaved layout algorithm. It’s a great read — go and read it if you haven’t! (I’m going to assume you have read it and try not to recapitulate too much below.)
 
@@ -192,9 +192,9 @@ This code is tricky to port to an imperative style because it makes central use 
 * We need some way of _undoing_ any calls to the `IDocumentRenderer` that were made in the course of laying out `x`.
 
 > [!note] Aside: A Thought On Laziness
-> 
+>
 > Wadler wrote a function that looks like it lays out the entire document, but because the language is lazy it never actually processes more than one line at a time. Cool! But, I dunno, understanding this took me some head-scratching because this important aspect of the control flow is not visible in the text of the code. Laziness can be a mixed blessing — it lets us separate producers and consumers in novel ways, _but_ it makes control flow implicit. Perhaps I'm still just not good enough at thinking lazily.
-> 
+>
 > (I tried implementing the backtracking behaviour [using a failure continuation](https://gist.github.com/benjamin-hodgson/8b3062e9715f10b6c74f65424cab9b27). The code is certainly more complex and uglier than Wadler's — there are two mutually recursive continuation types! — but it has the benefit of being very explicit about [when backtracking can happen](https://gist.github.com/benjamin-hodgson/8b3062e9715f10b6c74f65424cab9b27#file-prettiercps-hs-L48) and [what to do when it does](https://gist.github.com/benjamin-hodgson/8b3062e9715f10b6c74f65424cab9b27#file-prettiercps-hs-L61).)
 
 Anyway, we can handle the latter two issues imperatively by _buffering_ the output text one line at a time. If we reach the end of the line without overflowing, we can flush the buffer’s contents out to the `IDocumentRenderer`.
