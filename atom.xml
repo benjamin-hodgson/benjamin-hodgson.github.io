@@ -10,8 +10,317 @@
         <email>bhodgson@stackoverflow.com</email>
         
     </author>
-    <updated>2022-11-28T00:00:00Z</updated>
+    <updated>2024-08-15T00:00:00Z</updated>
     <entry>
+    <title>Prettier. Happier. More Imperative.</title>
+    <link href="http://www.benjamin.pizza/posts/2024-08-15-prettier-happier-more-imperative.html" />
+    <id>http://www.benjamin.pizza/posts/2024-08-15-prettier-happier-more-imperative.html</id>
+    <published>2024-08-15T00:00:00Z</published>
+    <updated>2024-08-15T00:00:00Z</updated>
+    <summary type="html"><![CDATA[
+<p>Phil Wadler’s pearl <a href="https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf"><em>A Prettier Printer</em></a> is a classic example of functional design. Starting with a simple model and some algebraic laws, Wadler <em>derives</em> an implementation of a well behaved layout algorithm. It’s a great read — go and read it if you haven’t! (I’m going to assume you have read it and try not to recapitulate too much below.)</p>
+<p>I learned a lot about Wadler’s algorithm by translating it to an imperative language. I think Wadler’s explanation skims over a couple of interesting behavioural details of his algorithm, and those details are actually a little easier to see in an imperative setting.</p>
+<p>You can find (a productionised version of) the code I’m going to present today <a href="https://github.com/benjamin-hodgson/Gutenberg/blob/main/Gutenberg/LayoutEngine.cs">in my library <code>Gutenberg</code></a>. As you’ll see, the code fuses together lots of my favourite programming ideas: it’s a combinator library, with a purely functional front end, backed by a logic programming engine, written as a stack machine! Let’s dive in.</p>
+<h2 id="wadlers-code"><a href="#wadlers-code">Wadler’s Code</a></h2>
+<p>Wadler’s library is designed around a datatype of <em>documents</em>. A document represents a block of text with some optional line breaks and indentation. To use the library, you construct a document using the provided combinators, and then invoke the layout algorithm to render the document as a string.</p>
+<p>For example, you might construct a document containing a code listing for a function call. If the function’s arguments can all fit on one line then the expression should be flattened,</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>printf<span class="op">(</span><span class="st">&quot;My </span><span class="sc">%s</span><span class="st"> is named </span><span class="sc">%s</span><span class="st">.&quot;</span><span class="op">,</span> <span class="st">&quot;cat&quot;</span><span class="op">,</span> <span class="st">&quot;Prune&quot;</span><span class="op">);</span></span></code></pre></div><p>but a longer expression might need to be broken up with each argument on its own line.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>printf<span class="op">(</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;My </span><span class="sc">%s</span><span class="st"> is named </span><span class="sc">%s</span><span class="st">. She eats </span><span class="sc">%s</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cat&quot;</span><span class="op">,</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Prune&quot;</span><span class="op">,</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Tender Chicken Chunks&quot;</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span></code></pre></div><p>Typically you’ll annotate your document with several different sets of line break hints. So a given document can be laid out in a number of ways. The layout algorithm’s job is to choose the best layout — meaning one which makes good use of the available horizontal space and doesn’t introduce more line breaks than necessary.</p>
+<p>Internally, the notion of a <em>choice of layouts</em> is represented by the <code>:&lt;|&gt;</code> constructor: <code>doc1 :&lt;|&gt; doc2</code> means “<code>doc1</code> is a preferable layout, but <code>doc2</code> can be used as a fallback if <code>doc1</code> causes the text to overflow the page width”. The layout algorithm takes a document containing <code>:&lt;|&gt;</code>s and produces one without.</p>
+<p>The work is done by the function <code>best</code>. Here it is, with some cosmetic tweaks:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>best</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    ::</span> <span class="dt">Int</span>  <span class="co">-- ^ The page width</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="ot">-&gt;</span> <span class="dt">Int</span>  <span class="co">-- ^ The number of characters already consumed on the current line</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">-&gt;</span> <span class="dt">DOC</span>  <span class="co">-- ^ The document to lay out</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">-&gt;</span> <span class="dt">Doc</span>  <span class="co">-- ^ The laid-out document</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>best w k x <span class="ot">=</span> be k [(<span class="dv">0</span>, x)]</span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        be k [] <span class="ot">=</span> <span class="dt">Nil</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        be k ((i, <span class="dt">NIL</span>)<span class="op">:</span>z) <span class="ot">=</span> be k z</span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        be k ((i, x <span class="op">:&lt;&gt;</span> y)<span class="op">:</span>z) <span class="ot">=</span> be k ((i, x)<span class="op">:</span>(i, y)<span class="op">:</span>z)</span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        be k ((i, <span class="dt">NEST</span> j x)<span class="op">:</span>z) <span class="ot">=</span> be k ((i<span class="op">+</span>j, x)<span class="op">:</span>z)</span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>        be k ((i, <span class="dt">TEXT</span> s)<span class="op">:</span>z) <span class="ot">=</span> <span class="dt">Text</span> s (be (k <span class="op">+</span> <span class="fu">length</span> s) z)</span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        be k ((i, <span class="dt">LINE</span>)<span class="op">:</span>z) <span class="ot">=</span> <span class="dt">Line</span> i (be i z)</span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>        be k ((i, x <span class="op">:&lt;|&gt;</span> y)<span class="op">:</span>z)</span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>            <span class="ot">=</span> better k</span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>                (be k ((i, x)<span class="op">:</span>z))</span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>                (be k ((i, y)<span class="op">:</span>z))</span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>        better k x y <span class="ot">=</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> fits (w<span class="op">-</span>k) x</span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>            then x</span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>            else y</span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>fits w x <span class="op">|</span> w <span class="op">&lt;</span> <span class="dv">0</span> <span class="ot">=</span> <span class="dt">False</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>fits w <span class="dt">Nil</span> <span class="ot">=</span> <span class="dt">True</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a>fits w (<span class="dt">Text</span> s x) <span class="ot">=</span> fits (w <span class="op">-</span> <span class="fu">length</span> s) x</span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>fits w (<span class="dt">Line</span> i x) <span class="ot">=</span> <span class="dt">True</span></span></code></pre></div><p>Let’s try to reconstruct Wadler’s code in an imperative style.</p>
+<h2 id="wadlers-two-documents"><a href="#wadlers-two-documents">Wadler’s Two Documents</a></h2>
+<p>Section 3 of the paper is all about designing an efficient representation for documents. Wadler calls it <code>DOC</code>. It took me a while to grasp the reason for the new name: he’s keeping the old <code>Doc</code> around (in modified form — it lacks the <code>Union</code> constructor).</p>
+<ul>
+<li><strong><code>DOC</code> is the API</strong>. It’s the core representation of documents that users of the library interact with. It’s an abstract type — you create <code>DOC</code>s using the provided combinators, not by calling its constructors directly.
+</li>
+<li><strong><code>Doc</code> is an intermediate representation</strong>. It’s the result of laying out a document (it’s returned by <code>best</code>). Wadler gives a function (awkwardly named <code>layout</code>) to display a <code>Doc</code> as a string but you can imagine other backends (for example, writing directly to the console).
+</li>
+</ul>
+<p>I think Wadler’s choice of names could use some improvement — <a href="https://hackage.haskell.org/package/prettyprinter">the modern <code>prettyprinter</code> library</a> uses <code>SimpleDocStream</code> for the latter. Structurally, <code>Doc</code>(/<code>SimpleDocStream</code>) is a <em>list</em> of literal text chunks interspersed with line-breaks-with-indentation:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Doc</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="dt">Nil</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Text</span> <span class="dt">String</span> <span class="dt">Doc</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Line</span> <span class="dt">Int</span> <span class="dt">Doc</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="co">-- equivalently,</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Doc</span> <span class="ot">=</span> [<span class="dt">Either</span> <span class="dt">String</span> <span class="dt">Int</span>]</span></code></pre></div><p>But in an imperative language it might be better to conceive of <code>Doc</code> as a <em>sequence of instructions</em> for a rendering backend. In C#, it’s more natural to abstract over backends using an interface, rather than an intermediate data structure:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IDocumentRenderer</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">WriteText</span><span class="op">(</span><span class="dt">string</span> text<span class="op">);</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="fu">WriteLineBreak</span><span class="op">(</span><span class="dt">int</span> indentation<span class="op">);</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="best-is-a-stack-machine"><a href="#best-is-a-stack-machine"><code>best</code> is a Stack Machine</a></h2>
+<p>In Section 3, Wadler somewhat opaquely describes “generalising each operation to work on a list of indentation-document pairs”. He’s talking specifically about <code>be</code> (<code>best</code>’s inner loop). Let’s take a look at a few of its clauses to figure out what he means:</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>best w k x <span class="ot">=</span> be k [(<span class="dv">0</span>, x)]</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        be k [] <span class="ot">=</span> <span class="dt">Nil</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        be k ((i, <span class="dt">NIL</span>)<span class="op">:</span>z) <span class="ot">=</span> be k z</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        be k ((i, x <span class="op">:&lt;&gt;</span> y)<span class="op">:</span>z) <span class="ot">=</span> be k ((i, x)<span class="op">:</span>(i, y)<span class="op">:</span>z)</span></code></pre></div><p>The list is initialised to a single item and thereafter the code only manipulates the front few items. The list is being treated as a stack. This stack represents a work stream — each item in the stack is a fragment of the document which hasn’t been laid out yet. The top item is the <em>next</em> fragment to be laid out.</p>
+<p>So let’s write a loop in that mutates a stack. (I’ll come back to the <code>:&lt;|&gt;</code> case — it requires special consideration!)</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> <span class="fu">Layout</span><span class="op">(</span>Document doc<span class="op">,</span> IDocumentRenderer renderer<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> stack <span class="op">=</span> <span class="kw">new</span> Stack<span class="op">&lt;(</span><span class="dt">int</span><span class="op">,</span> Document<span class="op">)&gt;();</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span><span class="dv">0</span><span class="op">,</span> doc<span class="op">));</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> <span class="op">(</span>stack<span class="op">.</span><span class="fu">Count</span> <span class="op">&gt;</span> <span class="dv">0</span><span class="op">)</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">var</span> <span class="op">(</span>indentation<span class="op">,</span> current<span class="op">)</span> <span class="op">=</span> stack<span class="op">.</span><span class="fu">Pop</span><span class="op">();</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">switch</span> <span class="op">(</span>current<span class="op">)</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">case</span> Empty<span class="op">:</span>  <span class="co">// NIL</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>                <span class="kw">break</span><span class="op">;</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">case</span> LineBreak<span class="op">:</span>  <span class="co">// LINE</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>                renderer<span class="op">.</span><span class="fu">WriteLineBreak</span><span class="op">(</span>indentation<span class="op">);</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>                <span class="kw">break</span><span class="op">;</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>            <span class="kw">case</span> <span class="fu">Text</span><span class="op">(</span><span class="dt">var</span> s<span class="op">):</span>  <span class="co">// TEXT</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>                renderer<span class="op">.</span><span class="fu">WriteText</span><span class="op">(</span>s<span class="op">);</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>                <span class="kw">break</span><span class="op">;</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>            <span class="kw">case</span> <span class="fu">Concat</span><span class="op">(</span><span class="dt">var</span> l<span class="op">,</span> <span class="dt">var</span> r<span class="op">):</span>  <span class="co">// l :&lt;&gt; r</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>                stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>indentation<span class="op">,</span> r<span class="op">));</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>                stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>indentation<span class="op">,</span> l<span class="op">));</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>                <span class="kw">break</span><span class="op">;</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>            <span class="kw">case</span> <span class="fu">Nested</span><span class="op">(</span><span class="dt">var</span> i<span class="op">,</span> <span class="dt">var</span> d<span class="op">):</span>  <span class="co">// NEST i d</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>                stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>indentation <span class="op">+</span> i<span class="op">,</span> d<span class="op">));</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>                <span class="kw">break</span><span class="op">;</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>For example, here’s a diagram of what happens to the stack when processing a document consisting of two literal strings.</p>
+<pre><code>                             +-----------+
+                             |   &quot;foo&quot;   |
++---------------------+      +-----------+      +-----------+
+| Concat(&quot;foo&quot;,&quot;bar&quot;) |      |   &quot;bar&quot;   |      |   &quot;bar&quot;   |
++---------------------+  =&gt;  +-----------+  =&gt;  +-----------+  =&gt;  +-------+
+|          ...        |      |    ...    |      |    ...    |      |  ...  |
+                                         Output:    &quot;foo&quot;          &quot;foobar&quot;
+</code></pre>
+<h2 id="backtracking"><a href="#backtracking"></a></h2>
+<p>Now let’s look at the <code>:&lt;|&gt;</code> case.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>be k ((i, x <span class="op">:&lt;|&gt;</span> y)<span class="op">:</span>z)</span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> better k</span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        (be k ((i, x)<span class="op">:</span>z))</span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        (be k ((i, y)<span class="op">:</span>z))</span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>better k x y <span class="ot">=</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> fits (w<span class="op">-</span>k) x</span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">then</span> x</span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> y</span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>fits w x <span class="op">|</span> w <span class="op">&lt;</span> <span class="dv">0</span> <span class="ot">=</span> <span class="dt">False</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>fits w <span class="dt">Nil</span> <span class="ot">=</span> <span class="dt">True</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>fits w (<span class="dt">Text</span> s x) <span class="ot">=</span> fits (w <span class="op">-</span> <span class="fu">length</span> s) x</span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>fits w (<span class="dt">Line</span> i x) <span class="ot">=</span> <span class="dt">True</span></span></code></pre></div><p>This is the key part of the layout algorithm: deciding which of two alternative layouts to use, based on whether it causes the document to overflow the available horizontal space.</p>
+<p>The stack <code>z</code> represents <em>the rest of the document</em> to be laid out. The code concatenates the first alternative <code>x</code> onto the front of the document <code>z</code> and lays out the document to see if it’ll fit in the allocated page width. If it doesn’t fit, we’ll push the fallback layout <code>y</code> onto the stack and lay that out instead.</p>
+<p>It’s important that we attempt to lay out the whole document — <code>x</code> <em>and</em> <code>z</code>, not just <code>x</code> — when seeing if it’ll fit. Choosing the <code>x</code> alternative might cause an overflow later (when processing a document that’s right now buried somewhere below the current top of the stack), even if <code>x</code> fits on its own. In other words this is a <em>backtracking</em> operation: if a layout with <code>x</code> overflows later in the line, we backtrack to the point at which we chose <code>x</code>, forgetting any layout decisions we made while rendering <code>x:z</code>.</p>
+<p>This code is tricky to port to an imperative style because it makes central use of immutability and laziness:</p>
+<ul>
+<li><strong>The rest of the document is duplicated</strong>. Using <code>z</code> twice like that requires <code>z</code> to be immutable (well, persistent). If we mutate <code>z</code> while laying out the first alternative, by pushing and popping things from it, it won’t be in the same state by the time we decide to fall back on <code>y</code> if it doesn’t fit!
+</li>
+<li><strong><code>fits</code> only reads as far as the end of the line</strong>, so backtracking is bounded to <code>lineWidth</code> characters. If the current line fits, then there’s nothing to be gained by trying a less-flat alternative. This requires lazy evaluation: we don’t want to lay out the entire document just to see whether the first line fits!
+</li>
+<li>We need some way of <em>undoing</em> any calls to the <code>IDocumentRenderer</code> that were made in the course of laying out <code>x</code>.
+</li>
+</ul>
+<blockquote class="callout callout-note">
+<h3>Aside: A Thought On Laziness</h3>
+<p></p>
+<p>Wadler wrote a function that looks like it lays out the entire document, but because the language is lazy it never actually processes more than one line at a time. Cool! But, I dunno, understanding this took me some head-scratching because this important aspect of the control flow is not visible in the text of the code. Laziness can be a mixed blessing — it lets us separate producers and consumers in novel ways, <em>but</em> it makes control flow implicit. Perhaps I’m still just not good enough at thinking lazily.</p>
+<p>(I tried implementing the backtracking behaviour <a href="https://gist.github.com/benjamin-hodgson/8b3062e9715f10b6c74f65424cab9b27">using a failure continuation</a>. The code is certainly more complex and uglier than Wadler’s — there are two mutually recursive continuation types! — but it has the benefit of being very explicit about <a href="https://gist.github.com/benjamin-hodgson/8b3062e9715f10b6c74f65424cab9b27#file-prettiercps-hs-L48">when backtracking can happen</a> and <a href="https://gist.github.com/benjamin-hodgson/8b3062e9715f10b6c74f65424cab9b27#file-prettiercps-hs-L61">what to do when it does</a>.)</p>
+</blockquote>
+<p>Anyway, we can handle the latter two issues imperatively by <em>buffering</em> the output text one line at a time. If we reach the end of the line without overflowing, we can flush the buffer’s contents out to the <code>IDocumentRenderer</code>.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> <span class="fu">Layout</span><span class="op">(</span>Document doc<span class="op">,</span> IDocumentRenderer renderer<span class="op">)</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> buffer <span class="op">=</span> <span class="kw">new</span> List<span class="op">&lt;</span><span class="dt">char</span><span class="op">&gt;();</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> stack <span class="op">=</span> <span class="kw">new</span> Stack<span class="op">&lt;(</span><span class="dt">int</span><span class="op">,</span> Document<span class="op">)&gt;();</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span><span class="dv">0</span><span class="op">,</span> doc<span class="op">));</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> <span class="op">(</span>stack<span class="op">.</span><span class="fu">Count</span> <span class="op">&gt;</span> <span class="dv">0</span><span class="op">)</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">var</span> <span class="op">(</span>indentation<span class="op">,</span> current<span class="op">)</span> <span class="op">=</span> stack<span class="op">.</span><span class="fu">Pop</span><span class="op">();</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">switch</span> <span class="op">(</span>current<span class="op">)</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">case</span> LineBreak<span class="op">:</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>                <span class="co">// Flush the buffer</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>                renderer<span class="op">.</span><span class="fu">WriteText</span><span class="op">(</span><span class="kw">new</span> <span class="dt">string</span><span class="op">(</span>buffer<span class="op">.</span><span class="fu">ToArray</span><span class="op">()));</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>                renderer<span class="op">.</span><span class="fu">WriteLineBreak</span><span class="op">(</span>indentation<span class="op">);</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>                buffer<span class="op">.</span><span class="fu">Clear</span><span class="op">();</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>                <span class="kw">break</span><span class="op">;</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>            <span class="kw">case</span> <span class="fu">Text</span><span class="op">(</span><span class="dt">var</span> s<span class="op">):</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>                buffer<span class="op">.</span><span class="fu">Add</span><span class="op">(</span>s<span class="op">);</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>                <span class="kw">break</span><span class="op">;</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>            <span class="co">// ... other cases unchanged</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>What to do in the case of an overflow? We need to reset the state of the layout algorithm to how it was before we tried to lay out <code>x</code>. This involves putting the stack back how it was at that time and also dropping any chunks that were written to the buffer since then.</p>
+<p>Let’s record every alternative we’ve tried in a separate stack of <em>choice points</em>. A choice point is a data structure containing a fallback alternative and the current state of the layout algorithm — consisting of the length of the buffer and the state of the stack. We have to make a copy of the stack because it’s mutable.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> choicePoints <span class="op">=</span> <span class="kw">new</span> Stack<span class="op">&lt;</span>ChoicePoint<span class="op">&gt;();</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="co">// ... in the switch block:</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">case</span> <span class="fu">ChoiceDoc</span><span class="op">(</span><span class="dt">var</span> x<span class="op">,</span> <span class="dt">var</span> y<span class="op">):</span>  <span class="co">// x :&lt;|&gt; y</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    choicePoints<span class="op">.</span><span class="fu">Push</span><span class="op">(</span><span class="kw">new</span> <span class="fu">ChoicePoint</span><span class="op">(</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        indentation<span class="op">,</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        y<span class="op">,</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        buffer<span class="op">.</span><span class="fu">Count</span><span class="op">,</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">Copy</span><span class="op">(</span>stack<span class="op">)</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="op">));</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>indentation<span class="op">,</span> x<span class="op">));</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">break</span><span class="op">;</span></span></code></pre></div><p>Now when an overflow happens we can backtrack to the last choice point. And if we reach the end of the line without overflowing, we can discard any remaining choice points.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">case</span> <span class="fu">Text</span><span class="op">(</span><span class="dt">var</span> s<span class="op">):</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    buffer<span class="op">.</span><span class="fu">AddRange</span><span class="op">(</span>s<span class="op">);</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>buffer<span class="op">.</span><span class="fu">Count</span> <span class="op">&gt;</span> LineWidth <span class="op">&amp;&amp;</span> choicePoints<span class="op">.</span><span class="fu">Count</span> <span class="op">&gt;</span> <span class="dv">0</span><span class="op">)</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">Backtrack</span><span class="op">();</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">break</span><span class="op">;</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="kw">case</span> LineBreak<span class="op">:</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    renderer<span class="op">.</span><span class="fu">WriteText</span><span class="op">(</span><span class="kw">new</span> <span class="dt">string</span><span class="op">(</span>buffer<span class="op">.</span><span class="fu">ToArray</span><span class="op">()));</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    renderer<span class="op">.</span><span class="fu">WriteLineBreak</span><span class="op">(</span>indentation<span class="op">);</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    buffer<span class="op">.</span><span class="fu">Clear</span><span class="op">();</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">Commit</span><span class="op">();</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">break</span><span class="op">;</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> <span class="fu">Backtrack</span><span class="op">()</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">var</span> <span class="op">(</span>i<span class="op">,</span> y<span class="op">,</span> bufLen<span class="op">,</span> s<span class="op">)</span> <span class="op">=</span> choicePoints<span class="op">.</span><span class="fu">Pop</span><span class="op">();</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>    stack <span class="op">=</span> s<span class="op">;</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>    buffer<span class="op">.</span><span class="fu">RemoveRange</span><span class="op">(</span>bufLen<span class="op">,</span> buffer<span class="op">.</span><span class="fu">Count</span> <span class="op">-</span> bufLen<span class="op">);</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>i<span class="op">,</span> y<span class="op">));</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> <span class="fu">Commit</span><span class="op">()</span></span>
+<span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a>    choicePoints<span class="op">.</span><span class="fu">Clear</span><span class="op">();</span></span>
+<span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="a-cue-from-prolog"><a href="#a-cue-from-prolog">A Cue From Prolog</a></h2>
+<p>Copying the stack when we create a choice point is ugly and inefficient: each copy operation takes linear time and space, and we make a linear number of copies (one for every choice point), resulting in quadratic performance.</p>
+<p>I thought about trying to amortise the copying operation with some sort of copy-on-write mechanism. But around the time I was working on this library I’d been <a href="https://github.com/a-yiorgos/wambook">reading about Warren’s Abstract Machine</a> — a backend for Prolog implementations — and that gave me a better idea.</p>
+<p>In the WAM, choice points are stored <em>on the execution stack</em> interspersed with the predicates’ stack frames. Things are arranged such that choice points are only popped from the stack after backtracking, not during normal execution. This prevents any preceding stack frames from being discarded, so that the state of the call stack can be restored upon backtracking. (The relevant section of <a href="https://github.com/a-yiorgos/wambook">the book</a> is Section 4.1, <em>Environment Protection</em>.)</p>
+<p>We can apply this idea to the layout engine. The items in the work stream will now be either a <code>Document</code> to be rendered or a choice point.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">case</span> <span class="fu">ChoiceDoc</span><span class="op">(</span><span class="dt">var</span> x<span class="op">,</span> <span class="dt">var</span> y<span class="op">):</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        indentation<span class="op">,</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span> <span class="fu">ChoicePoint</span><span class="op">(</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>            y<span class="op">,</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>            buffer<span class="op">.</span><span class="fu">Count</span><span class="op">,</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>            canBacktrack<span class="op">,</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>            continuation<span class="op">:</span> stack<span class="op">.</span><span class="fu">Count</span> <span class="op">-</span> <span class="dv">1</span>  <span class="co">// see below</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="op">)</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="op">));</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>indentation<span class="op">,</span> x<span class="op">));</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    canBacktrack <span class="op">=</span> <span class="kw">true</span><span class="op">;</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">break</span><span class="op">;</span></span></code></pre></div><p>The stack transition looks like this (supposing that the <code>Choice</code> document is encountered when the stack has two items):</p>
+<pre><code>                          +------------------+
+3                         |         x        |
+    +--------------+      +------------------+
+    |              |      |   ChoicePoint    |
+2   | Choice(x, y) |      | Continuation = 1 |
+    |              |      |   Fallback = y   |
+    +--------------+  =&gt;  +------------------+
+1   |     ...      |      |        ...       |
+    +--------------+      +------------------+
+0   |              |      |                  |
+</code></pre>
+<p>Upon encountering a choice point in the work stream, we’ll <em>leave the choice point where it is</em> and continue rendering the document that’s underneath it. This may result in new document fragments being piled on top of the choice point (and then being processed themselves). That means we’ll likely encounter each choice point multiple times. Each choice point will maintain a <em>continuation pointer</em> to the next document fragment to render in the non-backtracking code path.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">case</span> ChoicePoint cp<span class="op">:</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> continuation <span class="op">=</span> <span class="fu">GetContinuation</span><span class="op">(</span>cp<span class="op">.</span><span class="fu">Continuation</span><span class="op">);</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>continuation <span class="op">&lt;</span> <span class="dv">0</span><span class="op">)</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        <span class="co">// We’ve processed the whole document!</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        renderer<span class="op">.</span><span class="fu">WriteText</span><span class="op">(</span><span class="kw">new</span> <span class="dt">string</span><span class="op">(</span>buffer<span class="op">.</span><span class="fu">ToArray</span><span class="op">()));</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span><span class="op">;</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// put the choice point back where it was</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// and process the continuation</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>    cp<span class="op">.</span><span class="fu">Continuation</span> <span class="op">=</span> continuation <span class="op">-</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>indentation<span class="op">,</span> cp<span class="op">));</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    stack<span class="op">.</span><span class="fu">Push</span><span class="op">(</span>stack<span class="op">[</span>continuation<span class="op">]);</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">break</span><span class="op">;</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> <span class="fu">GetContinuation</span><span class="op">(</span><span class="dt">int</span> i<span class="op">)</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> <span class="op">(</span>i <span class="op">&gt;=</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> stack<span class="op">[</span>i<span class="op">]</span> <span class="kw">is</span> ChoicePoint cp<span class="op">)</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>        i <span class="op">=</span> cp<span class="op">.</span><span class="fu">Continuation</span><span class="op">;</span></span>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="22"><a href="#22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> i<span class="op">;</span></span>
+<span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>The stack transition looks like this. The document fragment that was at the <code>Continuation</code> index is duplicated to the top of the stack.</p>
+<pre><code>                              +------------------+
+3                             |        z         |
+    +------------------+      +------------------+
+    |   ChoicePoint    |      |   ChoicePoint    |
+2   | Continuation = 1 |      | Continuation = 0 |
+    |   Fallback = y   |      |   Fallback = y   |
+    +------------------+  =&gt;  +------------------+
+1   |        z         |      |        z         |
+    +------------------+      +------------------+
+0   |       ...        |      |       ...        |
+</code></pre>
+<p>When backtracking, we’ll discard any stack items on top of the latest choice point.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> <span class="fu">Backtrack</span><span class="op">()</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> <span class="op">(</span>stack<span class="op">.</span><span class="fu">Count</span> <span class="op">&gt;</span> <span class="dv">0</span><span class="op">)</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">var</span> <span class="op">(</span>indentation<span class="op">,</span> item<span class="op">)</span> <span class="op">=</span> stack<span class="op">.</span><span class="fu">Pop</span><span class="op">();</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> <span class="op">(</span>item <span class="kw">is</span> <span class="fu">ChoicePoint</span><span class="op">(</span><span class="dt">var</span> y<span class="op">,</span> <span class="dt">var</span> bufLen<span class="op">,</span> <span class="dt">var</span> b<span class="op">,</span> _<span class="op">))</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>            stack<span class="op">.</span><span class="fu">Push</span><span class="op">((</span>indentation<span class="op">,</span> y<span class="op">));</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>            buffer<span class="op">.</span><span class="fu">RemoveRange</span><span class="op">(</span>bufLen<span class="op">,</span> buffer<span class="op">.</span><span class="fu">Count</span> <span class="op">-</span> bufLen<span class="op">);</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>            canBacktrack <span class="op">=</span> b<span class="op">;</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span><span class="op">;</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Finally, when we reach the end of a line, any choice points (and the document fragments they were protecting) can be discarded. The <code>Empty</code> document does double duty as a tombstone.</p>
+<div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> <span class="fu">Commit</span><span class="op">()</span></span>
+<span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// why iterate backwards?</span></span>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// https://github.com/benjamin-hodgson/Gutenberg/blob/9ce96d354806ccb7d9c33d89514108045951b3b8/Gutenberg/LayoutEngine.cs#L395-L400</span></span>
+<span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> <span class="op">(</span><span class="dt">var</span> i <span class="op">=</span> stack<span class="op">.</span><span class="fu">Count</span> <span class="op">-</span> <span class="dv">1</span><span class="op">;</span> i <span class="op">&gt;=</span> <span class="dv">0</span><span class="op">;</span> i<span class="op">--)</span></span>
+<span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">var</span> <span class="op">(</span>_<span class="op">,</span> item<span class="op">)</span> <span class="op">=</span> stack<span class="op">[</span>i<span class="op">];</span></span>
+<span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> <span class="op">(</span>stack<span class="op">[</span>i<span class="op">]</span> <span class="kw">is</span> ChoicePoint cp<span class="op">)</span></span>
+<span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>            <span class="co">// Everything between a ChoicePoint and</span></span>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>            <span class="co">// its continuation has been written to</span></span>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>            <span class="co">// the renderer.</span></span>
+<span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">for</span> <span class="op">(</span><span class="dt">var</span> j <span class="op">=</span> cp<span class="op">.</span><span class="fu">Continuation</span> <span class="op">+</span> <span class="dv">1</span><span class="op">;</span> j <span class="op">&lt;=</span> i<span class="op">;</span> j<span class="op">++)</span></span>
+<span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>            <span class="op">{</span></span>
+<span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>                stack<span class="op">[</span>j<span class="op">]</span> <span class="op">=</span> <span class="op">(</span><span class="dv">0</span><span class="op">,</span> <span class="kw">new</span> <span class="fu">Empty</span><span class="op">());</span></span>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+]]></summary>
+</entry>
+<entry>
     <title>Incremental T4 Text Templating</title>
     <link href="http://www.benjamin.pizza/posts/2022-11-28-incremental-t4-text-templating.html" />
     <id>http://www.benjamin.pizza/posts/2022-11-28-incremental-t4-text-templating.html</id>
