@@ -30,7 +30,7 @@ printf(
 );
 ```
 
-So a given document can be laid out a number of different ways. The layout algorithm’s job is to choose the best layout — meaning one which makes good use of the available horizontal space and doesn’t introduce more line breaks than necessary.
+Typically you'll annotate your document with several different sets of line break hints. So a given document can be laid out in a number of ways. The layout algorithm’s job is to choose the best layout — meaning one which makes good use of the available horizontal space and doesn’t introduce more line breaks than necessary.
 
 Internally, the notion of a _choice of layouts_ is represented by the `:<|>` constructor: `doc1 :<|> doc2` means “`doc1` is a preferable layout, but `doc2` can be used as a fallback if `doc1` causes the text to overflow the page width”. The layout algorithm takes a document containing `:<|>`s and produces one without.
 
