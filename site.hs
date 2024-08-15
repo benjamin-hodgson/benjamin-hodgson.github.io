@@ -269,11 +269,10 @@ linkifyHeaders = do
                     Just ident -> bd { Md.blockLines = addLink (Md.blockLines bd) ident }
             | otherwise = bd
 
-        addLink [line@(_:_)] ident =
-            let (start, end) = (Md.tokPos (head line), Md.tokPos (last line))
-                linkDest = [sym '(' end, sym '#' end] ++ Md.tokenize "" ident ++ [sym ')' end]
-                newLine = [sym '[' start] ++ line ++ [sym ']' end] ++ linkDest
-            in [newLine]
+        addLink [line@(t1:_)] ident =
+            let l = Text.strip (Md.untokenize line)
+                newLine = "[" <> l <> "](#" <> ident <> ")"
+            in [Md.tokenize "" newLine]
         addLink lines _ = lines
 
         sym s loc = Md.Tok (Md.Symbol s) loc (Text.singleton s)
