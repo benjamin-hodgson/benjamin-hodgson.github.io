@@ -1,16 +1,13 @@
 ---
-tags:
-  - functional-programming
-  - logic-programming
-  - blog
-  - review
-date: 2024-08-06
+title: Prettier. Happier. More Imperative.
+date: 2024-08-13
 ---
 Phil Wadler’s pearl [_A Prettier Printer_](https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf) is a classic example of functional design. Starting with a simple model and some algebraic laws, Wadler _derives_ an implementation of a well behaved layout algorithm. It’s a great read — go and read it if you haven’t!
 
 I learned a lot about Wadler’s algorithm by translating it to an imperative language. I think Wadler’s explanation skims over a couple of interesting behavioural details of his algorithm, and those details are actually a little easier to see in an imperative setting.
 
 You can find (a productionised version of) the code I’m going to present today [in my library `Gutenberg`](https://github.com/benjamin-hodgson/Gutenberg/blob/main/Gutenberg/LayoutEngine.cs). As you’ll see, the code fuses together lots of my favourite programming ideas: it’s a combinator library, backed by a logic programming engine, written in an imperative style! Let’s dive in.
+
 
 ## Wadler’s Code
 
@@ -71,6 +68,7 @@ fits w (Line i x) = True
 
 Let’s try to reconstruct Wadler’s code in an imperative style.
 
+
 ## Wadler’s Two Documents
 
 Section 3 of the paper is all about designing an efficient representation for documents. Wadler calls it `DOC`. It took me a while to grasp the reason for the new name: he’s keeping the old `Doc` around (in modified form — it lacks the `Union` constructor).
@@ -98,6 +96,7 @@ interface IDocumentRenderer
     void WriteLineBreak(int indentation);
 }
 ```
+
 
 ## `best` is a Stack Machine
 
@@ -157,6 +156,7 @@ For example, here's a diagram of what happens to the stack when processing a con
 |          ...        |      |    ...    |      |    ...    |      |  ...  |
                                          Output:    "foo"          "foobar"
 ```
+
 
 ## Backtracking
 
@@ -276,6 +276,7 @@ void Commit()
     choicePoints.Clear();
 }
 ```
+
 
 ## A Cue From Prolog
 
