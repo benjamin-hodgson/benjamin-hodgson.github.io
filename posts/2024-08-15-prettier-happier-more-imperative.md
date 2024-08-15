@@ -2,6 +2,7 @@
 title: Prettier. Happier. More Imperative.
 date: 2024-08-15
 ---
+
 Phil Wadler’s pearl [_A Prettier Printer_](https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf) is a classic example of functional design. Starting with a simple model and some algebraic laws, Wadler _derives_ an implementation of a well behaved layout algorithm. It’s a great read — go and read it if you haven’t! (I’m going to assume you have read it and try not to recapitulate too much below.)
 
 I learned a lot about Wadler’s algorithm by translating it to an imperative language. I think Wadler’s explanation skims over a couple of interesting behavioural details of his algorithm, and those details are actually a little easier to see in an imperative setting.
@@ -112,7 +113,7 @@ best w k x = be k [(0, x)]
 
 The list is initialised to a single item and thereafter the code only manipulates the front few items. The list is being treated as a stack. This stack represents a work stream — each item in the stack is a fragment of the document which hasn’t been laid out yet. The top item is the _next_ fragment to be laid out.
 
-So let’s write a loop in that mutates a stack. (I’ll come back to the `:<|>` case — it requires special consideration!)
+So let’s write a loop that mutates a stack. (I’ll come back to the `:<|>` case — it requires special consideration!)
 
 ```csharp
 void Layout(Document doc, IDocumentRenderer renderer)
