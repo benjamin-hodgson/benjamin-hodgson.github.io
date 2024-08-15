@@ -145,7 +145,7 @@ void Layout(Document doc, IDocumentRenderer renderer)
 }
 ```
 
-For example, here's a diagram of what happens to the stack when processing a concatenated document.
+For example, here's a diagram of what happens to the stack when processing a document consisting of two literal strings.
 
 ```
                              +-----------+
