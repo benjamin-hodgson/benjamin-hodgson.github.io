@@ -6,7 +6,7 @@ Phil Wadler’s pearl [_A Prettier Printer_](https://homepages.inf.ed.ac.uk/wadl
 
 I learned a lot about Wadler’s algorithm by translating it to an imperative language. I think Wadler’s explanation skims over a couple of interesting behavioural details of his algorithm, and those details are actually a little easier to see in an imperative setting.
 
-You can find (a productionised version of) the code I’m going to present today [in my library `Gutenberg`](https://github.com/benjamin-hodgson/Gutenberg/blob/main/Gutenberg/LayoutEngine.cs). As you’ll see, the code fuses together lots of my favourite programming ideas: it’s a combinator library, backed by a logic programming engine, written as a stack machine! Let’s dive in.
+You can find (a productionised version of) the code I’m going to present today [in my library `Gutenberg`](https://github.com/benjamin-hodgson/Gutenberg/blob/main/Gutenberg/LayoutEngine.cs). As you’ll see, the code fuses together lots of my favourite programming ideas: it’s a combinator library, with a purely functional front end, backed by a logic programming engine, written as a stack machine! Let’s dive in.
 
 
 ## Wadler’s Code
