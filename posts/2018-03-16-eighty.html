@@ -46,9 +46,7 @@
             
 <p>HTML templating systems are great but they sure are complex. ASP.NET’s Razor, for example, is a whole new programming language! While Razor does happen to have a large chunk of C# embedded within it, and it works by generating and then compiling C# code, it’s still a separate language with a separate syntax, separate abstraction techniques, separate compiler tooling, a separate file type, and separate (and usually inferior) editor support. All this for a task as simple and common as generating HTML!</p>
 <p>This overhead can be worth it if you’re building a complex web application, but for simple tools such as report generators or email batch mailers Razor is unwieldy. Many people in these situations resort to generating their own HTML, either by building strings manually or by imperatively building tags using .NET’s supplied XML manipulation APIs. But there’s a whole world of possible designs out there, and there’s a lot of space in between “complex templating language” and “build strings by hand”.</p>
-<h2 id="eighty"><a href="#eighty">Eighty
-
-</a></h2>
+<h2 id="eighty"><a href="#eighty">Eighty</a></h2>
 <p><a href="https://github.com/benjamin-hodgson/Eighty">Eighty</a> (as in <em>eigh-ty-M-L</em>) is my attempt at striking a balance between these two extremes: not so abstract as to constitute a separate programming language, but not so concrete that you have to manipulate XML tags or strings manually. It’s a simple embedded domain-specific language which piggybacks on C#’s syntax, enabling you to write code resembling the HTML you’re generating. Rather than embedding C# into an HTML generator, Eighty embeds an HTML generator into C#.</p>
 <p>Here’s an example from <a href="https://github.com/benjamin-hodgson/Eighty/blob/master/README.md">the readme</a>:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> html <span class="op">=</span> <span class="fu">article</span><span class="op">(</span>@class<span class="op">:</span> <span class="st">&quot;readme&quot;</span><span class="op">).</span><span class="fu">_</span><span class="op">(</span></span>
@@ -70,9 +68,7 @@
 <li>Strings can be implicitly converted to <code>Html</code> and are interpreted as HTML text. Text is HTML-encoded by default. You can opt out of this using the <code>Raw</code> method.
 </li>
 </ul>
-<h2 id="eighty-vs-razor"><a href="#eighty-vs-razor">Eighty vs Razor
-
-</a></h2>
+<h2 id="eighty-vs-razor"><a href="#eighty-vs-razor">Eighty vs Razor</a></h2>
 <p>Of course, C# code will only ever look <em>a bit</em> like HTML. Razor code looks much more like HTML than this! This can be a drawback when you’re working with designers who want to read and write HTML — I’m planning to write a tool to convert HTML text into an Eighty expression to partially ease this pain point. But Eighty has two big advantages which make it simpler and easier than Razor to program with:</p>
 <ol>
 <li>It plugs into your existing system. You don’t require any extra tools to work with Eighty: if you can compile C#, you can use Eighty.
@@ -81,7 +77,7 @@
 </li>
 </ol>
 <p>To illustrate the second point, here are some examples of how you might emulate some of Razor’s programming constructs using Eighty. In many of these cases Eighty does a better job than Razor of allowing abstraction and code reuse, because Eighty is embedded within C# rather than layered on top of C#.</p>
-<h3 id="models"><a href="#models"></a></h3>
+<h3 id="models"><a href="#models">Models</a></h3>
 <p>In Razor, each view file you write declares a <em>model type</em> — the type of object it expects you to pass in to direct the generation of HTML. You use the <code>@model</code> directive at the top of your file, and then you can access members of the model in your Razor code.</p>
 <pre><code class="language-cshtml">@model ExampleModel
 
@@ -140,7 +136,7 @@
 <p><code>Html</code> values being ordinary C# values, Eighty actually supports more types of reuse than Razor does. For example, you can pass a chunk of HTML as an argument, which is not easy to do with Razor:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>Html <span class="fu">RepeatFiveTimes</span><span class="op">(</span>Html html<span class="op">)</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> <span class="fu">_</span><span class="op">(</span>Enumerable<span class="op">.</span><span class="fu">Repeat</span><span class="op">(</span>html<span class="op">,</span> <span class="dv">5</span><span class="op">));</span></span></code></pre></div><p>Since <code>Html</code> values are immutable, you can safely share them between different HTML documents, across different threads, etc. Sharing parts of your HTML document that don’t change can be an important optimisation.</p>
-<h3 id="layouts"><a href="#layouts"></a></h3>
+<h3 id="layouts"><a href="#layouts">Layouts</a></h3>
 <p>Razor lets you define a shared <em>layout</em> page, which acts as a template for the other pages in your application. For example, you might put the <code>html</code> and <code>body</code> tags in a layout page, and use the built in <code>RenderBody</code> helper to render the concrete page’s body inside the <code>body</code> tag. This is also where global navs and the like are defined.</p>
 <p>One way to handle global layouts and sections in Eighty would be to define an abstract base class. Each section becomes an abstract method, allowing individual pages to fill in their own HTML for those sections.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Layout</span>
@@ -186,9 +182,7 @@
 <span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">protected</span> <span class="kw">override</span> Html <span class="fu">Body</span><span class="op">()</span></span>
 <span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="co">/* The body of the dashboard page */</span><span class="op">;</span></span>
-<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="twenty"><a href="#twenty">Twenty
-
-</a></h2>
+<span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="twenty"><a href="#twenty">Twenty</a></h2>
 <p>Eighty comes bundled with a second HTML generation library called Twenty. Twenty is harder to use correctly than Eighty, and its API is more verbose, but it’s faster.</p>
 <p>HTML tags have to be balanced: every opening tag has to have a matching closing tag and vice versa. While an <code>Html</code> value is being written to a <code>TextWriter</code>, Eighty manages the stack of currently-open tags using the call stack. Each tag writes its opening tag, tells its children to write themselves, and then writes its closing tag. This is possible because <code>Html</code> is an ordinary reference type; the objects you build with methods like <code>p()</code> and <code>h1()</code> are tree-shaped objects representing a DOM of statically-unknown size.</p>
 <p>Twenty instead takes an imperative view of HTML generation. Each tag method writes an opening tag to the <code>TextWriter</code> immediately, and returns an <code>IDisposable</code> which writes out the closing tag when it’s disposed. You, the programmer, use C#’s <code>using</code> statement to ensure that the <code>Dispose</code> method is called as soon as the children have been written. The structure of your HTML document is still visible in the code, but it’s present in the nesting of <code>using</code> statements, rather than by the structure of a tree-shaped object.</p>
@@ -221,9 +215,7 @@
 </li>
 </ul>
 <p>Given Twenty’s limitations, my advice is to write your markup using <code>Html</code>, and convert it to <code>HtmlBuilder</code> if you see that building <code>Html</code> values is a performance bottleneck.</p>
-<h2 id="performance"><a href="#performance">Performance
-
-</a></h2>
+<h2 id="performance"><a href="#performance">Performance</a></h2>
 <p>Eighty is pretty fast. I wrote a benchmark testing how long it takes to spit out around 30kB of HTML (with some encoding characters thrown in for good measure) while running in an in-memory hosted MVC application. Eighty’s synchronous code path does this around three times faster than Razor, and Twenty runs about 30% faster than that — so, four times faster than Razor.</p>
 <p>What have I done to make Eighty fast? Honestly, not a huge amount. There are a only few interesting optimisations in Eighty’s codebase.</p>
 <ul>

@@ -44,9 +44,7 @@
             
 <p>I’ve been thinking a bit about how to build a library of tools to handle variables, capture-avoiding substitution, etc, on top of <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a>. Pretty much every compiler needs to deal with variables, and they’re notoriously tricky to handle correctly.</p>
 <p>I’m a way off having a final design, but I thought I’d publish my unfinished notes, hastily written in an afternoon. You’ll see a few Thinking Emojis throughout this article, indicating things I haven’t figured out yet. Please do get in touch if any of this gives you ideas.</p>
-<h2 id="a-quick-look-at-some-prior-art"><a href="#a-quick-look-at-some-prior-art">A quick look at some prior art
-
-</a></h2>
+<h2 id="a-quick-look-at-some-prior-art"><a href="#a-quick-look-at-some-prior-art">A quick look at some prior art</a></h2>
 <p><a href="https://hackage.haskell.org/package/unbound"><strong><code>unbound</code></strong></a>/<a href="https://hackage.haskell.org/package/unbound-generics"><strong><code>unbound-generics</code></strong></a></p>
 <ul>
 <li><code>Name</code> is an abstract data type with fixed representation.
@@ -126,9 +124,7 @@
 <li>Traverse your own terms, but <code>derive</code> magic assists with implementing the library’s traits.
 </li>
 </ul>
-<h2 id="representing-names"><a href="#representing-names">Representing Names
-
-</a></h2>
+<h2 id="representing-names"><a href="#representing-names">Representing Names</a></h2>
 <p>I definitely want to use de Bruijn indexes (managed by the library) for bound variables.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">readonly</span> <span class="kw">struct</span> Bound</span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
@@ -158,9 +154,7 @@
 <span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">bool</span> IsBound <span class="op">=&gt;</span> free<span class="op">.</span><span class="fu">OriginalName</span> <span class="op">==</span> <span class="kw">null</span><span class="op">;</span></span>
 <span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">bool</span> IsFree <span class="op">=&gt;</span> free<span class="op">.</span><span class="fu">OriginalName</span> <span class="op">!=</span> <span class="kw">null</span><span class="op">;</span></span>
 <span id="17"><a href="#17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>How much of this should be public? Should these be structs or classes? (<code>Name</code> is like 4 words.) 🤔</p>
-<h2 id="representing-scopes"><a href="#representing-scopes">Representing Scopes
-
-</a></h2>
+<h2 id="representing-scopes"><a href="#representing-scopes">Representing Scopes</a></h2>
 <p>I definitely want an explicit type to represent a scope. I personally think <code>BindingSite</code> is a slightly better name, although perhaps that should be reserved for names inside patterns? 🤔</p>
 <p>The idea is to treat <code>BindingSite</code> as an abstract data type. To create a <code>BindingSite</code> (such as when parsing a lambda expression), you call <code>Binder.Bind(variables, body)</code>. The binder traverses the <code>body</code> AST, looking for variables which are bound by the lambda and converting them to <code>Bound</code> de Bruijn indexes. Likewise, when you need to go inside a <code>BindingSite</code>, you have to explicitly unbind it.</p>
 <p>Don’t want to discard the original names, of course.</p>
@@ -260,9 +254,7 @@
 <span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>        <span class="co">//                      ^ damn!</span></span>
 <span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>That unsafe cast really is unsafe, because a <code>Rewrite</code> operation is liable to change the type of the pattern. Maybe patterns should be read-only? Do I need to split the read/write parts of <code>IRewritable</code>? 🤔</p>
 <p><strong>Idea 4</strong>: A reflection-based API, perhaps with attributes? Seems like it definitely has legs, but I find reflection-based APIs distasteful — they’re hard to reason about and hard to program with. (It’s much easier to manipulate values than code.) I’d prefer to come up with a <em>model</em>, which you can manipulate directly, and then layer a reflection API on top.</p>
-<h2 id="asts-with-binding-structure"><a href="#asts-with-binding-structure">ASTs with Binding Structure
-
-</a></h2>
+<h2 id="asts-with-binding-structure"><a href="#asts-with-binding-structure">ASTs with Binding Structure</a></h2>
 <p>This part is fairly worked out I think. I’m assuming that your syntax tree has a case for variables, containing a <code>Name</code> (and no children) and a case for binding sites, containing a <code>BindingSite</code> (and no children). So all we need to add to <code>IRewritable</code> is a way to identify those nodes:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IBindable<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> IRewritable<span class="op">&lt;</span>T<span class="op">&gt;</span> where T <span class="op">:</span> IBindable<span class="op">&lt;</span>T<span class="op">&gt;</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
@@ -272,9 +264,7 @@
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span> <span class="fu">TryGetBindingSite</span><span class="op">(</span><span class="kw">out</span> BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span> bindingSite<span class="op">);</span></span>
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">SetBindingSite</span><span class="op">(</span>BindingSite<span class="op">&lt;</span>T<span class="op">&gt;</span> newBindingSite<span class="op">);</span></span>
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Not so different than <a href="../posts/2019-12-15-generic-unification-with-sawmill.html"><code>IUnifiable</code></a>.</p>
-<h2 id="freshening"><a href="#freshening">Freshening
-
-</a></h2>
+<h2 id="freshening"><a href="#freshening">Freshening</a></h2>
 <p>When you go under a binder you (usually) want to replace the de Bruijn indexes in there with named variables. Those variables need to be <em>fresh</em>, that is, they need to not clash with (or <em>capture</em>) any other variables in scope. As a UX concern, you probably want the fresh name to be somewhat similar to the name the programmer typed.</p>
 <p>So we have <code>IFreshener</code>:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IFreshener</span>
@@ -322,9 +312,7 @@
 <span id="30"><a href="#30" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
 <span id="31"><a href="#31" aria-hidden="true" tabindex="-1"></a>        _names<span class="op">.</span><span class="fu">Pop</span><span class="op">();</span></span>
 <span id="32"><a href="#32" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="traversing-the-tree"><a href="#traversing-the-tree">Traversing the tree
-
-</a></h2>
+<span id="33"><a href="#33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="traversing-the-tree"><a href="#traversing-the-tree">Traversing the tree</a></h2>
 <p>OK, finally we have everything we need to bind and unbind variables in ASTs. Let’s suppose we went with <strong>Idea 2</strong> from above — just storing a flat list of names at the binding site.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">class</span> Binder</span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>

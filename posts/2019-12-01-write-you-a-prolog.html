@@ -52,9 +52,7 @@
     </ol>
 </nav>
 <p>You’ll find all the code for this series <a href="https://github.com/benjamin-hodgson/Amateurlog">on GitHub</a>.</p>
-<h2 id="whistle-stop-introduction-to-prolog"><a href="#whistle-stop-introduction-to-prolog">Whistle-Stop Introduction to Prolog
-
-</a></h2>
+<h2 id="whistle-stop-introduction-to-prolog"><a href="#whistle-stop-introduction-to-prolog">Whistle-Stop Introduction to Prolog</a></h2>
 <p>Prolog is a <em>logic programming</em> language. Prolog code consists of a collection of <em>rules</em>. Each rule says “X is true if Y (and Z and…) is true”. A rule is a logical axiom, with a set of premises (on the right) and a conclusion you can draw from those premises (on the left).</p>
 <p>As an example, you might say that a <code>Person</code> wants a certain <code>Food</code> if they’re hungry and they like that food. And — I don’t know about you — but I’ll eat something I really love even if I’m not hungry.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>wants(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>) <span class="kw">:-</span> hungry(<span class="dt">Person</span>)<span class="kw">,</span> likes(<span class="dt">Person</span><span class="kw">,</span> <span class="dt">Food</span>)<span class="kw">.</span></span>
@@ -97,9 +95,7 @@
 <li>With this new goal we try the first clause again. Prolog tries to unify <code>last(cons(oranges, nil), oranges)</code> with <code>last(cons(X, nil), X)</code>. This succeeds when <code>X = oranges</code>. Since there are no conditions on the right hand side (this clause is the base case of the recursive function), we’re done! The query succeeded; <code>oranges</code> is indeed the last element of the list.
 </li>
 </ol>
-<h2 id="representing-prolog-syntax"><a href="#representing-prolog-syntax">Representing Prolog Syntax
-
-</a></h2>
+<h2 id="representing-prolog-syntax"><a href="#representing-prolog-syntax">Representing Prolog Syntax</a></h2>
 <p>Hopefully blasting through Prolog’s core in only a few paragraphs was enough to get you excited about implementing it! The first step in interpreting a programming lanugage is to come up with a way to represent programs in that language. That means writing down some types representing the language’s <em>abstract syntax tree</em>. The middle part of the diagram I drew for <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">my post announcing Sawmill</a>:</p>
 <img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
 <p>As the name suggests, the exercise is to come up with an abstract representation of Prolog’s syntax. Think beyond the specifics of how the language is presented as text (such as where parentheses go and so on); we want to talk about the high-level grammatical constructs and how they relate to one another. This mode of thinking is akin to thinking about English at the level of sentence structure — subordinate clauses and so on — rather than spelling and punctuation.</p>
@@ -163,9 +159,7 @@
 <span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div><img src="../images/2019-12-01-write-you-a-prolog/anatomy.png" alt="Anatomy of a Rule" />
 <p>Prolog’s rules engine is based entirely on manipulating terms, so these three classes will turn out to be quite important in our little interpreter.</p>
-<h2 id="implementing-irewritable"><a href="#implementing-irewritable">Implementing <code>IRewritable</code>
-
-</a></h2>
+<h2 id="implementing-irewritable"><a href="#implementing-irewritable">Implementing <code>IRewritable</code></a></h2>
 <p><code>Term</code> is an immutable type with a recursive tree-shaped structure — a predicate’s arguments can be any <code>Term</code>, including more predicates. My generic programming library <a href="https://github.com/benjamin-hodgson/Sawmill">Sawmill</a> is filled with tools for working with immutable trees! As a Sawmill user, you implement its core <code>IRewritable</code> interface on your tree structure, and Sawmill takes care of much of the boilerplate of traversing the tree for you. (See <a href="https://www.benjamin.pizza/posts/2017-11-13-recursion-without-recursion.html">my earlier post</a> for an introduction to Sawmill.)</p>
 <p><code>IRewritable</code> is all about addressing the immediate children of the current node in a tree. It has three methods, <code>CountChildren</code>, <code>GetChildren</code>, and <code>SetChildren</code>, which we have to implement for each subclass of our <code>Term</code> tree. Variables and atoms don’t have child terms — only predicates.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">abstract</span> <span class="kw">class</span> Term <span class="op">:</span> IRewritable<span class="op">&lt;</span>Term<span class="op">&gt;</span></span>

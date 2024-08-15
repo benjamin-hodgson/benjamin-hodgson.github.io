@@ -85,9 +85,7 @@
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>This pain is caused by immutability. In an imperative setting you can say <code>order.Customer.Address.Postcode = newPostcode;</code>, although of course mutable data is less reliable and harder to work with overall. Rather than give up on immutability, functional programmers have invented a remarkable family of composable tools called <em>optics</em> for poking around inside complex datatypes. Optics are a way of describing “paths” through structures: you can compose paths together, and read and write the values at the end of those paths. I’m here today to demonstrate that C#8’s upcoming <a href="https://github.com/dotnet/csharplang/issues/52"><em>default interface methods</em></a> are great at modelling optics.</p>
 <p>Let’s start with <em>lenses</em>, the family member that gave the family its name.</p>
-<h2 id="lenses"><a href="#lenses">Lenses
-
-</a></h2>
+<h2 id="lenses"><a href="#lenses">Lenses</a></h2>
 <p>A <em>lens</em> is a first-class property for an immutable object. It’s an object with a pair of methods, a <em>getter</em> which retrives the value of a property and a <em>setter</em> which updates it. Remember, we’re working with immutable data, so the setter returns a new copy of the object.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ILens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
@@ -142,9 +140,7 @@
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Here’s an early taste of a default interface implementation. The default, <em><code>Get</code>-then-<code>Set</code></em>, works correctly, but when you’re working with deeply stacked lenses it can be inefficient to walk the whole data structure twice. (This is especially true of <em>multi-lenses</em> — of which more later — which build and discard a large number of intermediate enumerables.) If <code>Map</code> were an extension method, it would be impossible for users to override it and provide a more efficient implementation.</p>
 <hr />
 <p>Powerful as they are, these lenses don’t quite scale up to cover all of the important ways to access data. Specifically, they don’t support computed properties or lists.</p>
-<h2 id="getters"><a href="#getters">Getters
-
-</a></h2>
+<h2 id="getters"><a href="#getters">Getters</a></h2>
 <p>How would you write a lens which focuses on a list’s <code>Count</code>? You can’t set <code>Count</code> directly - it measures the number of times you’ve added or removed something from the list. The only way to change the <code>Count</code> is to add or remove an item!</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CountL<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">:</span> ILens<span class="op">&lt;</span>ImmutableList<span class="op">&lt;</span>T<span class="op">&gt;,</span> <span class="dt">int</span><span class="op">&gt;</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
@@ -174,9 +170,7 @@
 <span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">public</span> T3 <span class="fu">Get</span><span class="op">(</span>T1 obj<span class="op">)</span> <span class="op">=&gt;</span> _g2<span class="op">.</span><span class="fu">Get</span><span class="op">(</span>_g1<span class="op">.</span><span class="fu">Get</span><span class="op">(</span>obj<span class="op">));</span></span>
 <span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>If you compose a lens with a getter, you get a getter. This makes sense: if any part of a given path through a data structure is read-only, then the whole path must be read-only. It Just Works™ because <code>ILens</code> is a subtype of <code>IGetter</code>. Overload resolution takes care of it: you type <code>_</code> and the compiler picks the right return type based on the types of <code>_</code>’s arguments.</p>
-<h2 id="multi-lenses"><a href="#multi-lenses">Multi-lenses
-
-</a></h2>
+<h2 id="multi-lenses"><a href="#multi-lenses">Multi-lenses</a></h2>
 <p><code>ILens</code> focuses on a single part of a structure. Its <code>Get</code> method returns a single <code>TProp</code> and its <code>Set</code> method takes a single <code>TProp</code>. This means you can’t use lenses to, for example, update the price of all the products in an order.</p>
 <p>Enter <em>multi-lenses</em>, also known as <em>traversals</em>.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> IMultiLens<span class="op">&lt;</span>T<span class="op">,</span> TProp<span class="op">&gt;</span></span>
@@ -270,9 +264,7 @@
 <span id="23"><a href="#23" aria-hidden="true" tabindex="-1"></a>    T <span class="fu">MultiSet</span><span class="op">(</span>T oldObj<span class="op">,</span> IEnumerable<span class="op">&lt;</span>TProp<span class="op">&gt;</span> newVals<span class="op">)</span></span>
 <span id="24"><a href="#24" aria-hidden="true" tabindex="-1"></a>        <span class="op">=&gt;</span> <span class="fu">Set</span><span class="op">(</span>oldObj<span class="op">,</span> newVals<span class="op">.</span><span class="fu">Single</span><span class="op">());</span></span>
 <span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><img src="../images/2018-12-06-zooming-in-on-field-accessors/hierarchy.jpg" />
-<h2 id="default-interface-implementations"><a href="#default-interface-implementations">Default Interface Implementations
-
-</a></h2>
+<h2 id="default-interface-implementations"><a href="#default-interface-implementations">Default Interface Implementations</a></h2>
 <p>The code above makes central use of default interface implementations, so it’s probably time to talk about what they are.</p>
 <p>In C#8, interfaces won’t just be type declarations any more. You’ll be allowed to write code in an interface method, to function as the default implementation of that method. Typically it’ll be written in terms of the other methods on the interface, like an extension method. They differ from extension methods, however, in that they are virtual. If an implementing class has a better (faster, typically) way of implementing the operation, it’s free to override it.</p>
 <p>Here’s an example. How would LINQ’s design look different if default interface methods had been around at the time? Today’s <a href="https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.count"><code>Count</code></a> method, an extension method, works in linear time by counting up all of the elements of the input <code>IEnumerable</code>.</p>
@@ -322,9 +314,7 @@
 <span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> <span class="fu">Count</span><span class="op">()</span> <span class="op">=&gt;</span> _count<span class="op">;</span></span>
 <span id="26"><a href="#26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Interfaces with default methods are somewhat like abstract classes with virtual methods. The main difference is that a class can implement multiple interfaces, while it can only derive from one class. So default interface implementations amount to a form of multiple inheritance! (This provoked much whingeing in <a href="https://github.com/dotnet/csharplang/issues/288">the discussion on GitHub</a>.)</p>
 <p>The optics library I’ve outlined above makes central use of multiple inheritance. <code>ILens</code> inherits its <code>MultiGet</code> implementation from <code>IGetter</code> and its <code>Map</code> implementation from <code>IMultiLens</code>. So it wouldn’t work with abstract classes; before C#8 we wouldn’t have been able to write this program. Default interface implementations add new expressive power to the language.</p>
-<h2 id="production-worthiness"><a href="#production-worthiness">Production-Worthiness
-
-</a></h2>
+<h2 id="production-worthiness"><a href="#production-worthiness">Production-Worthiness</a></h2>
 <p>Lenses are very useful in functional languages, but I would not recommend you use them in practical C#, even after the release of C#8. When you stand it next to <a href="http://hackage.haskell.org/package/lens">Haskell’s <code>lens</code> library</a>, the API I outlined above has a number of significant shortcomings.</p>
 <ul>
 <li>

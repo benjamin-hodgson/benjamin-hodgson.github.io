@@ -45,9 +45,7 @@
 
             
 <p>Happy birthday to me! I’m pleased to announce that version 2.0 of my functional parsing library, <a href="https://github.com/benjamin-hodgson/Pidgin">Pidgin</a>, is now available <a href="https://www.nuget.org/packages/Pidgin">on Nuget</a>. In this release I’ve focused on error messages, performance, and <code>Span</code> support.</p>
-<h2 id="parser-combinators"><a href="#parser-combinators">Parser Combinators
-
-</a></h2>
+<h2 id="parser-combinators"><a href="#parser-combinators">Parser Combinators</a></h2>
 <p>I haven’t written about Pidgin before, so allow me to briefly introduce it. Pidgin is a <a href="https://en.wikipedia.org/wiki/Parser_combinator"><em>parser combinator</em></a> library, meaning that it consists of three main concepts:</p>
 <ul>
 <li>A type <code>Parser</code> which models a <em>parsing process</em>
@@ -142,9 +140,7 @@
 <span id="18"><a href="#18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
 <span id="19"><a href="#19" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Result<span class="op">.</span><span class="fu">Success</span><span class="op">(</span><span class="fu">_resultSelector</span><span class="op">(</span>result1<span class="op">.</span><span class="fu">Value</span><span class="op">,</span> result2<span class="op">.</span><span class="fu">Value</span><span class="op">));</span></span>
 <span id="20"><a href="#20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="error-messages"><a href="#error-messages">Error messages
-
-</a></h2>
+<span id="21"><a href="#21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="error-messages"><a href="#error-messages">Error messages</a></h2>
 <p>Part of Pidgin’s job is to report when you gave a parser bad input. For example, the top level of a C# file must contain <code>class</code>es and <code>namespace</code>s, so feeding a C# parser the text <code>Console.WriteLine(&quot;foo&quot;);</code> (without an enclosing <code>class</code>) should fail with some information about the problem:</p>
 <pre><code>Parse error.
     unexpected 'C'
@@ -158,9 +154,7 @@
 <span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> lowPrecedence <span class="op">=</span> midPrecedence<span class="op">.</span><span class="fu">Then</span><span class="op">(</span><span class="fu">Char</span><span class="op">(</span><span class="ch">'+'</span><span class="op">).</span><span class="fu">Then</span><span class="op">(</span>midPrecedence<span class="op">).</span><span class="fu">Many</span><span class="op">());</span></span></code></pre></div><p><code>topPrecedence</code> expects a number, or a number followed by a sequence of exponents — two possibilities. <code>midPrecedence</code> therefore expects a number, or a number followed by a sequence of exponents, or a number followed by a sequence of multiplications, or a number followed by a sequence of exponents followed by a sequence of multiplications — four possibilities. <code>lowPrecedence</code> has eight possible expected inputs. The set of expected inputs blows up exponentially! Calculating the error messages in advance means you need to explore all of the (exponentially large number of) expected inputs in advance, which led to cosmologically long parser build times. And in any case, reporting a huge number of expected inputs does not make for a very good error message.</p>
 <p>I made some attempts to optimise this by using more efficient data structures, but I realised this was a losing proposition and decided to throw it out altogether in v2.0. Error messages are now computed at runtime, when the error actually occurs. This means I can be more precise about what the parser was expecting at that particular point in the input: once a parsing process has committed to a branch I can report expected inputs <em>from that branch</em>, rather than reporting all possible expected inputs.</p>
 <p>Implementing this efficiently was a challenge. Parse errors actually occur quite frequently in a parser combinator library, even in the happy path, because of the way the <em>prioritised choice</em> operator <code>Or</code> works — <code>String(&quot;foo&quot;).Or(String(&quot;bar&quot;))</code> only tries <code>bar</code> if an attempt to parse <code>foo</code> failed. So I tried to implement this change without allocating heap memory every time a parser fails. When a parser fails, it saves its expected inputs in a stack implemented on top of pooled memory (using <code>ArrayPool</code>), which are then popped if the error gets discarded. (The way that certain parsers manipulate their children’s error messages adds some interesting complications here, which I’ve described in a <a href="https://github.com/benjamin-hodgson/Pidgin/blob/60c7734393719d11714158b201c99976ec48ffb9/Pidgin/ParseState.Error.cs#L36-L74">long comment</a>.)</p>
-<h2 id="span"><a href="#span"><code>Span</code>
-
-</a></h2>
+<h2 id="span"><a href="#span"><code>Span</code></a></h2>
 <blockquote class="callout callout-note">
 <h3>Note</h3>
 <p>You can watch <a href="https://twitter.com/g3rv4">my esteemed colleague Gervasio</a> and me carrying out the work I describe here in <a href="https://www.youtube.com/watch?v=O23OLkQtiS4">a live-stream on YouTube</a>. It was pretty fun!</p>
@@ -193,9 +187,7 @@
 <span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> <span class="dt">void</span><span class="op">*</span> AsPointer<span class="op">&lt;</span>T<span class="op">&gt;(</span><span class="kw">ref</span> Span<span class="op">&lt;</span>T<span class="op">&gt;</span> span<span class="op">);</span></span>
 <span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> <span class="kw">ref</span> Span<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="fu">AsRef</span><span class="op">(</span><span class="dt">void</span><span class="op">*</span> ptr<span class="op">);</span></span>
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p><code>AsPointer</code> and <code>AsRef</code> are not expressible in C# (even <code>unsafe</code> C#); <code>System.Runtime.CompilerServices.Unsafe</code> is implemented in raw IL. My copies of those methods have stubs in C# which are filled in by rewriting the DLL’s IL in a post-compile step.</p>
-<h2 id="assorted-performance-improvements"><a href="#assorted-performance-improvements">Assorted Performance Improvements
-
-</a></h2>
+<h2 id="assorted-performance-improvements"><a href="#assorted-performance-improvements">Assorted Performance Improvements</a></h2>
 <p>Performance has always been one of Pidgin’s priorities — I’m proud that Pidgin is C#’s fastest parser combinator library (that I know of!) — but there’s always room for improvement. In my tests Pidgin still runs somewhat slower than F#’s FParsec library, for example. In this release I made some architectural changes to <code>IParseState</code> to help close that gap.</p>
 <h3 id="buffering-uniformly"><a href="#buffering-uniformly">Buffering Uniformly</a></h3>
 <p>As I mentioned earlier, Pidgin has several internal implementations of <code>IParseState</code>, each of which implements a streaming abstraction on top of a different type of input. Parsers may need to <em>backtrack</em> on failure (using the <code>Try</code> combinator), so you can’t always discard a token as soon as you’ve seen it. Some <code>IParseState</code> implementations — specifically the ones that are built on top of streaming storage (like <code>Stream</code>) — therefore <em>buffer</em> their input into an array. The ones that are backed by in-memory storage like <code>string</code> don’t need to buffer because their data is already in memory.</p>
@@ -239,7 +231,7 @@
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">bool</span> HasCurrent <span class="op">=&gt;</span> _currentPos <span class="op">&gt;=</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> _currentPos <span class="op">&lt;</span> _buffer<span class="op">.</span><span class="fu">Length</span><span class="op">;</span></span>
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> TToken Current <span class="op">=&gt;</span> _buffer<span class="op">[</span>_currentPosition<span class="op">];</span></span>
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>These properties are short and non-virtual, so they are good inlining candidates. After inlining them, the JIT sees simple array-manipulating code, which it can easily optimise in the context of the containing method. This simple change resulted in a 15-20% performance improvement across the board.</p>
-<h3 id="chunking"><a href="#chunking"></a></h3>
+<h3 id="chunking"><a href="#chunking">Chunking</a></h3>
 <p>The <code>Stream</code> version of <code>Advance</code> called <code>stream.Read()</code>, which reads and returns a single byte from the stream. This is not as efficient as <code>stream.Read(byte[])</code>, which reads a chunk of bytes from the stream and copies them into an array. (The former requires <em>n</em> virtual method calls to read <em>n</em> bytes, whereas the latter requires only <em>n / <code>array.Length</code></em>.)</p>
 <p>I replaced <code>ITokenStream</code>’s <code>Advance</code> and <code>Peek</code> methods with a method which reads a chunk of tokens into the <code>ParseState</code>’s buffer.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ITokenStream<span class="op">&lt;</span>TToken<span class="op">&gt;</span></span>
@@ -261,9 +253,7 @@
 <span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Result<span class="op">.</span><span class="fu">Success</span><span class="op">(</span>_expected<span class="op">);</span></span>
 <span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>This runs about 20% faster for long strings.</p>
-<h2 id="make-your-own-opportunities"><a href="#make-your-own-opportunities">Make Your Own Opportunities
-
-</a></h2>
+<h2 id="make-your-own-opportunities"><a href="#make-your-own-opportunities">Make Your Own Opportunities</a></h2>
 <p>Indulge me for a moment while I dispense some unsolicited career advice. For a long time, performance engineering was something that <a href="https://twitter.com/marcgravell/">other</a>, <a href="https://twitter.com/davidfowl">cleverer</a> <a href="https://mattwarren.org/">people</a> did while I observed from a distance with awe. Why is ASP.NET fast? Because the guys that wrote it are Actual Wizards.</p>
 <p>I’ve been lucky enough to work with some of those clever people for a few years now, and actually they’re not Actual Wizards. They just have more experience than me — they know how to use and interpret profiles and benchmarks, they’ve seen enough to know what does and doesn’t work, and they’ve had practice coming up with ideas to improve performance.</p>
 <p>The good news is that performance optimisation usually doesn’t involve fiddly low-level programming like this — simply being aware of when your code performs IO makes a big difference — and it’s never too early or late to start building your experience level, no matter where you are in your career. For me, that meant setting myself the goal of making my open source libraries as fast as I could. For you, it could mean picking a slow part of your codebase at work and trying to make it faster, or pair-programming with a colleague, or thoroughly reading through some unfamiliar code. Making your own opportunities to learn new things is the best way to get better.</p>

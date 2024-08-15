@@ -43,9 +43,7 @@
 
             
 <p>Given a polymorphic type, like <code>List</code>, what can we say about the relationship between different usages of that type? If <code>A</code> and <code>B</code> are related, is <code>List[A]</code> related to <code>List[B]</code>? <em>Variance</em> is the word for this type of relationship, and it turns out there are a few different answers to that question, depending on the type you’re asking about.</p>
-<h2 id="covariance"><a href="#covariance">Covariance
-
-</a></h2>
+<h2 id="covariance"><a href="#covariance">Covariance</a></h2>
 <p>Probably the most familiar situation is when the parameterised types are related in the same way as the parameter. This is the type of variance exhibited by most “container” types, like <code>List</code>.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">sealed</span> <span class="kw">abstract</span> <span class="kw">class</span> <span class="ex">List</span><span class="op">[+</span>A<span class="op">]</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a></span>
@@ -58,9 +56,7 @@
 <span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> [] <span class="kw">where</span></span>
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> f xs <span class="ot">=</span> [f x <span class="op">|</span> x <span class="ot">&lt;-</span> xs]</span></code></pre></div><p>This chimes with the intuition that a functor <code>f</code> is a container of sorts. If you can write a function to convert each <code>a</code> in the container into a <code>b</code>, then <code>fmap</code> can convert a container of <code>a</code>s into a container of <code>b</code>s by converting each item in the container.</p>
 <p>In general, a type is covariant if its parameter is used as an output. An object which produces <code>Cat</code>s can be used to produce <code>Animal</code>s. All you have to do is ignore the cattiness of the animals you get out of the producer.</p>
-<h2 id="contravariance"><a href="#contravariance">Contravariance
-
-</a></h2>
+<h2 id="contravariance"><a href="#contravariance">Contravariance</a></h2>
 <p><em>Contravariance</em>, covariance’s evil twin, is the word for when the parameterised types are related in the opposite way as the parameters. Scala’s <code>Ordering</code>, which determines which way round to put two objects (like C#’s <code>IComparer</code>), is an example of a contravariant type.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Ordering<span class="op">[-</span>A<span class="op">]</span> <span class="op">{</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">apply</span><span class="op">(</span>x <span class="op">:</span> A<span class="op">,</span> y <span class="op">:</span> A<span class="op">)</span> <span class="op">:</span> <span class="bu">Int</span></span>
@@ -77,9 +73,7 @@
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    contramap f (<span class="dt">Comparer</span> p) <span class="ot">=</span> <span class="dt">Comparer</span> (\x y <span class="ot">-&gt;</span> p (f x) (f y))</span></code></pre></div><p>If you can turn <code>b</code>s into <code>a</code>s, then you can turn a comparer of <code>a</code>s into a comparer of <code>b</code>s by converting the <code>b</code>s into <code>a</code>s before they go into the comparer. Note how <code>f</code> is applied to <code>p</code>’s inputs in the implementation of <code>contramap</code>.</p>
 <p>In general, a type is contravariant if its parameter appears as an input. An object which consumes <code>Animals</code> can be used to consume <code>Cat</code>s. All you have to do is forget about the cattiness of the animals before you put them into the consumer.</p>
 <p>Julie Moronuki has <a href="https://typeclasses.com/contravariance">the best explanation of contravariance</a> that I know of.</p>
-<h2 id="invariance"><a href="#invariance">Invariance
-
-</a></h2>
+<h2 id="invariance"><a href="#invariance">Invariance</a></h2>
 <p><em>Invariance</em> is the word for when there’s no relationship at all between different usages of a parameterised type.</p>
 <p>In Scala a type parameter unadorned with a sign is invariant. The following mutable set type is invariant:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> <span class="ex">Set</span><span class="op">[</span>A<span class="op">]</span> <span class="op">{</span></span>
@@ -105,9 +99,7 @@
 <p>Let me spell out the similarity between <code>Invariant</code> functors and Scala’s subtype invariance. For <code>Operation a</code> to be convertible to <code>Operation b</code>, <code>a</code> must be convertible to <code>b</code> <em>and</em> <code>b</code> must be convertible to <code>a</code>. For <code>Set[A]</code> to be a subtype of <code>Set[B]</code>, <code>A</code> must be a subtype of <code>B</code> <em>and</em> <code>B</code> must be a subtype of <code>A</code> (that is, they must be the same type).</p>
 <p>Note that variance is a property of the type parameter (<code>A</code>), not the type constructor (<code>List</code>/<code>Ordering</code>). A given type constructor may have multiple parameters with different variances. <code>Function1[-A, +B]</code>, for example.</p>
 <img src="../images/2019-01-11-the-fourth-type-of-variance/hierarchy.png" />
-<h2 id="combining-variances"><a href="#combining-variances">Combining Variances
-
-</a></h2>
+<h2 id="combining-variances"><a href="#combining-variances">Combining Variances</a></h2>
 <p>An object which produces a producer of <code>A</code>s effectively produces <code>A</code>s. A type with a covariant type as an output is itself covariant.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="co">// Container returns a covariant type, so Container is covariant</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> <span class="ex">Container</span><span class="op">[+</span>A<span class="op">]</span> <span class="op">{</span></span>
@@ -125,9 +117,7 @@
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Sortable<span class="op">[+</span>A<span class="op">]</span> <span class="op">{</span>  </span>
 <span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">sortBy</span><span class="op">(</span>ordering<span class="op">:</span> Ordering<span class="op">[</span>A<span class="op">]):</span> <span class="bu">Unit</span></span>
 <span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>Mnemonically, you can think of input parameters as meaning “times -1”. <code>Ordering</code> takes <code>A</code>s as its inputs, so <code>Ordering</code> is negative. <code>Sortable</code> takes a (negative) <code>Ordering</code> as an input, so it’s positive (-1 * -1 = 1). Printer takes a (positive) <code>List</code> as input, so it’s negative. This explains Scala’s choice of <code>+</code> and <code>-</code> as the syntax for its variance annotations.</p>
-<h2 id="the-semilattice-of-variances"><a href="#the-semilattice-of-variances">The Semilattice of Variances
-
-</a></h2>
+<h2 id="the-semilattice-of-variances"><a href="#the-semilattice-of-variances">The Semilattice of Variances</a></h2>
 <p>Now, it turns out that these three types of variance have a relationship to each other. Invariance generalises both covariance and contravariance. Covariant things are also invariant, and contravariant things are also also invariant.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="ot">defaultInvmapCo ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>defaultInvmapCo f _ x <span class="ot">=</span> <span class="fu">fmap</span> f x</span>
@@ -141,9 +131,7 @@
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Invariant</span> f <span class="ot">=&gt;</span> <span class="dt">Contravariant</span> f <span class="kw">where</span> <span class="co">{- ... -}</span></span></code></pre></div><img src="../images/2019-01-11-the-fourth-type-of-variance/semilattice.jpg" />
 <p>So there’s this interesting relationship between the three types of variance. They form a little semilattice, of which <code>Invariant</code> is the supremum.</p>
 <p>But, hmm, the picture seems asymmetric. Is variance really only a semilattice? Or is there something lurking at the bottom of that picture?</p>
-<h2 id="phantom-variance"><a href="#phantom-variance">Phantom Variance
-
-</a></h2>
+<h2 id="phantom-variance"><a href="#phantom-variance">Phantom Variance</a></h2>
 <p>Looking at the code above, it appears that <code>Functor</code> and <code>Contravariant</code> both specialise <code>Invariant</code> by ignoring one of <code>Invariant</code>’s function parameters. What if we ignored both of them?</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> (<span class="dt">Functor</span> f, <span class="dt">Contravariant</span> f) <span class="ot">=&gt;</span> <span class="dt">Phantom</span> f <span class="kw">where</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="ot">    pmap ::</span> f a <span class="ot">-&gt;</span> f b</span></code></pre></div><p>This strange class says that you can map an <code>f a</code> to an <code>f b</code> without needing to map <code>a</code>s or <code>b</code>s at all! Intuitively, you can only convert <code>f a</code> to <code>f b</code> for free when <code>f</code> doesn’t mention <code>a</code> anywhere in its body.</p>

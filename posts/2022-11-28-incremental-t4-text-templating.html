@@ -46,9 +46,7 @@
             
 <p>Since starting at Microsoft earlier this year I’ve done a lot of maintenance work on my team’s build system. One of the things I’ve been working on has been <em>incremental building</em>: if you run a build in Visual Studio, and then run another build straight away, it should detect that nothing has changed and skip rebuilding. Incremental building is very important for day-to-day productivity, especially in large codebases, since rebuilding one project usually forces all of its downstream dependents to rebuild too. (The devs in my department typically have around 60 projects loaded into Visual Studio; the whole repo consists of around 1300 projects(!). So as you can imagine a cascading incremental build failure can take quite some time and be a major productivity drag.)</p>
 <p>Anyway, here’s one of the incremental build issues I fixed. It’s a bit outside my usual wheelhouse but I wanted to write it down because I couldn’t find anything online when I was first investigating this issue.</p>
-<h2 id="debugging-the-up-to-date-check"><a href="#debugging-the-up-to-date-check">Debugging the Up-To-Date Check
-
-</a></h2>
+<h2 id="debugging-the-up-to-date-check"><a href="#debugging-the-up-to-date-check">Debugging the Up-To-Date Check</a></h2>
 <p>I noticed that my team’s project wasn’t building incrementally: whenever I tried to re-run a unit test I had to wait for the whole project to recompile. The first thing to do, when you notice yourself feeling annoyed by recompilation, is to <a href="https://github.com/dotnet/project-system/blob/main/docs/up-to-date-check.md#sdk-style-projects">enable Up-To-Date Check Logging in Visual Studio</a>. (I recommend just leaving the logging on “minimal” mode at all times.) The “Up-To-Date Check” is the component of Visual Studio which is responsible for incremental builds. It works by looking at the timestamps of the project’s input and output files; if all of the output files are newer than all of the input files then the project doesn’t need to be rebuilt.</p>
 <p>After turning on the logging and rebuilding, I saw this message in the Output window:</p>
 <pre><code>FastUpToDate: Input Compile item 'CodeGen\Templates\AdapterTextTemplate.cs' is newer than earliest output 'bin\net472\ScopeCompiler.dll', not up-to-date.
@@ -99,9 +97,7 @@
 <span id="43"><a href="#43" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">Compile</span><span class="ot"> Include=</span><span class="st">&quot;@(GeneratedFiles)&quot;</span><span class="ot"> Exclude=</span><span class="st">&quot;@(Compile)&quot;</span> /&gt;</span>
 <span id="44"><a href="#44" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">ItemGroup</span>&gt;</span>
 <span id="45"><a href="#45" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><p>I realised that the incremental build failure was due to an interaction between build-time text templating and MSBuild’s <a href="https://learn.microsoft.com/en-us/dotnet/core/project-sdk/overview#default-includes-and-excludes">default includes</a>. The Up-To-Date Check scans the source tree for any <code>cs</code> files; if any of them have changed (or been created) since the last time a build ran, then the project needs rebuilding. Then, during the build (before compilation), T4 runs and generates some <code>cs</code> files; by default these <code>cs</code> files are placed alongside the <code>tt</code> file — ie, in the source tree. The next time you run a build, Visual Studio sees that the generated <code>cs</code> files have been touched, meaning the project needs to be rebuilt, meaning that T4 needs to run, which touches the generated <code>cs</code> files…</p>
-<h2 id="the-fix"><a href="#the-fix">The Fix
-
-</a></h2>
+<h2 id="the-fix"><a href="#the-fix">The Fix</a></h2>
 <p>For the fix I made a few changes:</p>
 <ol>
 <li>I excluded the generated <code>cs</code> files from the default list of files to track in the Up-To-Date Check.
@@ -173,9 +169,7 @@
 <span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>        &lt;/<span class="kw">Compile</span>&gt;</span>
 <span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">FileWrites</span><span class="ot"> Include=</span><span class="st">&quot;@(_T4OutputFile)&quot;</span> /&gt;</span>
 <span id="15"><a href="#15" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">ItemGroup</span>&gt;</span>
-<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><h2 id="the-code"><a href="#the-code">The Code
-
-</a></h2>
+<span id="16"><a href="#16" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">Target</span>&gt;</span></code></pre></div><h2 id="the-code"><a href="#the-code">The Code</a></h2>
 <p>I put all of this code in a file called <code>TextTemplating.CSharp.targets</code> and imported it into the projects which used T4.</p>
 <p>Here is the final file in handy pasteable form:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">Project</span>&gt;</span>

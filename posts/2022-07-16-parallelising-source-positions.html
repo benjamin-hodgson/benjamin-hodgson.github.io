@@ -59,9 +59,7 @@
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>calculateSourcePos sp _ <span class="ot">=</span> sp { col <span class="ot">=</span> col sp <span class="op">+</span> <span class="dv">1</span> }</span></code></pre></div><p>When the parser encounters a new line, the column counter is reset back to 1.</p>
 <p>The signature of <code>calculateSourcePos</code> poses a performance problem: it takes the previous <code>SourcePos</code> as an argument. Each iteration of the loop depends on the result of the previous iteration. This <em>data dependency</em> means the loop can’t be parallelised — you have to wait for each iteration of the loop to finish before you can start the next one.</p>
 <p>This article is about redesigning <code>SourcePos</code> to be more parallelisable.</p>
-<h2 id="monoids-are-embarrassingly-parallel"><a href="#monoids-are-embarrassingly-parallel">Monoids are Embarrassingly Parallel
-
-</a></h2>
+<h2 id="monoids-are-embarrassingly-parallel"><a href="#monoids-are-embarrassingly-parallel">Monoids are Embarrassingly Parallel</a></h2>
 <p><em>Monoid</em> is the high-falutin’ mathsy name for a certain variety of composable objects. Composability is very important in programming, and consequently monoids show up all over the place. There are plenty of introductions to monoids out there (mostly by <a href="https://blog.ploeh.dk/2017/10/06/monoids/">better</a> <a href="https://www.youtube.com/watch?v=-mnA8_DWfik">teachers</a> than me), so I’ll keep it brief.</p>
 <p>For an object to be a monoid you need two things:</p>
 <ol>
@@ -91,9 +89,7 @@
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>pmconcat <span class="ot">=</span> List.foldr (<span class="op">&lt;&gt;</span>) <span class="fu">mempty</span></span>
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span> parMap <span class="fu">mconcat</span></span>
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span> chunksOf <span class="dv">1024</span></span></code></pre></div><p>To put it another way, monoids don’t suffer from the data dependency which made <code>calculateSourcePos</code> hard to parallelise. The challenge, then, is to come up with a way to make <code>SourcePos</code> into a monoid.</p>
-<h2 id="deltas"><a href="#deltas">Deltas
-
-</a></h2>
+<h2 id="deltas"><a href="#deltas">Deltas</a></h2>
 <p>If you go hiking, you might bring with you a list of directions on a piece of paper. Directions are monoidal: if you have directions from your house to the beach, and from the beach to the pub, you can follow those directions sequentially to get from your house to the pub. (I’ll tolerate hiking as long as the destination is a pub.)</p>
 <p>Directions are relative, not absolute. The directions on your paper might tell you how to get from your house to the pub, but if you start somewhere other than your house you can still follow the directions — you just have to hope you end up in a different pub.</p>
 <p>So by analogy, let’s stop worrying about absolute locations in a source file and instead think about offsets relative to an arbitrary location.</p>
@@ -123,16 +119,12 @@
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>calculateSourcePosDelta inputText <span class="ot">=</span> pmconcat <span class="op">$</span> parMap toDelta inputText</span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
 <span id="3"><a href="#3" aria-hidden="true" tabindex="-1"></a>        toDelta <span class="ch">'\n'</span> <span class="ot">=</span> <span class="dt">SourcePosDelta</span> <span class="dv">1</span> <span class="dv">0</span></span>
-<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        toDelta _ <span class="ot">=</span> <span class="dt">SourcePosDelta</span> <span class="dv">0</span> <span class="dv">1</span></span></code></pre></div><h2 id="hardware-parallelism"><a href="#hardware-parallelism">Hardware Parallelism
-
-</a></h2>
+<span id="4"><a href="#4" aria-hidden="true" tabindex="-1"></a>        toDelta _ <span class="ot">=</span> <span class="dt">SourcePosDelta</span> <span class="dv">0</span> <span class="dv">1</span></span></code></pre></div><h2 id="hardware-parallelism"><a href="#hardware-parallelism">Hardware Parallelism</a></h2>
 <p><a href="https://github.com/benjamin-hodgson/Pidgin/blob/sourceposdelta/Pidgin.Bench/SourcePosDeltaBench.cs">I tested some implementations of <code>&lt;&gt;</code> (in C#)</a> which made use of modern CPUs’ support for <em>hardware parallelism</em> (also known as SIMD, for Single Instruction Multiple Data). Recent versions of .NET come bundled with opt-in SIMD support, to be found in <a href="https://docs.microsoft.com/en-us/dotnet/api/system.numerics?view=net-6.0">the <code>System.Numerics</code> namespace</a>.</p>
 <p>CPUs with SIMD have extra-wide registers (like, 256 bits) divided into <em>lanes</em>. You can stuff four 64-bit integers (or eight 32-bit ones) into a single register, and the CPU supports special instructions to perform the same operation on each of those four integers at once — so (for example) you can add four sets of two integers with a single instruction. Each SIMD operation is a little bit slower than its corresponding single-target instruction, but since they operate on four times the amount of data you can often get reasonable speedups when you’re processing lots of data.</p>
 <p><a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L278">My fastest attempt</a> involved packing <code>SourcePosDelta</code>’s two integers into <a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L320">a single 64-bit integer</a> and doing some <a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L334">bit manipulation</a> to implement <code>&lt;&gt;</code>’s “annihilation” semantics. Then I divided the input array into four chunks — one per lane — and ran the bit manipulation algorithm on each lane. Since it’s best to load contiguous data into a SIMD register’s lanes, I had to <a href="https://github.com/benjamin-hodgson/Pidgin/blob/539ecf23b8ebf0f601a48ade7576343671ef075c/Pidgin.Bench/SourcePosDeltaBench.cs#L51">rearrange the input array</a> to line the chunks up with their SIMD lanes.</p>
 <p>I decided against putting the SIMD code into the library, because in practice the number of <code>SourcePosDelta</code>s which need summing is often not very large. In any case, the SIMD code offered comparable performance to a much simpler algorithm: loop backwards until you find the last newline in a chunk of text, then ignore any non-newline characters to the left of it.</p>
-<h2 id="spans-and-shifts"><a href="#spans-and-shifts">Spans and Shifts
-
-</a></h2>
+<h2 id="spans-and-shifts"><a href="#spans-and-shifts">Spans and Shifts</a></h2>
 <p>Here’s another cool thing you can do with <code>SourcePosDelta</code>.</p>
 <p>In general, each node in a parse tree corresponds to a certain <em>span</em> of the input document: the section of the input text containing a given syntactic construct.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Span</span> <span class="ot">=</span> <span class="dt">Span</span> {</span>
@@ -205,9 +197,7 @@
 <span id="27"><a href="#27" aria-hidden="true" tabindex="-1"></a>            <span class="op">|</span> <span class="fu">span</span> r <span class="ot">`containsPos`</span> start s <span class="ot">=</span></span>
 <span id="28"><a href="#28" aria-hidden="true" tabindex="-1"></a>                <span class="dt">Add</span> l (edit s replacement r)</span>
 <span id="29"><a href="#29" aria-hidden="true" tabindex="-1"></a>            <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">=</span> replacement</span></code></pre></div><p>This code is linear in the <em>depth</em> of the tree, which is usually shallow (typically dozens of nodes deep, rather than hundreds or thousands). You could do even better asymptotically by storing the parse tree in a <a href="https://en.wikipedia.org/wiki/Zipper_(data_structure)">zipper</a> focused on the node the user is currently editing, and lazily apply shifts as the zipper moves around.</p>
-<h2 id="monoid-actions"><a href="#monoid-actions">Monoid Actions
-
-</a></h2>
+<h2 id="monoid-actions"><a href="#monoid-actions">Monoid Actions</a></h2>
 <p>Let’s look a little closer at the formalism underlying <code>SourcePosDelta</code>.</p>
 <p>This idea of building up a monoid and then using it to transform some other value is formalised using the notion of <em>actions</em> (also known as <em>modules</em>). A monoidal object is said to be a <em>monoid action</em> on some other object <code>a</code> if it can be used to transform <code>a</code>:</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="co">-- &quot;Action a m&quot; means &quot;m acts on a&quot;</span></span>
@@ -253,9 +243,7 @@
 <p>Any monoid can always be thought of as acting upon itself, simply by defining <code>act = (&lt;&gt;)</code>.</p>
 </li>
 </ol>
-<h2 id="actions-all-the-way-down"><a href="#actions-all-the-way-down">Actions All the Way Down
-
-</a></h2>
+<h2 id="actions-all-the-way-down"><a href="#actions-all-the-way-down">Actions All the Way Down</a></h2>
 <p>It turns out monoid actions can also explain the strange asymmetry in <code>SourcePosDelta</code>’s <code>(&lt;&gt;)</code> method. When computing <code>delta1 &lt;&gt; delta2</code>, we can think of <code>delta2</code>’s <code>lines</code> as acting on <code>delta1</code>’s <code>cols</code>.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Lines</span> <span class="ot">=</span> <span class="dt">Lines</span> <span class="dt">Natural</span> <span class="kw">deriving</span> <span class="dt">Monoid</span> via (<span class="dt">Sum</span> <span class="dt">Natural</span>)</span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Cols</span> <span class="ot">=</span> <span class="dt">Cols</span> <span class="dt">Natural</span> <span class="kw">deriving</span> <span class="dt">Monoid</span> via (<span class="dt">Sum</span> <span class="dt">Natural</span>)</span>

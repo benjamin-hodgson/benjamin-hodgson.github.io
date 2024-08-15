@@ -53,9 +53,7 @@
 </nav>
 <img src="../images/2017-11-13-recursion-without-recursion/compiler.jpg" alt="Compiler overview" />
 <p>Today’s the day! We’re going to turn last week’s unification algorithm into an actual programming language by filling in the bottom-right part of the above diagram. Prolog’s <em>rules engine</em> is the system which processes the predicates and facts in your program to answer queries.</p>
-<h2 id="the-database"><a href="#the-database">The Database
-
-</a></h2>
+<h2 id="the-database"><a href="#the-database">The Database</a></h2>
 <p>When you load a program into your Prolog interpreter, it reads the collection of rules into an internal data structure. This data structure is known as Prolog’s <em>database</em>. For simplicity we can represent the database as an array of rules (ie, the same structure which comes out of the parser), but a real Prolog interpreter would use a more specialised data structure to make querying more efficient.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Engine</span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
@@ -67,9 +65,7 @@
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
-<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="a-first-attempt"><a href="#a-first-attempt">A First Attempt
-
-</a></h2>
+<span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><h2 id="a-first-attempt"><a href="#a-first-attempt">A First Attempt</a></h2>
 <p>Prolog’s interactive terminal accepts <em>queries</em> (predicates) and outputs a <em>substitution</em> which satisfies the query, according to the rules in the database. So the signature for <code>Query</code> is</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> ImmutableDictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> Term<span class="op">&gt;</span> <span class="fu">Query</span><span class="op">(</span>Term goal<span class="op">)</span></span></code></pre></div><p>If a goal can’t be satisfied, <code>Query</code> will return <code>null</code>.</p>
 <p>When you type a query, Prolog looks for the first rule in its database which matches the goal. In code, that means looping over <code>_database</code> and ignoring rules whose <code>Head</code> doesn’t unify with the goal.</p>
@@ -114,9 +110,7 @@
 <span id="13"><a href="#13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> subst<span class="op">;</span></span>
 <span id="14"><a href="#14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>If any of the recursive <code>Query</code> calls failed, that means one of the conditions on the right hand side was not satisfiable, so the whole rule fails (this function returns <code>null</code>) and we have to try the next one. Eventually we hope to find a rule whose head matches the goal <em>and</em> whose conditions are satisfied. This means the query was successful, so we return the <code>subst</code> corresponding to the rule.</p>
 <p>That’s a decent first stab at the code for <code>Query</code>. Now we have to fix the bugs.</p>
-<h2 id="backtracking"><a href="#backtracking">Backtracking
-
-</a></h2>
+<h2 id="backtracking"><a href="#backtracking">Backtracking</a></h2>
 <p>Here’s a trimmed-down version of the example database from the first post.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>likes(benjamin<span class="kw">,</span> asparagus)<span class="kw">.</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>likes(benjamin<span class="kw">,</span> pizza)<span class="kw">.</span></span>
@@ -187,10 +181,8 @@
 <span id="25"><a href="#25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p><code>SelectMany</code> (and <code>from...select</code>, which is the same thing under the hood) coming in clutch here. Each predicate in the body of a rule has potentially many solutions, so each recursive call to <code>Query</code> introduces potentially many possible branches to choose from. <code>SelectMany</code> lets us take all of them — but because <code>IEnumerable</code> is lazy, at runtime it doesn’t actually explore more branches than necessary to find a single solution. It also handles the “no solutions” case gracefully: if <code>substs</code> is empty then the body of the <code>foreach</code> loop does nothing. (<code>SelectMany</code> always returns an empty collection when its input collection is empty.)</p>
 <p>Working with immutable data is of utmost importance here. Combining lazy <code>IEnumerable</code>s with mutable data can have catastrophic consequences because it’s hard to predict when your code will be run. The body of my loop computes a <em>new</em> <code>substs</code> to be used for the next iteration; it doesn’t update a single collection of solutions. I don’t know what would happen if you did write it like that but I know it would be wrong!</p>
 <p>Feeding the <code>dinner(Food)</code> query into this version of the code correctly outputs <code>Food := pizza</code>.</p>
-<h2 id="scope-management"><a href="#scope-management">Scope Management
-
-</a></h2>
-<h3 id="discharging"><a href="#discharging"></a></h3>
+<h2 id="scope-management"><a href="#scope-management">Scope Management</a></h2>
+<h3 id="discharging"><a href="#discharging">Discharging</a></h3>
 <p>Here’s another example program which reveals a bug in <code>Query</code>.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>foo(<span class="dt">X</span>)<span class="kw">.</span></span>
 <span id="2"><a href="#2" aria-hidden="true" tabindex="-1"></a>bar(baz)<span class="kw">.</span></span>
@@ -216,7 +208,7 @@
 <span id="8"><a href="#8" aria-hidden="true" tabindex="-1"></a>    <span class="op">=&gt;</span> subst</span>
 <span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">Where</span><span class="op">(</span>kvp <span class="op">=&gt;</span> goal<span class="op">.</span><span class="fu">Variables</span><span class="op">().</span><span class="fu">Contains</span><span class="op">(</span>kvp<span class="op">.</span><span class="fu">Key</span><span class="op">))</span></span>
 <span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">ToImmutableDictionary</span><span class="op">();</span></span></code></pre></div><p>This fixes the bug. <code>test()</code> now correctly returns an empty substitution.</p>
-<h3 id="freshening"><a href="#freshening"></a></h3>
+<h3 id="freshening"><a href="#freshening">Freshening</a></h3>
 <p>There’s one final bug to fix in the engine.</p>
 <div class="sourceCode"><pre class="sourceCode"><code class="sourceCode"><span id="1"><a href="#1" aria-hidden="true" tabindex="-1"></a>foo(a<span class="kw">,</span> <span class="dt">X</span>)<span class="kw">.</span></span></code></pre></div><p>Running the query <code>foo(X, b)</code> should return <code>X := a</code>, but the interpreter prints <code>no solution</code>. This is of course another name collision issue. When unifying the goal with the left hand side, the interpreter has mistaken the two <code>X</code>s for being the <em>same</em> <code>X</code>. The <code>X</code> in <code>foo</code>’s left hand side should be local to <code>foo</code>.</p>
 <p>To avoid unintentional collisions we need to <em>freshen</em> local variables. Whenever the interpreter enters a rule, it should rename the rule’s local variables to new variables which aren’t being used anywhere in the goal. An easy way to guarantee that a name isn’t being used anywhere in the goal is to stick a number on the end of it, and increase that number by 1 each time. (I’m also going to put an <code>?</code> on the front of the auto-generated variable names, because variables beginning with <code>?</code> is not valid Prolog so it’s guaranteed not to collide with a name typed by a programmer.)</p>
