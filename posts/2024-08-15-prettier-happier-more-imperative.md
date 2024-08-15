@@ -1,6 +1,6 @@
 ---
 title: Prettier. Happier. More Imperative.
-subtitle: Understanding _A Prettier Printer_ by Porting It
+subtitle: Understanding "A Prettier Printer" by Porting It
 date: 2024-08-15
 ---
 
