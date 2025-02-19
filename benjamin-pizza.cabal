@@ -16,7 +16,7 @@ executable benjamin-pizza
     ghc-options: -threaded
     build-depends:
         base >= 4.17.0,
-        hakyll >= 4.16.0.0,
+        hakyll >= 4.16.6.0,
         blaze-html,
         containers,
         commonmark,
