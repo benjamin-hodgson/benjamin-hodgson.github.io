@@ -74,7 +74,7 @@ class TopTenRecipeSuggester<TServices> : IRecipeSuggester
             from i in ingredients
             from r in TServices.RecipeRepository.FindRecipesWithIngredient(i)
             group i by r into g
-            orderby g.Count()
+            orderby g.Count() descending
             select g.Key
         ).Take(10).ToList();
 
