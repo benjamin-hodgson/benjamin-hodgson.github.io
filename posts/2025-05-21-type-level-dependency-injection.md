@@ -66,22 +66,22 @@ Now when the code needs to call a dependency, it just looks it up in the `TServi
 class TopTenRecipeSuggester<TServices> : IRecipeSuggester
     where TServices : IRecipeRepositoryProvider, ILoggerProvider
 {
-	public IEnumerable<Recipe> SuggestRecipes(IEnumerable<string> ingredients)
-	{
-		TServices.Logger.Log("finding recipes...");
+    public IEnumerable<Recipe> SuggestRecipes(IEnumerable<string> ingredients)
+    {
+        TServices.Logger.Log("finding recipes...");
 
-		var results = (
-			from i in ingredients
-			from r in TServices.RecipeRepository.FindRecipesWithIngredient(i)
-			group i by r into g
-			orderby g.Count()
-			select g.Key
-		).Take(10).ToList();
+        var results = (
+            from i in ingredients
+            from r in TServices.RecipeRepository.FindRecipesWithIngredient(i)
+            group i by r into g
+            orderby g.Count()
+            select g.Key
+        ).Take(10).ToList();
 
-		TServices.Logger.Log("found some recipes");
+        TServices.Logger.Log("found some recipes");
 
-		return results;
-	}
+        return results;
+    }
 }
 ```
 
@@ -102,7 +102,7 @@ class CompositionRoot : ILoggerProvider, IRecipeRepositoryProvider, IRecipeSugge
     public static IRecipeSuggester RecipeSuggester { get; }
         = new TopTenRecipeSuggester<CompositionRoot>();
 
-	// ...
+    // ...
 }
 ```
 
@@ -233,7 +233,7 @@ GetController<CompositionRoot>().Run();
 
 static IRecipeSuggestionController GetController<T>()
     where T : IRecipeSuggestionControllerProvider
-	=> T.RecipeSuggestionController;
+    => T.RecipeSuggestionController;
 ```
 
 Writing an additional provider interface for each component in your system (a concrete provider for each concrete service, and an abstract provider for each of their interfaces) is tedious boilerplate, but at least it's the kind of thing you can automate with a source generator.
