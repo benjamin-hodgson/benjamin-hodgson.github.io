@@ -96,8 +96,8 @@
 <span id="5"><a href="#5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="kw">static</span> <span class="kw">override</span> IRecipeRepository RecipeRepository <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
 <span id="6"><a href="#6" aria-hidden="true" tabindex="-1"></a>        <span class="op">=</span> <span class="kw">new</span> MockRecipeRepository<span class="op">&lt;</span>TestCompositionRoot<span class="op">&gt;();</span></span>
 <span id="7"><a href="#7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><p>You’d have to define an entirely separate composition root for testing instead.</p>
-<blockquote class="callout callout-aside">
-<h3>Aside</h3>
+<blockquote class="callout callout-note">
+<h3>Note</h3>
 <p>I actually don’t think this is too bad, or at least, it’s also a weak spot for classic constructor injection. With classic constructor injection, tests typically <code>new</code> up the SUT and specify all of its dependencies by hand anyway. Type-Level DI has somewhat more boilerplate but not, like, asymptotically more.</p>
 </blockquote>
 <p>Anyway, we can patch this up using one of my favourite cursed tricks: <em>F-bounds</em> (aka the <em>curiously recurring template pattern</em>). <code>CompositionRoot</code> will (become an interface and) take a <code>TServices</code> type parameter itself. <code>TServices</code> stands in for the eventual concrete type of the composition root.</p>
@@ -112,8 +112,8 @@
 <span id="9"><a href="#9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="10"><a href="#10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">static</span> IRecipeSuggester IRecipeSuggesterProvider<span class="op">.</span><span class="fu">RecipeSuggester</span> <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="op">}</span></span>
 <span id="11"><a href="#11" aria-hidden="true" tabindex="-1"></a>        <span class="op">=</span> <span class="kw">new</span> TopTenRecipeSuggester<span class="op">&lt;</span>TServices<span class="op">&gt;();</span></span>
-<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><blockquote class="callout callout-aside">
-<h3>Aside</h3>
+<span id="12"><a href="#12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><blockquote class="callout callout-note">
+<h3>Note</h3>
 <p>Now you can see why I made the providers’ properties <code>static</code>. Interfaces can’t have (non-static) fields, and accordingly non-static interface properties can’t have initialisers because there’s no corresponding storage location.</p>
 </blockquote>
 <p>This arrangement allows you to derive another interface from <code>CompositionRoot</code>, override whatever you need, and forward the type parameter.</p>
