@@ -130,7 +130,7 @@ class TestCompositionRoot : CompositionRoot
 
 You'd have to define an entirely separate composition root for testing instead.
 
->[!aside]
+>[!note]
 > I actually don't think this is too bad, or at least, it's also a weak spot for classic constructor injection. With classic constructor injection, tests typically `new` up the SUT and specify all of its dependencies by hand anyway. Type-Level DI has somewhat more boilerplate but not, like, asymptotically more.
 
 Anyway, we can patch this up using one of my favourite cursed tricks: _F-bounds_ (aka the _curiously recurring template pattern_). `CompositionRoot` will (become an interface and) take a `TServices` type parameter itself. `TServices` stands in for the eventual concrete type of the composition root.
@@ -150,7 +150,7 @@ interface ICompositionRoot<TServices> : ILoggerProvider, IRecipeRepositoryProvid
 }
 ```
 
-> [!aside]
+> [!note]
 > Now you can see why I made the providers' properties `static`. Interfaces can't have (non-static) fields, and accordingly non-static interface properties can't have initialisers because there's no corresponding storage location.
 
 This arrangement allows you to derive another interface from `CompositionRoot`, override whatever you need, and forward the type parameter.
